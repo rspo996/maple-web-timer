@@ -69,7 +69,7 @@ details{margin-top:12px;font-size:14px}details li{margin:3px 0}
       <summary><b>처음 설정하는 법</b></summary>
       <ol>
         <li><b>게임 화면 연결</b> → 메이플스토리 <u>창</u>을 선택합니다. (이 탭은 다른 모니터에 두거나 뒤로 숨겨도 계속 동작합니다)</li>
-        <li>솔 야누스 / 부스터를 <b>켠 상태에서</b> 카드의 <b>등록</b>을 누르고, ① 버프창 전체를 드래그 → ② 해당 아이콘 하나만 꼭 맞게 드래그.</li>
+        <li><b>솔 야누스</b>와 <b>부스터</b>는 따로 등록하지 않아도 자동으로 찾습니다. 부스터는 화면 위쪽 가운데 “남은시간” 타이머의 숫자를 직접 읽어요. 잘 안 잡히면 <b>등록</b>으로 직접 지정하세요(부스터는 ② 단계에서 “◷ 남은시간” 글자를 드래그).</li>
         <li>룬이 미니맵에 보일 때 룬 카드의 <b>등록</b> → ① 미니맵 전체 → ② 룬 아이콘만 드래그.</li>
         <li>지속시간 칸을 비워두면 한 번 켜졌다 꺼지는 걸 보고 <b>자동으로 학습</b>합니다. 알고 있으면 <code>분:초</code>로 직접 입력하세요.</li>
         <li>일치도 숫자를 보면서 켜져 있을 땐 기준값보다 높고, 꺼져 있을 땐 낮게 나오도록 기준값을 조절하세요.</li>
@@ -125,6 +125,7 @@ function stepDetector(st, cfg, matched, now){
     st.lastRemind=now;
   } else if(st.present && st.offStreak>=need.off){
     st.present=false;
+    if(cfg.kind==='countdown' && !st.alertedPre) ev.push('gone');
     if(cfg.kind==='buff'){
       if(!cfg.durationSec && st.appearedAt){
         const d=Math.round((now-st.appearedAt)/1000 - need.off*0.5);
@@ -144,7 +145,55 @@ function stepDetector(st, cfg, matched, now){
   }
   return ev;
 }
-function newState(){ return {present:false,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,lastRemind:0,score:0,pos:null}; }
+function newState(){ return {present:false,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:''}; }
+
+/* ===== 부스터 타이머 숫자 읽기 (7세그먼트) ===== */
+// 노란/흰 7세그먼트 숫자(검은 배경)를 읽어 {value, text} 반환. 못 읽으면 null
+const SEG_DIGITS={'1111110':'0','0110000':'1','1101101':'2','1111001':'3','0110011':'4','1011011':'5','1011111':'6','0011111':'6',
+  '1110000':'7','1110010':'7','1111111':'8','1111011':'9','1110011':'9'};
+function ocrSevenSeg(rgba, W, H, litMin=110){
+  const lit=new Uint8Array(W*H);
+  for(let i=0,j=0;i<W*H;i++,j+=4) lit[i]=(0.299*rgba[j]+0.587*rgba[j+1]+0.114*rgba[j+2])>litMin?1:0;
+  const runs=[]; let cur=null;
+  for(let x=0;x<W;x++){
+    let n=0,top=H,bot=-1; for(let y=0;y<H;y++) if(lit[y*W+x]){n++; if(y<top)top=y; bot=y;}
+    if(n>=2){ if(!cur){cur={l:x,r:x,t:top,b:bot};runs.push(cur);} else {cur.r=x; cur.t=Math.min(cur.t,top); cur.b=Math.max(cur.b,bot);} }
+    else cur=null;
+  }
+  runs.forEach(r=>{r.w=r.r-r.l+1; r.h=r.b-r.t+1;});
+  const maxH=Math.max(0,...runs.map(r=>r.h)); if(maxH<8) return null;
+  const digs=runs.filter(r=>r.h>=0.7*maxH); if(!digs.length) return null;
+  const top=Math.min(...digs.map(r=>r.t)), bot=Math.max(...digs.map(r=>r.b)), Hc=bot-top+1;
+  let cw=Math.max(...digs.map(r=>r.w)); if(cw<0.4*Hc) cw=Math.round(0.55*Hc);
+  const frac=(x0,x1,y0,y1)=>{ x0=Math.max(0,Math.round(x0)); x1=Math.min(W-1,Math.round(x1)); y0=Math.max(0,Math.round(y0)); y1=Math.min(H-1,Math.round(y1));
+    let n=0,on=0; for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ n++; on+=lit[y*W+x]; } return n?on/n:0; };
+  let text='';
+  for(const r of runs){
+    if(r.h>=0.7*maxH){
+      const x0=r.w>=0.75*cw ? r.l : r.r-cw+1, X=f=>x0+f*(cw-1), Y=f=>top+f*(Hc-1);
+      const seg=[ frac(X(.3),X(.7),Y(0),Y(.12)), frac(X(.8),X(1),Y(.15),Y(.4)), frac(X(.8),X(1),Y(.6),Y(.85)),
+                  frac(X(.3),X(.7),Y(.88),Y(1)), frac(X(0),X(.2),Y(.6),Y(.85)), frac(X(0),X(.2),Y(.15),Y(.4)), frac(X(.3),X(.7),Y(.44),Y(.56)) ];
+      const ch=SEG_DIGITS[seg.map(v=>v>0.3?1:0).join('')]; if(ch===undefined) return null; text+=ch;
+    } else if(text && r.h<=0.3*maxH && r.w<=0.5*maxH && r.b>=bot-0.2*Hc && !text.includes('.')) text+='.';
+  }
+  if(text.endsWith('.')) text=text.slice(0,-1);
+  if(!/^\d+(\.\d+)?$/.test(text)) return null;
+  return {value:parseFloat(text), text};
+}
+// 읽은 숫자로 남은 시간 갱신. 잘못 읽은 값 하나로 알림이 울리지 않도록, 예상값과 맞거나 두 번 연속 일치할 때만 받아들임
+function stepCountdown(st, cfg, value, now){
+  const ev=[];
+  if(!st.present){ st.remain=null; st.cand=null; return ev; }
+  if(value==null) return ev;
+  const exp=st.remain!=null ? st.remain-(now-st.remainAt)/1000 : null;
+  const candExp=st.cand!=null ? st.cand-(now-st.candAt)/1000 : null;
+  const ok=(exp!=null && Math.abs(value-exp)<=2) || (candExp!=null && Math.abs(value-candExp)<=1);
+  if(!ok){ st.cand=value; st.candAt=now; return ev; }
+  st.remain=value; st.remainAt=now; st.cand=null;
+  if(value>cfg.leadSec+5) st.alertedPre=false;                   // 새 부스터를 썼으면 다시 알림 준비
+  if(value<=cfg.leadSec && value>0 && !st.alertedPre){ st.alertedPre=true; ev.push('pre'); }
+  return ev;
+}
 </script>
 
 <script>
@@ -152,13 +201,16 @@ function newState(){ return {present:false,onStreak:0,offStreak:0,armed:false,ap
 const DEFS=[
   {id:'sol',name:'솔 야누스',kind:'buff',areaLabel:'버프창 영역',iconLabel:'솔 야누스 아이콘',threshold:0.75,
    presets:[{url:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAMESURBVFhHvZdhtaswEIRroRawgAUs1AIWsIAFLGAhFmIBC9cCb78NQ9MQaPvjdc6ZQ7rZ7AxJgPRWYP0Rq1hDXH5CtJLkE95xhRjWNczwb52nxCkmzmHx3/R5ThgT58HivTPHOMcXE2/FQQxJIBcHy99mYouTU8M0PpxCbuKtgcX6IcUfj9a5G1iTAcU9ZrnRpoJZKGdAJk4NLNYUuWuJSyBuUysTEicGlKdxy2I1jPkMcK0aQJQ1nKdEDOwFl+DUb025eJZHDdWj9ukM5OLlnXHXKjiPtuFgYUB8Ch9nSiaqBnJxoM21CyNgwmFI7NvwQvpjtFkz5kaoQS0gE9Ul0FSRNNmmyUnBvg8uLNBu28HYOxFumn59dMHb/RAOdWQAraoBJbKGORQ/M9A/kihtTCg/BzUVrxqgQxvodru/UCAHYRdvwiu3WciFyzqqT05lE4a1axtPHMfZOfSjkxh9gMEI3u+2xu3kV0hM4mUd2PfTXgetqgENKkGMPrmXaHPvnPpN36d1DgbyQVyjxYIl5bHcRNOYsP2GmKiJc52n6CzrXBpwYdvFTBtGgAbKAOMAbzlM1AzMk92p1YG0wUcGEKWNAcyAmgHEh2E8GGAc+LN+xiEe7YsJLg2w4ZRULoE2owz42tvv2hLIAFfE+SaoDrGqgXL6csi1xNtm2DcgTwJXYrmJd3WqBvT46PFjgAbp8UGkM9HcBG1iMlA+hty17vz0MdRgSGJOxcnRi6h7WFF77bq4tSHxT+scDJSv4pyKIyDIBOT9n/e9q3P6LTj7GOnjUhpAGA5dPPR9/TF69znGBKQ4HMck7gaG+NJH++pzjFZlE6aOfRY28fJAIiNwMDGYx/a8iwMJ74+DAfDNkWya2PU85wg9DZZ5WtpcHBwMzNtZDRMig785lOYzVR5KReFgYBw47z3P7U+YiMUp9smxnByJX6G6BJhwI3Y3kLvSmZ7Z+PSPCbnvkBsAuwmQjNj7fey2CAbSGpYmXLz4a0buFUpxwTt+QbSS5BHq/N/ccLv9A28Xr8xLUjrGAAAAAElFTkSuQmCC',w:32,h:32,crop:2},{url:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAIISURBVFhH1ZeBcYMwDEWzAit0Ba+QFbwCK3gFVugKrMAKrMAKXYH42/xGyBLkcldy1d2/QGTpPxvTuDcV60UyY53m5RLBq1o+oyS6/Nl13ZpSWvu+L9dQCPEtsR690LPcZ49hnHcQjXkIwTSOMa5ngTG6rvYKLkQF2My77qsxl8ZjLowxmUKOoUGKce5NiAbAmrlnnPrR1BlI7V1XogHgM9fmlvGQbHkgGgJe5iPwzNl4mX+KeK+l80cQJgACAxDVPO/e3AizQ2MGrqcxv1JCOs8VQQ9CsLcJgOQ4oqAOkub41Ab4TsrKSwgEesMDXiYACbU5ZkgTNo/3YSedZ42GoI8J4M2ezUqjzfAe0k4SRNZYq+ACIFCAwZ556qfGnELOg2BPxCHA2exhNKT515BA/O6VVXgZQD9zGFA01NcQIVj/FgAKGbiWAHLWcjWYx1hd//8APv4IWHT5Jvwe8quUB3oAcqm1kPMA0BO9ES7Ax/8QcRU8AL0npHTeA6CPC+CtAhozaCJl5b3ZmwD653ialh2ENsAMpXRemqMXgr3d8wB/KrkKFQKb6zlLiPdaOo9amnP28DABvCMZISQIZmdJGlvmEDzMI9nZobS+nnsQLeb5uiG0uXsoRbIemY+P5RJEyzOG0PPwWP7Jf0wQDQT3hAXyqliPXkfmjJK4QvCqlm0w+dfa4nZ7ABlHWuAqaGEaAAAAAElFTkSuQmCC',w:32,h:32,crop:2},{url:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJxSURBVFhHvZYBsfIwEISfBSxgAQu1UAtYqIVYqIVaqIVawMJvoS9f0oVruKRl3vzszA7QXnY3l6PwU2D9El2s8/L4CvHKli+kG5fLJfEKr9cdp2naOB9QddObBrroh2nZhXDNrRC83frEvhuaVJ2nUQvxDGDNU3Hk07gf1nGcE+e42KPuU2uDiDaEH+BZdEvvEQhhepoO92kdhgPGGoVhbQqxaaOrEIcdkDltvd/HPfvg09QMkXRiGMatEy/zagcUggXzvGy7n9Lrp+hjIK3VgMocn0oHctu7uOsSIYzrSKATpLYEmvk4rn4AnZGgtibReJ4Tw9WFU0zDuIWRjqD5egsgcOacX4gDBe/9uD6Wf4mEoKVHVD1rpZNmwnTWDUCLGJwwRKNIJhoRQbtp09YzjATIevp6glMdYDE7EbQruMzzjrpe1ucAJzqQdm8K2A3nCfSgATKXoahrwNajgZaAB15+gFhIUr7Hy9aVZX7sCOb4faaWV/seePVovZ4NoR0gn9fr7B+POFCGYInPiDHQ+mX3Hnj1aOVhZA5OBXgfQEG75dVS10qgsR/EDwP8dQi59qcAUNBnEQMbShT0+aMACsEi24UzRqKtl47MqwF4Pre6UBIDwQsnylwB8LjE34NmAIVQek+4hFej9TJ/BWj8HHtdKEPY3QtlF6y5Asj8VIBWiBpa5ocB+r7bbub/BLUQsNYBW9MyPwiQ6YWwQUqUxrBmjpcboBWiDGK7wHt7z67xzJsBvBC1IELNuGYOqwG6LtMuhF4Qdg7tNc8YSheP8i8ZSCFUZFkKyaDGst7TLM2FdOMbxCtbvkM3/zc3/Pz8Arwfc1DVVGZaAAAAAElFTkSuQmCC',w:32,h:32,crop:2}]},
-  {id:'booster',name:'부스터',kind:'buff',areaLabel:'버프창 영역',iconLabel:'부스터 아이콘',threshold:0.75},
+  {id:'booster',name:'부스터',kind:'countdown',areaLabel:'남은시간 타이머 주변',iconLabel:'“◷ 남은시간” 글자',threshold:0.7,
+   presetArea:f=>({x:Math.round(f.w*0.2),y:0,w:Math.round(f.w*0.6),h:Math.round(f.h*0.3)}), presetScales:[0.8,1,1.25,1.5],
+   presets:[{url:'data:image/png;base64,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',w:65,h:19,crop:0}]},
   {id:'rune',name:'룬',kind:'rune',areaLabel:'미니맵 영역',iconLabel:'룬 아이콘',threshold:0.8},
 ];
 const STORE='maple-web-timer-v1';
 const $=s=>document.querySelector(s);
 let cfgs={}; try{ cfgs=JSON.parse(localStorage.getItem(STORE)||'{}'); }catch(e){}
 for(const d of DEFS){ cfgs[d.id]=Object.assign({enabled:true,area:null,tpl:null,frameW:0,frameH:0,threshold:d.threshold,durationSec:null,leadSec:10,repeatSec:60},cfgs[d.id]||{},{kind:d.kind}); }
+if(cfgs.booster && cfgs.booster.ver!==2){ Object.assign(cfgs.booster,{ver:2,tpl:null,area:null,frameW:0,frameH:0,threshold:0.7}); }
 function save(){ try{ localStorage.setItem(STORE,JSON.stringify(cfgs)); }catch(e){} }
 const states={}; const tplCache={};
 for(const d of DEFS) states[d.id]=newState();
@@ -177,7 +229,9 @@ function buildCards(){
       <div class="status off" data-s="status">등록 필요</div>
       <div class="sub" data-s="sub"></div>
       <div class="grid">
-        ${d.kind==='buff'
+        ${d.kind==='countdown'
+          ? `<span>미리 알림</span><span><input type="number" min="1" max="120" data-k="leadSec"> 초 전</span>`
+          : d.kind==='buff'
           ? `<span>지속시간</span><span><input type="text" data-k="duration" placeholder="자동 학습"> <span class="sub">분:초</span></span>
              <span>미리 알림</span><span><input type="number" min="1" max="120" data-k="leadSec"> 초 전</span>`
           : `<span>반복 알림</span><span><input type="number" min="0" max="600" data-k="repeatSec"> 초마다 <span class="sub">(0=끔)</span></span>`}
@@ -201,13 +255,16 @@ function buildCards(){
       q('[data-k=leadSec]').value=c.leadSec;
       q('[data-k=leadSec]').onchange=e=>{c.leadSec=Math.max(1,+e.target.value||10);save();};
       q('[data-a=restart]').onclick=()=>{ const st=states[d.id]; st.appearedAt=Date.now(); st.alertedPre=false; st.present=true; st.onStreak=2; st.offStreak=0; st.armed=true; };
+    } else if(d.kind==='countdown'){
+      q('[data-k=leadSec]').value=c.leadSec;
+      q('[data-k=leadSec]').onchange=e=>{c.leadSec=Math.max(1,+e.target.value||10);save();};
     } else {
       q('[data-k=repeatSec]').value=c.repeatSec;
       q('[data-k=repeatSec]').onchange=e=>{c.repeatSec=Math.max(0,+e.target.value||0);save();};
     }
     if(d.presets) q('[data-a=reset]').onclick=()=>{ c.tpl=null; c.area=null; c.frameW=c.frameH=0; save(); states[d.id]=newState(); renderCard(d); };
     q('[data-a=register]').onclick=()=>startRegister(d);
-    q('[data-a=test]').onclick=()=>{ unlockAudio(); fire(d, d.kind==='buff'?'pre':'appear'); };
+    q('[data-a=test]').onclick=()=>{ unlockAudio(); fire(d, d.kind==='rune'?'appear':'pre'); };
     renderCard(d);
   }
 }
@@ -225,10 +282,13 @@ function renderCard(d){
   else if(c.tpl && c.frameW && frame.w && (c.frameW!==frame.w||c.frameH!==frame.h)){ text='다시 등록 필요'; cls='alert'; subt=`등록 당시 화면 ${c.frameW}×${c.frameH}, 지금 ${frame.w}×${frame.h}`; }
   else if(d.kind==='rune'){ text=st.present?'룬 있음!':'룬 없음'; cls=st.present?'alert':'off'; }
   else if(!st.present){ text='꺼져 있음'; }
+  else if(d.kind==='countdown'){
+    if(st.remain==null){ text='켜짐 · 숫자 읽는 중'; cls='on'; subt=st.lastText?'읽은 값 '+st.lastText:'타이머 숫자를 아직 못 읽었어요'; }
+    else { const rem=st.remain-(Date.now()-st.remainAt)/1000; text='남은 시간 '+fmt(rem); cls=rem<=c.leadSec?'alert':'on'; subt='읽은 값 '+st.lastText+'초'; } }
   else if(!st.appearedAt){ text='켜짐'; cls='on'; subt='켜진 시점을 몰라요 · 다음 사용부터 계산 (또는 “방금 켰어요”)'; }
   else if(!c.durationSec){ text='켜짐 · 학습 중'; cls='on'; subt=`${fmt((Date.now()-st.appearedAt)/1000)} 경과 · 꺼지면 지속시간을 기억합니다`; }
   else { const rem=(st.appearedAt+c.durationSec*1000-Date.now())/1000; text='남은 시간 '+fmt(rem); cls=rem<=c.leadSec?'alert':'on'; }
-  if(usingPreset(d.id) && src && !subt) subt='기본 아이콘으로 화면 오른쪽 위를 자동 검색 중 · 잘 안 잡히면 “등록”으로 직접 지정';
+  if(usingPreset(d.id) && src && !subt) subt=d.kind==='countdown'?'화면 위쪽 가운데의 “남은시간” 타이머를 자동 검색 중':'기본 아이콘으로 화면 오른쪽 위를 자동 검색 중 · 잘 안 잡히면 “등록”으로 직접 지정';
   s.textContent=text; s.className='status '+cls; sub.textContent=subt;
 }
 
@@ -311,6 +371,7 @@ const defOf=id=>DEFS.find(d=>d.id===id);
 const usingPreset=id=>!cfgs[id].tpl && !!defOf(id).presets;
 function areaOf(id){
   const c=cfgs[id]; if(c.area&&c.tpl) return c.area;
+  if(usingPreset(id)&&frame.w&&defOf(id).presetArea) return defOf(id).presetArea(frame);
   if(usingPreset(id)&&frame.w) return {x:Math.round(frame.w*0.35),y:0,w:Math.round(frame.w*0.65),h:Math.round(frame.h*0.3)};  // 버프창: 화면 오른쪽 위
   return null;
 }
@@ -318,7 +379,7 @@ function detect(d, source){
   const c=cfgs[d.id], a=areaOf(d.id); if(!a) return null;
   if(c.tpl && c.frameW && (c.frameW!==frame.w||c.frameH!==frame.h)) return null;
   // 기본 아이콘은 UI 배율이 달라도 찾도록 여러 크기로 검색. 한 번 찾으면 그 크기부터 먼저 확인
-  const cands=c.tpl?[c.tpl]:d.presets.flatMap(p=>PRESET_SCALES.map(s=>({...p,s})));
+  const cands=c.tpl?[c.tpl]:d.presets.flatMap(p=>(d.presetScales||PRESET_SCALES).map(s=>({...p,s})));
   const st=states[d.id], hit=st.hit&&cands.find(t=>t.url===st.hit.url&&t.s===st.hit.s);
   const order=hit?[hit,...cands.filter(t=>t!==hit)]:cands;
   let best=null;
@@ -333,6 +394,13 @@ function detect(d, source){
   if(best&&best.score>=c.threshold) st.hit={url:best.t.url,s:best.t.s};
   return best;
 }
+// “남은시간” 글자 오른쪽의 숫자 영역을 원본 해상도로 잘라 읽기
+function readTimer(source, p){
+  const x0=Math.round(p.x+p.w*1.05), x1=Math.round(p.x+p.w*2.75), y0=Math.round(p.y), y1=Math.round(p.y+p.h*2.0);
+  const W=Math.min(x1,frame.w)-x0, H=Math.min(y1,frame.h)-y0; if(W<10||H<8||x0<0||y0<0) return null;
+  work.width=W; work.height=H; wctx.drawImage(source,x0,y0,W,H,0,0,W,H);
+  return {rect:{x:x0,y:y0,w:W,h:H}, read:ocrSevenSeg(wctx.getImageData(0,0,W,H).data,W,H)};
+}
 let busy=false;
 async function tick(){
   if(busy) return; busy=true;
@@ -344,7 +412,10 @@ async function tick(){
       if(source && c.enabled && !reg){
         const r=detect(d,source);
         if(r){ st.score=r.score; st.pos=r.pos;
-          for(const ev of stepDetector(st,c,r.score>=c.threshold,now)){
+          const evs=stepDetector(st,c,r.score>=c.threshold,now);
+          if(d.kind==='countdown'){ const o=st.present&&r.score>=c.threshold?readTimer(source,r.pos):null; st.ocrRect=o&&o.rect; if(o&&o.read) st.lastText=o.read.text;
+            evs.push(...stepCountdown(st,c,o&&o.read?o.read.value:null,now)); }
+          for(const ev of evs){
             if(ev.learn){ c.durationSec=ev.learn; save(); const inp=document.querySelector(`#card-${d.id} [data-k=duration]`); if(inp) inp.value=fmt(ev.learn); }
             else if(ev==='pre'||ev==='gone'||ev==='remind'||(ev==='appear'&&d.kind==='rune')||(ev==='appear-unknown'&&d.kind==='rune')) fire(d,ev.startsWith('appear')?'appear':ev);
           }
@@ -368,7 +439,8 @@ function drawPreview(source){
   if(!reg) for(const d of DEFS){ const c=cfgs[d.id], st=states[d.id], ar=areaOf(d.id); if(!ar) continue;
     pctx.setLineDash([lw*3,lw*2]); pctx.strokeStyle='rgba(255,255,255,.55)'; pctx.strokeRect(ar.x,ar.y,ar.w,ar.h);
     pctx.setLineDash([]); pctx.fillStyle='rgba(255,255,255,.8)'; pctx.fillText(d.name,ar.x+2,ar.y+lw*8);
-    if(st.pos&&src){ pctx.strokeStyle=st.score>=c.threshold?'#3ccf7d':'rgba(255,107,107,.7)'; pctx.strokeRect(st.pos.x,st.pos.y,st.pos.w,st.pos.h); } }
+    if(st.pos&&src){ pctx.strokeStyle=st.score>=c.threshold?'#3ccf7d':'rgba(255,107,107,.7)'; pctx.strokeRect(st.pos.x,st.pos.y,st.pos.w,st.pos.h); }
+    if(st.ocrRect&&src){ pctx.strokeStyle='#f0c040'; pctx.strokeRect(st.ocrRect.x,st.ocrRect.y,st.ocrRect.w,st.ocrRect.h); } }
   if(reg){
     pctx.setLineDash([]);
     if(reg.area){ pctx.strokeStyle='#6aa1ff'; pctx.strokeRect(reg.area.x,reg.area.y,reg.area.w,reg.area.h); }
