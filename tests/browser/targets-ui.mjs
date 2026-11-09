@@ -113,4 +113,28 @@ await page.click("#card-rune [data-a=toggle]");
 await ev(() => location.reload()); await wait(2000);
 const rl = await ev(() => ({ sol: document.querySelector("#card-sol").dataset.open, rune: document.querySelector("#card-rune").dataset.open, booster: document.querySelector("#card-booster").dataset.open }));
 check("새로고침 뒤에도 사용자가 정한 펼침/접힘 유지", rl.sol === "1" && rl.rune === "0" && rl.booster === "0", rl);
+
+// ---- F4: 상태줄 요약, 해상도가 바뀐 뒤 차례로 다시 등록 ----
+const tgt = (id, name) => ({ id, kind: "buff", name, preset: null, enabled: true, threshold: 0.75, area: { x: 0, y: 0, w: 100, h: 50 }, tpl: { url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", w: 1, h: 1 }, frameW: 1280, frameH: 720, p: { durationSec: null, leadSec: 10 } });
+const V4 = { ver: 2, seq: 4, group: { on: false, windowSec: 10 }, targets: [
+  { id: "sol", kind: "buff", name: "솔 야누스", preset: "sol", enabled: true, threshold: 0.75, area: null, tpl: null, frameW: 0, frameH: 0, p: { durationSec: null, leadSec: 10 } },
+  { id: "booster", kind: "countdown", name: "부스터", preset: "booster", enabled: true, threshold: 0.7, area: null, tpl: null, frameW: 0, frameH: 0, p: { leadSec: 10 } },
+  tgt("u1", "버프A"), tgt("u2", "버프B"), tgt("u3", "버프C"), tgt("u4", "버프D") ] };
+({ page, ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-v2": V4 } }));
+await ev(() => { __fake.resize(1920, 1080); [["u1", 300, 11], ["u2", 500, 12], ["u3", 700, 13], ["u4", 900, 14]].forEach(([n, x, seed]) => __fake.pattern(n, x, 150, seed, 32)); });
+await wait(1200);
+await page.click("#btnConnect"); await wait(2500);
+const st1 = await ev(() => ({ strip: document.querySelector("#watchTargets").innerText.replace(/\n/g, " "), btns: [...document.querySelectorAll("#watchTargets button")].map(b => b.textContent) }));
+check("해상도 변경: 다시 등록 4개는 '차례로 등록' 버튼 하나", st1.btns.includes("다시 등록 4개 · 차례로 등록") && !st1.btns.some(t => t.endsWith("다시 등록")), st1);
+await page.click("#watchTargets >> text=차례로 등록").catch(async () => { await ev(() => [...document.querySelectorAll("#watchTargets button")].find(b => b.textContent.includes("차례로 등록")).click()); });
+await wait(800);
+check("차례로 등록: 첫 대상 배너와 남은 개수", (await ev(() => document.querySelector("#bannerText").textContent)) === "버프A ① 버프창 영역을 넉넉하게 드래그하세요 · 이어서 3개 더");
+for (const x of [300, 500, 700, 900]) { await drag(page, 100, 100, 1800, 300); await drag(page, x - 2, 148, x + 34, 184); await wait(500); }
+await wait(3000);
+const st2 = await ev(() => ({ banner: document.querySelector("#banner").classList.contains("on"), frames: store.targets.slice(2).map(t => t.frameW + "x" + t.frameH).join(), btns: [...document.querySelectorAll("#watchTargets button")].map(b => b.textContent), strip: document.querySelector("#watchTargets").innerText.replace(/\n/g, " ") }));
+check("차례로 등록: 4개 모두 1920x1080으로 저장되고 배너가 닫힘", !st2.banner && st2.frames === "1920x1080,1920x1080,1920x1080,1920x1080" && !st2.btns.some(t => t.includes("등록")), st2);
+check("상태줄: 켜진 대상 6개 → 정상 4개로 묶고 못 찾은 내장 2개는 개별 표시", st2.btns.includes("정상 4개") && st2.strip.includes("솔 야누스 아직 못 찾음") && st2.strip.includes("부스터 아직 못 찾음") && !st2.strip.includes("버프A"), st2);
+await page.click("#watchTargets >> text=정상 4개").catch(async () => { await ev(() => [...document.querySelectorAll("#watchTargets button")].find(b => b.textContent === "정상 4개").click()); });
+const st3 = await ev(() => ({ strip: document.querySelector("#watchTargets").innerText.replace(/\n/g, " "), saved: JSON.parse(localStorage.getItem("maple-web-timer-ui")).stripOpen }));
+check("정상 묶음을 누르면 이름이 펼쳐지고 상태가 저장됨", st3.strip.includes("버프A") && st3.strip.includes("버프D") && st3.saved === true, st3);
 done();

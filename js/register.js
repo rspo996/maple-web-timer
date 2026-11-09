@@ -1,6 +1,6 @@
 /* ----- 미리보기 & 드래그 등록 ----- */
 const pv=$('#preview'), pctx=pv.getContext('2d');
-let reg=null; // {t, steps, i, snap, rects:{area?,icon?}, drag, msg, fresh}  fresh: 방금 만든 대상의 첫 등록(취소하면 대상도 지운다)
+let reg=null; // {t, steps, i, snap, rects:{area?,icon?}, drag, msg, fresh, queue}  fresh: 방금 만든 대상의 첫 등록(취소하면 대상도 지운다), queue: 이어서 다시 등록할 대상 id
 function drawPreview(source){
   const s = reg ? reg.snap : source; if(!s) return;
   const [w,h]=dims(s); if(!w) return;
@@ -40,16 +40,16 @@ async function snapshot(){
 async function startRegister(t,opts={}){
   if(!src){ setNote(`${t.name} 등록은 게임 화면을 연결하거나 스크린샷을 불러온 뒤에 할 수 있어요`); return; }
   setNote('');
-  const snap=await snapshot(); if(!snap) return;
+  const snap=opts.snap||await snapshot(); if(!snap) return;   // 차례로 등록할 때는 앞 단계에서 찍은 화면을 재사용
   if(reg) cancelRegister();   // 다른 대상을 등록 중이었으면 그만둔다(첫 등록이었으면 그 대상은 지워진다)
-  reg={t,steps:KINDS[t.kind].register.steps,i:0,snap,rects:{},drag:null,msg:'',fresh:!!opts.fresh}; updateBanner(); drawPreview(null);
+  reg={t,steps:KINDS[t.kind].register.steps,i:0,snap,rects:{},drag:null,msg:'',fresh:!!opts.fresh,queue:opts.queue||[]}; updateBanner(); drawPreview(null);
   $('#stage').scrollIntoView({behavior:'smooth',block:'center'});
 }
 const STEP_TEXT={ area:l=>`${l.area}을 넉넉하게 드래그하세요`, icon:l=>`${l.icon} 하나만 꼭 맞게 드래그하세요` };
 function updateBanner(){
   const b=$('#banner'); if(!reg){ b.classList.remove('on'); return; }
   b.classList.add('on');
-  $('#bannerText').textContent=(reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${STEP_TEXT[reg.steps[reg.i]](labelsOf(reg.t))}`;
+  $('#bannerText').textContent=(reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${STEP_TEXT[reg.steps[reg.i]](labelsOf(reg.t))}`+(reg.queue.length?` · 이어서 ${reg.queue.length}개 더`:'');
 }
 function cancelRegister(){
   const r=reg; reg=null; updateBanner();
@@ -61,8 +61,12 @@ function finishRegister(){
   if(why){ reg.msg=why; reg.rects={}; reg.i=0; updateBanner(); drawPreview(null); return; }
   k.register.save(t,reg.rects,reg.snap); saveTargets();
   states[t.id]=newState(); states[t.id].armed=!!(src&&src.type==='image');
-  reg=null; updateBanner(); renderCard(t); renderWatch(); setNote(`${t.name} 등록했어요`,'info');
+  const queue=reg.queue, snap=reg.snap; reg=null; updateBanner(); renderCard(t); renderWatch(); setNote(`${t.name} 등록했어요`,'info');
+  const next=queue.map(targetById).find(Boolean);           // 해상도가 바뀐 뒤 여러 대상을 차례로 다시 등록
+  if(next) startRegister(next,{queue:queue.slice(queue.indexOf(next.id)+1),snap});
 }
+// 차례로 등록: 첫 대상부터 등록하고 끝나면 다음 대상으로 이어 간다. Esc·취소로 중단
+function startRegisterQueue(ids){ const first=ids.map(targetById).find(Boolean); if(first) return startRegister(first,{queue:ids.slice(ids.indexOf(first.id)+1)}); }
 function toImg(e){ const r=pv.getBoundingClientRect(); return {x:(e.clientX-r.left)*pv.width/r.width, y:(e.clientY-r.top)*pv.height/r.height}; }
 function initRegister(){
 $('#btnCancel').onclick=cancelRegister;

@@ -142,6 +142,23 @@ function insertTargetAt(store,t,index){
 function deleteConfirmText(name,soundCount){ return `"${name}" 대상을 지울까요?`+(soundCount?` 내 소리 ${soundCount}개도 함께 지워져요.`:''); }
 function ownedSlotKeys(keys,id){ return keys.filter(k=>String(k).split('.')[0]===id); }
 
+/* ----- 상태줄 요약 (스펙 5.6). rows는 targetSnapshot의 행. 켜진 대상이 6개 이상이면 정상은 한 덩어리로 묶는다 ----- */
+// 돌려주는 항목: {type:'text',id,text,cls} | {type:'btn',id,label} | {type:'reregAll',ids,n,label} | {type:'okGroup',n,open,label}
+function summarizeStrip(rows,open){
+  const group=rows.filter(r=>r.enabled).length>=6;
+  const reIds=rows.filter(r=>r.stripState==='rereg').map(r=>r.id);
+  const items=[], oks=[]; let reDone=false;
+  for(const r of rows){
+    const s=r.stripState;
+    if(s==='rereg'&&reIds.length>=3){ if(!reDone){ reDone=true; items.push({type:'reregAll',ids:reIds,n:reIds.length,label:`다시 등록 ${reIds.length}개 · 차례로 등록`}); } continue; }
+    if(s==='reg'||s==='rereg'){ items.push({type:'btn',id:r.id,label:`${r.name} ${s==='reg'?'등록하기':'다시 등록'}`}); continue; }
+    if(s==='ok'&&group){ oks.push(r.name); continue; }
+    items.push({type:'text',id:r.id,cls:s==='ok'?'':s,text:s==='off'?`${r.name} 꺼둠`:s==='unseen'?`${r.name} 아직 못 찾음`:r.name});
+  }
+  if(oks.length){ items.push({type:'okGroup',n:oks.length,open:!!open,label:`정상 ${oks.length}개`}); if(open) for(const n of oks) items.push({type:'text',id:null,cls:'',text:n}); }
+  return items;
+}
+
 /* ----- 내 소리 슬롯 키 = 대상id.이벤트 (묶음 1 스펙 4.4·4.5) ----- */
 const MANUAL_SLOTS=[['manual.pre','미리 알림'],['manual.end','끝'],['manual.next1','구간 전환 1'],['manual.next2','구간 전환 2']];
 // 소리 설정 화면의 행 목록. 대상이 추가·삭제·개명될 때마다 다시 계산한다. opts.manual=false면 수동 타이머(묶음 2) 슬롯을 뺀다
@@ -174,4 +191,4 @@ function initTargets(){
   if(r.status==='broken') setNote('설정을 읽지 못해 처음 상태로 시작했어요. 백업 파일이 있으면 불러오세요');
   else if(r.saveFailed){ saveWarned=true; setNote('설정을 저장하지 못했어요 (이 탭에서만 유지)'); }
 }
-if(typeof module==='object') module.exports={renameTarget,moveTarget,insertTargetAt,deleteConfirmText,ownedSlotKeys,missingBuiltins,addBuiltin,addBuff,slotsOf,orphanSlots,BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};
+if(typeof module==='object') module.exports={summarizeStrip,renameTarget,moveTarget,insertTargetAt,deleteConfirmText,ownedSlotKeys,missingBuiltins,addBuiltin,addBuff,slotsOf,orphanSlots,BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};

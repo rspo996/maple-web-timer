@@ -232,3 +232,38 @@ test('삭제 확인 문구와 대상이 가진 내 소리 키', () => {
   assert.equal(deleteConfirmText('유니온의 힘', 2), '"유니온의 힘" 대상을 지울까요? 내 소리 2개도 함께 지워져요.');
   assert.deepEqual(plain(ownedSlotKeys(['u3.pre', 'u3.gone', 'u30.pre', 'sol.pre', 'sys.lost'], 'u3')), ['u3.pre', 'u3.gone']);
 });
+
+// ---- 상태줄 요약 (묶음 1 스펙 5.6) ----
+const { summarizeStrip } = L;
+const row = (id, s, o = {}) => ({ id, name: o.name || id, enabled: s !== 'off', stripState: s, ...o });
+const labels = items => plain(items).map(i => (i.type === 'text' ? i.text : i.label));
+
+test('summarizeStrip: 켜진 대상 5개 이하는 지금처럼 모두 나열(꺼둠·못 찾음 문구 포함)', () => {
+  const rows = [row('a', 'ok'), row('b', 'unseen'), row('c', 'off'), row('d', 'reg'), row('e', 'ok')];
+  assert.deepEqual(labels(summarizeStrip(rows, false)), ['a', 'b 아직 못 찾음', 'c 꺼둠', 'd 등록하기', 'e']);
+});
+
+test('summarizeStrip: 6개 이상이면 정상은 "정상 N개"로 묶고 문제 있는 것만 개별로', () => {
+  const rows = ['a', 'b', 'c', 'd', 'e'].map(id => row(id, 'ok')).concat([row('f', 'unseen'), row('g', 'reg'), row('h', 'off')]);   // 켜진 대상 7개
+  const items = plain(summarizeStrip(rows, false));
+  assert.deepEqual(labels(items), ['f 아직 못 찾음', 'g 등록하기', 'h 꺼둠', '정상 5개']);
+  assert.deepEqual(items[3], { type: 'okGroup', n: 5, open: false, label: '정상 5개' });
+});
+
+test('summarizeStrip: 정상 묶음을 펼치면 이름이 이어진다', () => {
+  const rows = ['a', 'b', 'c', 'd', 'e', 'f'].map(id => row(id, 'ok'));
+  assert.deepEqual(labels(summarizeStrip(rows, true)), ['정상 6개', 'a', 'b', 'c', 'd', 'e', 'f']);
+});
+
+test('summarizeStrip: 다시 등록이 3개 이상이면 개별 버튼 대신 "차례로 등록" 하나(5개 이하여도)', () => {
+  const rows = [row('a', 'rereg'), row('b', 'ok'), row('c', 'rereg'), row('d', 'rereg')];
+  const items = plain(summarizeStrip(rows, false));
+  assert.deepEqual(labels(items), ['다시 등록 3개 · 차례로 등록', 'b']);
+  assert.deepEqual(items[0].ids, ['a', 'c', 'd']);
+  assert.deepEqual(labels(summarizeStrip([row('a', 'rereg'), row('c', 'rereg')], false)), ['a 다시 등록', 'c 다시 등록']);   // 2개는 개별
+});
+
+test('summarizeStrip: 꺼둔 대상은 켜진 대상 수에 세지 않는다', () => {
+  const rows = ['a', 'b', 'c', 'd', 'e'].map(id => row(id, 'ok')).concat([row('f', 'off'), row('g', 'off')]);
+  assert.equal(labels(summarizeStrip(rows, false)).length, 7);                      // 켜진 것 5개 → 나열
+});

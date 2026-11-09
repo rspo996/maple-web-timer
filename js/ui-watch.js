@@ -16,16 +16,20 @@ function setNote(text, kind='warn'){
 const snapshotNow=()=>targetSnapshot(store.targets,states,{src:!!src,frame},Date.now());
 function renderWatch(){
   const w=watchStatus();
-  const rows=src?snapshotNow():[];
-  const key=w.cls+'|'+w.state+'|'+rows.map(r=>r.id+':'+r.name+':'+r.stripState).join(',')+'|'+(src&&src.type);
+  const items=src?summarizeStrip(snapshotNow(),ui.stripOpen):[];     // 연결 안 됨 상태에서는 대상 목록을 보이지 않는다
+  const key=w.cls+'|'+w.state+'|'+JSON.stringify(items)+'|'+(src&&src.type);
   if(key!==watchKey){   // 바뀔 때만 다시 그려서 화면 낭독기가 매 틱 읽지 않게 함
     watchKey=key; $('#watch').className='watch '+w.cls; $('#watchState').textContent=w.state;
     const box=$('#watchTargets'); box.textContent='';
-    rows.forEach((r,i)=>{
+    items.forEach((it,i)=>{
       if(i){ const sep=document.createElement('span'); sep.className='sep'; sep.setAttribute('aria-hidden','true'); sep.textContent='·'; box.append(sep); }
-      // 연결 뒤 다음에 할 일(등록)이 주된 버튼이 되도록 primary로 강조
-      if(r.stripState==='reg'||r.stripState==='rereg'){ const b=document.createElement('button'); b.className='primary'; b.textContent=`${r.name} ${r.stripState==='reg'?'등록하기':'다시 등록'}`; b.onclick=()=>startRegister(targetById(r.id)); box.append(b); }
-      else { const sp=document.createElement('span'); if(r.stripState!=='ok') sp.className=r.stripState; sp.textContent=r.stripState==='off'?`${r.name} 꺼둠`:r.stripState==='unseen'?`${r.name} 아직 못 찾음`:r.name; box.append(sp); }
+      if(it.type==='btn'||it.type==='reregAll'){   // 연결 뒤 다음에 할 일(등록)이 주된 버튼이 되도록 primary로 강조
+        const b=document.createElement('button'); b.className='primary'; b.textContent=it.label;
+        b.onclick=it.type==='btn'?()=>startRegister(targetById(it.id)):()=>startRegisterQueue(it.ids); box.append(b); }
+      else if(it.type==='okGroup'){
+        const b=document.createElement('button'); b.textContent=it.label; b.setAttribute('aria-expanded',it.open?'true':'false');
+        b.onclick=()=>{ ui.stripOpen=!ui.stripOpen; saveUi(); renderWatch(); }; box.append(b); }
+      else { const sp=document.createElement('span'); if(it.cls) sp.className=it.cls; sp.textContent=it.text; box.append(sp); }
     });
     const stop=$('#btnStop'); stop.hidden=!src; stop.textContent=src&&src.type==='image'?'테스트 끝내기':'감시 끝내기';
   }
