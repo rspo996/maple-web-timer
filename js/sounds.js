@@ -23,7 +23,7 @@ const idb=q=>new Promise((resolve,reject)=>{ q.onsuccess=()=>resolve(q.result); 
 function playCustom(slot, fallback){
   const c=slot&&customSounds.get(slot); if(!c||!actx) return false;
   const play=buf=>{ const n=actx.createBufferSource(), g=actx.createGain(); n.buffer=buf; g.gain.value=+$('#vol').value;
-    n.connect(g).connect(actx.destination); const t=Math.max(actx.currentTime+0.02, beepEnd); n.start(t); beepEnd=t+buf.duration+0.06; };
+    n.connect(g).connect(Alerts.audioOut()); const t=Math.max(actx.currentTime+0.02, beepEnd); n.start(t); beepEnd=t+buf.duration+0.06; };
   if(c.buf) play(c.buf);
   else actx.decodeAudioData(c.data.slice(0)).then(b=>{ c.buf=b; play(b); }, ()=>{ if(fallback) fallback(); });
   return true;
