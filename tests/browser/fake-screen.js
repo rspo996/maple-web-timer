@@ -1,0 +1,38 @@
+// 브라우저 검사용 가짜 화면 공유. prelude.mjs의 open()이 주입한다. 주입 뒤 "게임 화면 연결"을 누르면 이 캔버스가 공유 화면이 된다.
+(() => {
+  if (window.__fake) return;
+  const realNow = Date.now.bind(Date); let skew = 0;
+  Date.now = () => realNow() + skew;                       // 시간을 앞당겨 타이머를 시험
+  const cv = document.createElement('canvas'); cv.width = 1280; cv.height = 720;
+  const g = cv.getContext('2d');
+  const icons = new Map();                                 // name -> {x,y,w,h,seed|img,on}
+  const cells = seed => { let s = seed * 9301 + 49297; const a = []; for (let i = 0; i < 16; i++) { s = (s * 9301 + 49297) % 233280; a.push(s / 233280); } return a; };
+  let black = false;
+  const draw = () => {
+    g.fillStyle = black ? '#000' : '#26303a'; g.fillRect(0, 0, cv.width, cv.height);
+    if (black) return;
+    for (const ic of icons.values()) {
+      if (!ic.on) continue;
+      if (ic.img) { if (ic.img.complete) g.drawImage(ic.img, ic.x, ic.y, ic.w, ic.h); continue; }
+      const c = cells(ic.seed), u = ic.w / 4;
+      for (let i = 0; i < 16; i++) { const v = 40 + Math.floor(c[i] * 200); g.fillStyle = `rgb(${v},${(v * 1.7) % 255 | 0},${(v * 2.3) % 255 | 0})`; g.fillRect(ic.x + (i % 4) * u, ic.y + Math.floor(i / 4) * u, u, u); }
+    }
+  };
+  setInterval(draw, 150);
+  const fake = {
+    cv, spoken: [], beeps: 0,
+    pattern(name, x, y, seed, size = 32) { icons.set(name, { x, y, w: size, h: size, seed, on: true }); },     // 무늬 아이콘(등록해서 쓰는 대상용)
+    image(name, url, x, y, w, h) { const img = new Image(); img.src = url; icons.set(name, { x, y, w, h, img, on: true }); },   // 그림 아이콘(내장 아이콘용)
+    show(name, on = true) { const ic = icons.get(name); if (ic) ic.on = on; },
+    black(on = true) { black = on; },
+    resize(w, h) { cv.width = w; cv.height = h; },
+    skew(ms) { skew += ms; },
+    reset() { fake.spoken.length = 0; fake.beeps = 0; },
+    wait(ms) { return new Promise(r => setTimeout(r, ms)); },
+  };
+  speechSynthesis.speak = u => fake.spoken.push(u.text);   // 음성 문구를 기록만 한다(실제로 말하지 않음)
+  const co = AudioContext.prototype.createOscillator;
+  AudioContext.prototype.createOscillator = function () { fake.beeps++; return co.call(this); };
+  navigator.mediaDevices.getDisplayMedia = async () => cv.captureStream(5);
+  window.__fake = fake;
+})();
