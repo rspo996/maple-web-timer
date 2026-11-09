@@ -23,6 +23,8 @@
     cv, spoken: [], beeps: 0,
     pattern(name, x, y, seed, size = 32) { icons.set(name, { x, y, w: size, h: size, seed, on: true }); },     // 무늬 아이콘(등록해서 쓰는 대상용)
     image(name, url, x, y, w, h) { const img = new Image(); img.src = url; icons.set(name, { x, y, w, h, img, on: true }); },   // 그림 아이콘(내장 아이콘용)
+    patternURL(seed, size = 32) { const c = document.createElement('canvas'); c.width = c.height = size; const k = c.getContext('2d'), cl = cells(seed), u = size / 4;   // pattern()과 같은 그림의 data URL(대상에 직접 넣어 등록을 건너뜀)
+      for (let i = 0; i < 16; i++) { const v = 40 + Math.floor(cl[i] * 200); k.fillStyle = `rgb(${v},${(v * 1.7) % 255 | 0},${(v * 2.3) % 255 | 0})`; k.fillRect((i % 4) * u, Math.floor(i / 4) * u, u, u); } return c.toDataURL('image/png'); },
     show(name, on = true) { const ic = icons.get(name); if (ic) ic.on = on; },
     black(on = true) { black = on; },
     resize(w, h) { cv.width = w; cv.height = h; },

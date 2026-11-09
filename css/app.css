@@ -101,3 +101,6 @@ summary{cursor:pointer}
 .card[data-open="0"] .body{display:none}
 .card[data-open="0"]{padding:8px 12px}
 .card[data-open="0"] .top{margin-bottom:0}
+#groupCtl{border:1px solid var(--line);border-radius:8px;margin:10px 0 0;padding:6px 12px 8px;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center}
+#groupCtl legend{padding:0 4px}
+#groupCtl p{flex:1 0 100%;margin:4px 0 0}

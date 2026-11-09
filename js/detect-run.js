@@ -69,7 +69,19 @@ function reqFor(t,def,info,rank){
   return {src:'target',id:t.id,event:def.key,text:def.msg(t,info||{}),beep:def.beep,slot:`${t.id}.${def.key}`,mode:'full',flash:'card-'+t.id,
     group:def.group?{cls:def.group,label:t.name,rank:rank==null?(t.p.leadSec||0):rank,order:store.targets.indexOf(t)}:null};
 }
-function dispatchEvents(list,now){ for(const x of list) Alerts.fire(reqFor(x.t,x.def,x.info)); }
+// 이번 틱의 이벤트를 알림으로 보낸다. 묶기가 켜져 있으면 미리 알림이 난 틱에 곧 끝나는 다른 대상을 같이 묶는다(당겨 알림)
+function dispatchEvents(list,now){
+  const reqs=list.map(x=>reqFor(x.t,x.def,x.info));
+  if(store.group.on){
+    const fired=list.filter(x=>x.def.group==='pre').map(x=>x.t.id);
+    for(const p of planGroup(fired,store.targets,states,KINDS,now,store.group.windowSec).pulled){
+      const t=targetById(p.id), k=KINDS[t.kind];
+      k.markPre(stateOf(t.id),now);                     // 당겨 알린 주기는 자체 pre·꺼짐 알림을 다시 울리지 않는다
+      reqs.push(reqFor(t,k.events.find(e=>e.group==='pre'),{},p.rank));
+    }
+  }
+  for(const r of reqs) Alerts.fire(r);
+}
 // 카드의 "알림 테스트": 묶지 않고 첫 이벤트를 개별 알림으로 재생
 function testAlert(t){ const def=KINDS[t.kind].events[0]; Alerts.fire({...reqFor(t,def,{}),src:'test',group:null}); }
 let busy=false;

@@ -30,6 +30,7 @@ async function grab(){
 function dims(s){ return s instanceof HTMLVideoElement ? [s.videoWidth,s.videoHeight] : [s.naturalWidth||s.width, s.naturalHeight||s.height]; }
 
 function teardown(emptyText){
+  Alerts.clear();   // 묶음 대기 중이던 알림은 연결 알림이 우선이라 버린다
   src=null; pctx.clearRect(0,0,pv.width,pv.height);   // 멈춘 마지막 화면 대신 빈 화면 위에 안내문을 보여줌
   $('#empty').textContent=emptyText; $('#empty').style.display=''; $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
   store.targets.forEach(renderCard); renderWatch();

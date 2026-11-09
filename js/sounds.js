@@ -27,6 +27,7 @@ function previewSlot(s){
   unlockAudio(); if(playCustom(s.key)) return;
   const [id,ev]=s.key.split('.');
   if(id==='sys'){ playDefault(SYS_MSG[ev],'system'); return; }
+  if(id==='grp'){ playDefault(groupText(ev,groupPreviewItems(ev)),'multi'); return; }   // 켜진 버프 앞 두 개의 실제 이름으로
   const t=targetById(id), def=t&&KINDS[t.kind]&&KINDS[t.kind].events.find(e=>e.key===ev);
   if(def) playDefault(def.msg(t,{}),def.beep);   // 대상을 못 찾으면 소리 미리듣기만
 }
@@ -74,7 +75,21 @@ function renderSounds(){
     f.textContent=c?`${c.name} · ${c.dur.toFixed(1)}초`:'기본 소리'; f.title=c?c.name:''; f.classList.toggle('custom',!!c);
     const rb=s.row.querySelector('[data-a=reset]'); rb.style.visibility=c?'':'hidden'; rb.disabled=!c; }   // 자리는 남겨 버튼 줄을 맞춤
 }
-function initSounds(){ refreshSlots(); buildSounds(); loadSounds(); }
+function initSounds(){ refreshSlots(); buildSounds(); loadSounds(); initGroupControl(); }
+// 묶음 알림 미리듣기에 쓸 이름: 해당 묶음 종류의 이벤트가 있는 켜진 대상 앞 두 개. 없으면 예시 이름
+function groupPreviewItems(cls){
+  const names=store.targets.filter(t=>t.enabled&&KINDS[t.kind]&&KINDS[t.kind].events.some(e=>e.group===cls)).slice(0,2).map(t=>t.name);
+  return (names.length===2?names:['유니온의 힘','유니온의 부']).map((label,i)=>({label,rank:i,order:i}));
+}
+// 가까운 알림 묶기 설정: 끔 | 5초 | 10초 | 20초(기본 끔). 바꾸는 즉시 저장하고 Alerts에 알린다
+function initGroupControl(){
+  const g=store.group, val=g.on?String(g.windowSec):'0';
+  for(const r of document.querySelectorAll('#groupCtl input')){
+    r.checked=r.value===val;
+    r.onchange=()=>{ if(!r.checked) return; const v=+r.value; store.group=v?{on:true,windowSec:v}:{on:false,windowSec:store.group.windowSec}; saveTargets(); Alerts.configure(store.group); };
+  }
+  Alerts.configure(store.group);
+}
 async function deleteSoundKeys(keys){
   try{ const st=await soundStore('readwrite'); await Promise.all(keys.map(k=>idb(st.delete(k)))); }catch(e){}
 }

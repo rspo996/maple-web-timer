@@ -7,9 +7,8 @@ export const BASE = "http://127.0.0.1:8766/index.html";      // 검증 전용 �
 export async function open(taskSpace, opt = {}) {
   const task = await taskSpace("target-list-verify");
   const page = task.page("p1");
-  await page.goto(opt.url || BASE);
-  await page.evaluate(async ({ seed, sounds }) => {              // 이 origin의 저장소를 비우고 시험 데이터를 넣는다
-    localStorage.clear();
+  await page.goto(new URL("/__seed__", BASE).href);            // 앱이 열려 있으면 IndexedDB 삭제가 막히므로, 앱이 없는 같은 origin 페이지(404)에서 비우고 시험 데이터를 넣는다
+  await page.evaluate(async ({ seed, sounds }) => {                  localStorage.clear();
     await new Promise(r => { const q = indexedDB.deleteDatabase("maple-web-timer"); q.onsuccess = q.onerror = q.onblocked = r; });
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v));
     if (sounds.length) await new Promise((res, rej) => {         // 내 소리 슬롯 키마다 0.3초 WAV를 넣는다
