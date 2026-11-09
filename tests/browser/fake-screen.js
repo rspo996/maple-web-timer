@@ -16,6 +16,7 @@
       if (ic.img) { if (ic.img.complete) g.drawImage(ic.img, ic.x, ic.y, ic.w, ic.h); continue; }
       const c = cells(ic.seed), u = ic.w / 4;
       for (let i = 0; i < 16; i++) { const v = 40 + Math.floor(c[i] * 200); g.fillStyle = `rgb(${v},${(v * 1.7) % 255 | 0},${(v * 2.3) % 255 | 0})`; g.fillRect(ic.x + (i % 4) * u, ic.y + Math.floor(i / 4) * u, u, u); }
+      if (ic.shade) { g.fillStyle = `rgba(0,0,0,${ic.shade})`; g.fillRect(ic.x, ic.y, ic.w, ic.h); }
     }
   };
   setInterval(draw, 150);
@@ -26,6 +27,7 @@
     patternURL(seed, size = 32) { const c = document.createElement('canvas'); c.width = c.height = size; const k = c.getContext('2d'), cl = cells(seed), u = size / 4;   // pattern()과 같은 그림의 data URL(대상에 직접 넣어 등록을 건너뜀)
       for (let i = 0; i < 16; i++) { const v = 40 + Math.floor(cl[i] * 200); k.fillStyle = `rgb(${v},${(v * 1.7) % 255 | 0},${(v * 2.3) % 255 | 0})`; k.fillRect((i % 4) * u, Math.floor(i / 4) * u, u, u); } return c.toDataURL('image/png'); },
     show(name, on = true) { const ic = icons.get(name); if (ic) ic.on = on; },
+    shade(name, alpha) { const ic = icons.get(name); if (ic) ic.shade = alpha; },     // 아이콘 위에 검은 반투명(쿨타임처럼 어둡게)
     black(on = true) { black = on; },
     resize(w, h) { cv.width = w; cv.height = h; },
     skew(ms) { skew += ms; },
