@@ -26,7 +26,10 @@ function buildCard(t){
   }
   el.innerHTML=`
     <div class="top"><h2><img class="thumb" alt="" hidden><span data-s="name"></span></h2>
-      <label class="sw"><input type="checkbox" data-k="enabled"> 사용</label></div>
+      <span class="mini" data-s="mini"></span>
+      <label class="sw"><input type="checkbox" data-k="enabled"> 사용</label>
+      <button data-a="toggle" aria-expanded="false" aria-controls="body-${t.id}"></button></div>
+    <div class="body" id="body-${t.id}">
     <div class="status off" data-s="status">등록 필요</div>
     <div class="sub" data-s="sub"></div>
     <div class="grid">
@@ -42,7 +45,8 @@ function buildCard(t){
     <div class="row manage" style="margin-top:10px">
       <button data-a="rename">이름 바꾸기</button><button data-a="up" aria-label="${t.name} 위로 옮기기">위로</button><button data-a="down" aria-label="${t.name} 아래로 옮기기">아래로</button><button data-a="delete">삭제</button>
     </div>
-    <form class="row" data-s="renameForm" hidden><input maxlength="12" aria-label="새 이름"><button>저장</button><button type="button" data-a="renameCancel">취소</button><span class="sub" role="alert" data-s="renameErr"></span></form>`;
+    <form class="row" data-s="renameForm" hidden><input maxlength="12" aria-label="새 이름"><button>저장</button><button type="button" data-a="renameCancel">취소</button><span class="sub" role="alert" data-s="renameErr"></span></form>
+    </div>`;
   const q=s=>el.querySelector(s);
   q('[data-s=name]').textContent=t.name;
   q('[data-k=enabled]').checked=t.enabled;
@@ -56,6 +60,7 @@ function buildCard(t){
   for(const a of k.actions) q(`[data-act=${a.key}]`).onclick=()=>a.run(t,stateOf(t.id),Date.now());
   if(t.preset) q('[data-a=reset]').onclick=()=>{ t.tpl=null; t.area=null; t.frameW=t.frameH=0; saveTargets(); states[t.id]=newState(); renderCard(t); setNote(`${t.name} 기본 아이콘으로 되돌렸어요`,'info'); };
   q('[data-a=register]').onclick=()=>startRegister(t);
+  q('[data-a=toggle]').onclick=()=>{ ui.open=ui.open||{}; ui.open[t.id]=!isOpen(t); saveUi(); renderCard(t); };
   const idx=store.targets.indexOf(t), form=q('[data-s=renameForm]'), nameInp=form.querySelector('input');
   q('[data-a=up]').disabled=idx===0; q('[data-a=down]').disabled=idx===store.targets.length-1;
   q('[data-a=up]').onclick=()=>moveCard(t,-1); q('[data-a=down]').onclick=()=>moveCard(t,1);
@@ -72,6 +77,9 @@ function onTargetChanged(t,key){
   const f=KINDS[t.kind].cardFields(t).find(x=>x.key===key), inp=document.querySelector(`#card-${t.id} [data-f=${key}]`);
   if(f&&inp) inp.value=f.get(t);
 }
+// 펼침 상태: 사용자가 정한 값(ui.open)이 우선. 정한 적 없으면 등록 필요·다시 등록 필요 대상만 펼친다(알림으로 카드가 움직이지 않게 접은 것은 자동으로 펼치지 않음)
+function needsAttention(t){ const k=KINDS[t.kind]; return !!k&&(!k.isRegistered(t)||(!!src&&k.needsReregister(t,frame))); }
+function isOpen(t){ return ui.open&&t.id in ui.open ? !!ui.open[t.id] : needsAttention(t); }
 function renderCard(t){
   const el=document.getElementById('card-'+t.id), k=KINDS[t.kind]; if(!el||!k) return;
   const st=stateOf(t.id), q=s=>el.querySelector(s);
@@ -81,6 +89,9 @@ function renderCard(t){
   setText(q('[data-s=score]'),src&&(t.tpl||t.preset)?st.score.toFixed(2)+(st.score>=t.threshold?' ✔':''):'–');
   const s=cardStatus(t,st,Date.now(),{src:!!src,frame}), sEl=q('[data-s=status]');
   setText(sEl,s.text); const cls='status '+s.cls; if(sEl.className!==cls) sEl.className=cls; setText(q('[data-s=sub]'),s.sub);
+  const mini=q('[data-s=mini]'); setText(mini,s.text); const mc='mini '+s.cls; if(mini.className!==mc) mini.className=mc;   // 접힌 카드의 한 줄 상태
+  const open=isOpen(t), tg=q('[data-a=toggle]'); if(el.dataset.open!==(open?'1':'0')) el.dataset.open=open?'1':'0';
+  setText(tg,open?'접기 ▴':'펼치기 ▾'); tg.setAttribute('aria-expanded',open?'true':'false'); tg.setAttribute('aria-label',`${t.name} ${open?'접기':'펼치기'}`);
 }
 
 /* ----- 대상 추가·제거 (순수 부분은 targets.js의 addBuiltin·addBuff) ----- */

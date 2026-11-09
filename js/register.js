@@ -8,11 +8,12 @@ function drawPreview(source){
   pctx.drawImage(s,0,0);
   const lw=Math.max(2,w/600); pctx.lineWidth=lw; pctx.font=`${Math.round(lw*7)}px sans-serif`;
   const placed=[];
-  if(!reg) for(const t of store.targets){ const st=stateOf(t.id), ar=KINDS[t.kind]?areaOf(t):null; if(!ar) continue;
-    pctx.setLineDash([lw*3,lw*2]); pctx.strokeStyle='rgba(255,255,255,.55)'; pctx.strokeRect(ar.x,ar.y,ar.w,ar.h);
-    pctx.setLineDash([]); pctx.fillStyle='rgba(255,255,255,.8)'; pctx.fillText(t.name,ar.x+2,ar.y+lw*8);
+  if(!reg) for(const t of store.targets){ if(!KINDS[t.kind]) continue; const st=stateOf(t.id), ar=areaOf(t);
+    // 점선 영역과 이름은 펼친 카드의 대상만(10개가 겹치지 않게). 일치 박스는 모든 대상에 그린다
+    if(ar&&isOpen(t)){ pctx.setLineDash([lw*3,lw*2]); pctx.strokeStyle='rgba(255,255,255,.55)'; pctx.strokeRect(ar.x,ar.y,ar.w,ar.h);
+      pctx.setLineDash([]); pctx.fillStyle='rgba(255,255,255,.8)'; pctx.fillText(t.name,ar.x+2,ar.y+lw*8); }
     if(st.pos&&src){ const hit=st.score>=t.threshold;
-      pctx.strokeStyle=hit?'#3ccf7d':'rgba(255,107,107,.7)'; pctx.strokeRect(st.pos.x,st.pos.y,st.pos.w,st.pos.h);
+      pctx.setLineDash([]); pctx.strokeStyle=hit?'#3ccf7d':'rgba(255,107,107,.7)'; pctx.strokeRect(st.pos.x,st.pos.y,st.pos.w,st.pos.h);
       // 기준값을 맞출 때 카드와 캔버스를 오가지 않도록 일치도/기준값을 박스 바로 아래에 표시
       const label=`${t.name} ${st.score.toFixed(2)} / ${t.threshold.toFixed(2)}`, fs=Math.round(lw*9);
       pctx.save(); pctx.font=`600 ${fs}px sans-serif`;

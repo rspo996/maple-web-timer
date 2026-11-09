@@ -90,3 +90,14 @@ summary{cursor:pointer}
 #undoBar{position:fixed;left:16px;bottom:16px;z-index:8;display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;box-shadow:0 6px 24px rgba(0,0,0,.2)}
 #undoBar[hidden]{display:none}
 .card .manage{justify-content:flex-end}
+/* 접힌/펼친 카드 */
+.card .top{flex-wrap:wrap;gap:6px 10px}
+.card .top h2{flex:1 1 auto;min-width:0}
+.card .top h2 span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .top button{padding:3px 10px;font-size:13px}
+.mini{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mini.on{color:var(--ok)}.mini.alert{color:var(--warn-text)}
+.card[data-open="1"] .mini{display:none}
+.card[data-open="0"] .body{display:none}
+.card[data-open="0"]{padding:8px 12px}
+.card[data-open="0"] .top{margin-bottom:0}

@@ -92,4 +92,25 @@ await page.click("#card-rune [data-a=delete]"); await wait(300);
 check("삭제 확인: 내 소리가 없으면 뒷문장 생략", (await ev(() => __confirms[__confirms.length - 1])) === '"룬" 대상을 지울까요?');
 await page.click("#btnAdd"); await ev(() => [...document.querySelectorAll("#addMenu button")].find(b => b.textContent === "룬").click()); await wait(300);
 check("지운 내장 대상은 같은 id로 복원", (await ev(() => store.targets.some(t => t.id === "rune"))));
+
+// ---- F3: 접힌/펼친 카드, 펼침 상태 저장, 미리보기 점선 ----
+({ page, ev, wait } = await open(taskSpace, { connect: true }));
+const cs = await ev(() => Object.fromEntries(["sol", "booster", "rune"].map(i => { const c = document.querySelector("#card-" + i); return [i, { open: c.dataset.open, h: Math.round(c.getBoundingClientRect().height), body: c.querySelector(".body").offsetHeight, mini: c.querySelector("[data-s=mini]").textContent, status: c.querySelector("[data-s=status]").textContent }]; })));
+check("기본: 등록된 내장 대상은 접힘, 등록 필요한 룬은 펼침", cs.sol.open === "0" && cs.booster.open === "0" && cs.rune.open === "1", cs);
+check("접힌 카드: 한 줄(높이 70px 이하)이고 한 줄 상태가 상태 문구와 같음", cs.sol.h <= 70 && cs.sol.body === 0 && cs.sol.mini === cs.sol.status && cs.sol.mini === "아직 못 찾음", cs.sol);
+check("부제는 감지 대상 3개", (await ev(() => document.querySelector("#subtitle").textContent)) === "감지 대상 3개");
+// 미리보기: 점선 영역은 펼친 카드만(strokeRect 호출을 기록)
+await ev(() => { window.__r = []; const o = pctx.strokeRect.bind(pctx); pctx.strokeRect = (...a) => { __r.push(a.join()); o(...a); }; });
+await wait(1200);
+const collapsedRects = await ev(() => __r.slice());
+check("미리보기: 접힌 sol·booster의 점선 영역은 그리지 않음", !collapsedRects.includes("448,0,832,216") && !collapsedRects.includes("256,0,768,216"), collapsedRects.slice(0, 5));
+await page.click("#card-sol [data-a=toggle]"); await ev(() => { __r.length = 0; }); await wait(1200);
+const openRects = await ev(() => __r.slice());
+check("미리보기: 펼친 sol의 점선 영역은 그림", openRects.includes("448,0,832,216"), openRects.slice(0, 5));
+check("펼침 상태 저장(ui.open)", (await ev(() => JSON.parse(localStorage.getItem("maple-web-timer-ui")).open.sol)) === true);
+// 새로고침해도 유지, 사용자가 접은 룬은 등록 필요여도 자동으로 펼치지 않음
+await page.click("#card-rune [data-a=toggle]");
+await ev(() => location.reload()); await wait(2000);
+const rl = await ev(() => ({ sol: document.querySelector("#card-sol").dataset.open, rune: document.querySelector("#card-rune").dataset.open, booster: document.querySelector("#card-booster").dataset.open }));
+check("새로고침 뒤에도 사용자가 정한 펼침/접힘 유지", rl.sol === "1" && rl.rune === "0" && rl.booster === "0", rl);
 done();
