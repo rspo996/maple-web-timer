@@ -123,3 +123,29 @@ test('stepCountdown: 숫자를 20초 넘게 못 읽으면 unread 한 번, 읽으
   stepCountdown(st, c, 50, 40_000);
   assert.equal(st.ocrWarned, false);
 });
+
+// ---- 묶음 1 스펙 16-1: 당겨 알림(markPre) 뒤에 같은 주기의 pre가 다시 울리지 않아야 함 ----
+test('부스터: 당겨 알림으로 pre 처리된 뒤 19초를 읽어도 재무장되지 않아 10초에 pre가 또 울리지 않는다', () => {
+  const st = newState(), c = { leadSec: 10 }; st.present = true; st.presentAt = 0;
+  stepCountdown(st, c, 20, 0); stepCountdown(st, c, 19.5, 500);
+  st.alertedPre = true; st.preMarkRemain = 19.5;               // KINDS.countdown.markPre가 하는 일
+  assert.deepEqual(stepCountdown(st, c, 19, 1000), []);        // 19 > leadSec+5 이지만 재무장하지 않음
+  assert.equal(st.alertedPre, true);
+  assert.deepEqual(stepCountdown(st, c, 10, 10_000), []);      // 10초에 pre 없음
+});
+
+test('부스터: 당겨 알림 뒤에도 새 부스터(표시 값이 훨씬 커짐)를 쓰면 다시 준비', () => {
+  const st = newState(), c = { leadSec: 10 }; st.present = true; st.presentAt = 0;
+  stepCountdown(st, c, 20, 0); stepCountdown(st, c, 19.5, 500);
+  st.alertedPre = true; st.preMarkRemain = 19.5;
+  stepCountdown(st, c, 60, 5000); stepCountdown(st, c, 59.5, 5500);   // 60 > 19.5+5
+  assert.equal(st.alertedPre, false);
+});
+
+test('부스터 자체 pre도 preMarkRemain을 남기고, 새 주기가 시작되면 지운다', () => {
+  const st = newState(), c = { leadSec: 10 }; st.present = true; st.presentAt = 0;
+  stepCountdown(st, c, 11, 0); stepCountdown(st, c, 10.5, 500);
+  assert.deepEqual(stepCountdown(st, c, 10, 1000), ['pre']);
+  assert.equal(st.preMarkRemain, 10);
+  const d = newState(); assert.equal(d.preMarkRemain, 0);
+});

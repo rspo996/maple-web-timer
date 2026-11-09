@@ -4,7 +4,7 @@ function stepDetector(st, cfg, matched, now){
   if(matched){ st.onStreak++; st.offStreak=0; } else { st.offStreak++; st.onStreak=0; }
   if(!st.present && st.onStreak>=need.on){
     st.present=true; st.presentAt=now;
-    if(st.armed){ st.appearedAt=now; st.alertedPre=false; ev.push('appear'); }
+    if(st.armed){ st.appearedAt=now; st.alertedPre=false; st.preMarkRemain=0; ev.push('appear'); }
     else { st.appearedAt=null; ev.push('appear-unknown'); }   // 연결 시점에 이미 켜져 있던 경우
     st.lastRemind=now;
   } else if(st.present && st.offStreak>=need.off){
@@ -17,7 +17,7 @@ function stepDetector(st, cfg, matched, now){
       }
       if(!st.alertedPre) ev.push('gone');
     }
-    st.appearedAt=null; st.alertedPre=false;
+    st.appearedAt=null; st.alertedPre=false; st.preMarkRemain=0;
   }
   if(!st.present && st.offStreak>=need.off) st.armed=true;   // 확실히 꺼진 걸 본 뒤부터 켜짐 시각을 신뢰
   if(st.present && cfg.kind==='buff' && st.appearedAt && cfg.durationSec && !st.alertedPre){
@@ -29,7 +29,7 @@ function stepDetector(st, cfg, matched, now){
   }
   return ev;
 }
-function newState(){ return {present:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
+function newState(){ return {present:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,preMarkRemain:0,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
 
 /* ===== 부스터 타이머 숫자 읽기 (7세그먼트) ===== */
 // 노란/흰 7세그먼트 숫자(검은 배경)를 읽어 {value, text} 반환. 못 읽으면 null
@@ -80,8 +80,9 @@ function stepCountdown(st, cfg, value, now){
   const ok=(exp!=null && Math.abs(value-exp)<=2) || (candExp!=null && Math.abs(value-candExp)<=1);
   if(!ok){ st.cand=value; st.candAt=now; return ev; }
   st.remain=value; st.remainAt=now; st.cand=null;
-  if(value>cfg.leadSec+5) st.alertedPre=false;                   // 새 부스터를 썼으면 다시 알림 준비
-  if(value<=cfg.leadSec && value>0 && !st.alertedPre){ st.alertedPre=true; ev.push('pre'); }
+  // 새 부스터를 썼으면 다시 알림 준비. 묶기로 미리 당겨 알린 주기(preMarkRemain)는 그 값보다 훨씬 커져야 새 주기로 본다
+  if(value>Math.max(cfg.leadSec,st.preMarkRemain||0)+5){ st.alertedPre=false; st.preMarkRemain=0; }
+  if(value<=cfg.leadSec && value>0 && !st.alertedPre){ st.alertedPre=true; st.preMarkRemain=value; ev.push('pre'); }
   return ev;
 }
 if(typeof module==='object') module.exports={stepDetector,newState,SEG_DIGITS,ocrSevenSeg,UNREAD_MS,stepCountdown};
