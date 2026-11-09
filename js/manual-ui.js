@@ -211,7 +211,7 @@ function renderManualStrip(now){
   setText($('#watchManual'),items.length?'⏱ '+items.slice(0,2).join(' · ')+(items.length>2?` +${items.length-2}`:''):'');
   const prefix=run.length?`⏱ ${manualFmt(manualRemainMs(run[0],now))}`:'';
   if(prefix!==titlePrefix){ titlePrefix=prefix; if(titleTimer===null) document.title=baseTitle(); }   // 알림 깜빡임 중이면 끝난 뒤 baseTitle()이 반영
-  $('#soundLock').hidden=!(run.length&&!manualAudible());
+  const lockHidden=!(run.length&&!manualAudible()); if($('#soundLock').hidden!==lockHidden) $('#soundLock').hidden=lockHidden;
 }
 // 소리 설정의 "듣기": 실제 타이머가 있으면 그 이름으로, 없으면 예시 문구
 function manualPreviewText(ev){
