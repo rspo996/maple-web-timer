@@ -111,7 +111,7 @@ export function targetSnapshot(targets,states,ctx,now){
   });
 }
 
-/* ----- 대상 추가 (순수: 저장소 객체를 바꾸고 결과를 돌려준다. 화면 처리는 ui-cards.js) ----- */
+/* ----- 대상 추가 (순수: 저장소 객체를 바꾸고 결과를 돌려준다. 화면 처리는 app/cards.js) ----- */
 export const FULL_MSG=`대상은 ${TARGET_MAX}개까지 둘 수 있어요`;
 export function missingBuiltins(targets){ return Object.keys(BUILTIN).filter(id=>!targets.some(t=>t.id===id)); }
 // 지웠던 내장 대상을 기본값으로 다시 만든다(원래 id). 같은 이름이 이미 있으면 (기본)을 붙인다
@@ -141,7 +141,7 @@ export function addKindTarget(store,kind){
   const t=newTarget(makeId(store),kind,name,k.defaultThreshold!=null?{threshold:k.defaultThreshold}:undefined); store.targets.push(t); return {ok:true,target:t};
 }
 
-/* ----- 이름 바꾸기·순서·삭제 (순수. 화면 처리는 ui-cards.js) ----- */
+/* ----- 이름 바꾸기·순서·삭제 (순수. 화면 처리는 app/cards.js) ----- */
 export function renameTarget(store,id,raw){
   const t=store.targets.find(x=>x.id===id); if(!t) return {ok:false,msg:'대상을 찾을 수 없어요'};
   const c=checkName(raw,store.targets,id); if(!c.ok) return {ok:false,msg:c.msg};

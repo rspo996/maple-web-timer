@@ -1,9 +1,8 @@
 /* ===== 음량 0~200% (묶음 5). 비프·내 소리는 마스터 GainNode 한 곳에서 키우고, 100%를 넘을 때만 리미터를 거친다.
    음성(TTS)은 Web Audio로 키울 수 없어 100%에서 멈춘다(ttsVolume) ===== */
 import {Alerts,beep,unlockAudio} from './alerts.js';
-import {$} from './dom.js';
+import {$,setText} from './dom.js';
 import {saveUi,ui} from './prefs.js';
-import {setText} from './ui-cards.js';
 import {clampVolumePct,volumeToGain} from '../core/util.js';
 export let master=null, limiter=null, limiterOn=null;
 export const volPct=()=>clampVolumePct($('#vol').value);

@@ -14,7 +14,7 @@ import {ui} from './prefs.js';
 import {initRegister} from './register.js';
 import {initSounds} from './sounds.js';
 import {initTargets,store} from './store.js';
-import {initCards,onTargetChanged} from './ui-cards.js';
+import {onTargetChanged} from './cards.js';
 import {renderWatch,setNote} from './ui-watch.js';
 
 function onWorkerTick(){
@@ -27,7 +27,7 @@ export function boot(){
   if(booted) return; booted=true;
   // 순수 계산 쪽(core)이 부르는 화면·캡처 기능
   setHooks({setNote,onTargetChanged,detectTemplate,readTimer,loadTpl,hasSource:()=>!!src});
-  initTargets(); initCapture(); initRegister(); initCards(); initSounds();
+  initTargets(); initCapture(); initRegister(); initSounds();
   manualInit(); audioInit(); pipInit();
   renderWatch();
   $('#helpDetails').open = !(ui.connectedOnce || store.targets.some(t=>t.tpl));   // 처음에만 펼침

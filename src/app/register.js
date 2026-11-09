@@ -1,17 +1,18 @@
-/* ----- 미리보기 & 드래그 등록 ----- */
+/* ----- 미리보기 캔버스 그리기와 드래그 등록의 엔진 쪽. 캔버스·안내줄 요소는 ui/StagePanel.jsx가 만든다 ----- */
 import {dims,grab,src} from './capture.js';
 import {areaOf,stateOf,states} from './detect-run.js';
-import {$} from './dom.js';
+import {bump} from './bus.js';
 import {saveTargets,store,targetById} from './store.js';
-import {isOpen,removeTargetNow,renderCard} from './ui-cards.js';
+import {isOpen,removeTargetNow} from './cards.js';
 import {renderWatch,setNote} from './ui-watch.js';
 import {newState} from '../core/detect-core.js';
 import {KINDS,labelsOf} from '../core/kinds.js';
 import {eulReul} from '../core/util.js';
-export let pv=null, pctx=null;   // initRegister()가 채운다
+export let pv=null, pctx=null;   // 미리보기 캔버스. StagePanel이 만들어지면 setPreviewCanvas로 채운다
+export function setPreviewCanvas(el){ pv=el; pctx=el?el.getContext('2d'):null; }
 export let reg=null; // {t, steps, i, snap, rects:{area?,icon?}, drag, msg, fresh, queue}  fresh: 방금 만든 대상의 첫 등록(취소하면 대상도 지운다), queue: 이어서 다시 등록할 대상 id
 export function drawPreview(source){
-  const s = reg ? reg.snap : source; if(!s) return;
+  const s = reg ? reg.snap : source; if(!s||!pctx) return;
   const [w,h]=dims(s); if(!w) return;
   if(pv.width!==w||pv.height!==h){ pv.width=w; pv.height=h; }
   pctx.drawImage(s,0,0);
@@ -56,15 +57,16 @@ export async function startRegister(t,opts={}){
   const snap=opts.snap||await snapshot(); if(!snap) return;   // 차례로 등록할 때는 앞 단계에서 찍은 화면을 재사용
   if(reg) cancelRegister();   // 다른 대상을 등록 중이었으면 그만둔다(첫 등록이었으면 그 대상은 지워진다)
   reg={t,steps:KINDS[t.kind].register.steps,i:0,snap,rects:{},drag:null,msg:'',fresh:!!opts.fresh,queue:opts.queue||[]}; updateBanner(); drawPreview(null);
-  $('#stage').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('stage').scrollIntoView({behavior:'smooth',block:'center'});
 }
 export const STEP_TEXT={ area:l=>`${eulReul(l.area)} 넉넉하게 드래그하세요`, icon:l=>`${l.icon} 하나만 꼭 맞게 드래그하세요` };
 export const stepTextOf=(t,step)=>{ const o=KINDS[t.kind].register.stepText; return (o&&o[step]?o[step]:STEP_TEXT[step])(labelsOf(t)); };   // 종류가 문구를 덮어쓸 수 있다
-export function updateBanner(){
-  const b=$('#banner'); if(!reg){ b.classList.remove('on'); return; }
-  b.classList.add('on');
-  $('#bannerText').textContent=(reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${stepTextOf(reg.t,reg.steps[reg.i])}`+(reg.queue.length?` · 이어서 ${reg.queue.length}개 더`:'');
+// 등록 안내줄 문구. 등록 중이 아니면 null
+export function bannerText(){
+  if(!reg) return null;
+  return (reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${stepTextOf(reg.t,reg.steps[reg.i])}`+(reg.queue.length?` · 이어서 ${reg.queue.length}개 더`:'');
 }
+export function updateBanner(){ bump(); }
 // 등록 상태만 비운다(대상을 지우는 쪽에서 부름). 첫 등록 취소 처리는 cancelRegister
 export function clearRegister(){ reg=null; updateBanner(); }
 export function cancelRegister(){
@@ -77,25 +79,25 @@ export function finishRegister(){
   if(why){ reg.msg=why; reg.rects={}; reg.i=0; updateBanner(); drawPreview(null); return; }
   k.register.save(t,reg.rects,reg.snap); saveTargets();
   states[t.id]=newState(); states[t.id].armed=!!(src&&src.type==='image');
-  const queue=reg.queue, snap=reg.snap; reg=null; updateBanner(); renderCard(t); renderWatch(); setNote(k.register.doneNote?k.register.doneNote(t):`${t.name} 등록했어요`,'info');
+  const queue=reg.queue, snap=reg.snap; reg=null; updateBanner(); renderWatch(); setNote(k.register.doneNote?k.register.doneNote(t):`${t.name} 등록했어요`,'info');
   const next=queue.map(targetById).find(Boolean);           // 해상도가 바뀐 뒤 여러 대상을 차례로 다시 등록
   if(next) startRegister(next,{queue:queue.slice(queue.indexOf(next.id)+1),snap});
 }
 // 차례로 등록: 첫 대상부터 등록하고 끝나면 다음 대상으로 이어 간다. Esc·취소로 중단
 export function startRegisterQueue(ids){ const first=ids.map(targetById).find(Boolean); if(first) return startRegister(first,{queue:ids.slice(ids.indexOf(first.id)+1)}); }
 export function toImg(e){ const r=pv.getBoundingClientRect(); return {x:(e.clientX-r.left)*pv.width/r.width, y:(e.clientY-r.top)*pv.height/r.height}; }
-export function initRegister(){
-pv=$('#preview'); pctx=pv.getContext('2d');
-$('#btnCancel').onclick=cancelRegister;
-$('#btnRetake').onclick=async()=>{ if(!reg) return; const s=await snapshot(); if(s){ reg.snap=s; drawPreview(null); } };
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&reg) cancelRegister(); });
-pv.addEventListener('pointerdown',e=>{ if(!reg) return; const p=toImg(e); reg.drag={x0:p.x,y0:p.y,x1:p.x,y1:p.y}; pv.setPointerCapture(e.pointerId); });
-pv.addEventListener('pointermove',e=>{ if(!reg||!reg.drag) return; const p=toImg(e); reg.drag.x1=p.x; reg.drag.y1=p.y; drawPreview(null); });
-pv.addEventListener('pointerup',()=>{
+// "화면 다시 찍기": 등록 중인 화면을 지금 화면으로 바꾼다
+export async function retakeSnapshot(){ if(!reg) return; const s=await snapshot(); if(s){ reg.snap=s; drawPreview(null); } }
+// 미리보기 캔버스 위 드래그(StagePanel의 포인터 이벤트)
+export function dragStart(e){ if(!reg) return; const p=toImg(e); reg.drag={x0:p.x,y0:p.y,x1:p.x,y1:p.y}; pv.setPointerCapture(e.pointerId); }
+export function dragMove(e){ if(!reg||!reg.drag) return; const p=toImg(e); reg.drag.x1=p.x; reg.drag.y1=p.y; drawPreview(null); }
+export function dragEnd(){
   if(!reg||!reg.drag) return; const r=norm(reg.drag); reg.drag=null;
   if(r.w<6||r.h<6){ drawPreview(null); return; }
   reg.rects[reg.steps[reg.i]]=r; reg.msg=''; reg.i++;
   if(reg.i<reg.steps.length){ updateBanner(); drawPreview(null); return; }
   finishRegister();
-});
+}
+export function initRegister(){
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&reg) cancelRegister(); });
 }

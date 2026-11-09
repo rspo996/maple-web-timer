@@ -1,9 +1,9 @@
 import {Alerts,fireSystem} from './alerts.js';
+import {batch} from './bus.js';
 import {LOST_REMIND_MAX,LOST_REMIND_MS,STALL_MS,dims,frame,grab,health,setFrameFresh,src,viewCtx} from './capture.js';
 import {pipUpdate} from './pip.js';
 import {drawPreview,reg} from './register.js';
 import {store,targetById} from './store.js';
-import {renderCard} from './ui-cards.js';
 import {pulse,renderWatch,setNote} from './ui-watch.js';
 import {planGroup} from '../core/alerts-core.js';
 import {newState,ocrSevenSeg} from '../core/detect-core.js';
@@ -105,31 +105,32 @@ export async function tick(){
   if(busy) return; busy=true;
   try{
     const t0=performance.now(), now=Date.now(), g=await grab(), source=g.frame; setFrameFresh(g.fresh);
-    if(source){ [frame.w,frame.h]=dims(source); }
-    const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
-    if(live){
-      if(ok){ health.okAt=now; health.badSince=null; if(health.badWarned){ health.badWarned=false; fireSystem('back'); } }
-      else { health.badSince=health.badSince||now; if(!health.badWarned && now-health.badSince>=STALL_MS){ health.badWarned=true; fireSystem('stall'); } }
-    } else if(!src && health.lostAt && health.reminders<LOST_REMIND_MAX && now-health.remindAt>=LOST_REMIND_MS){
-      health.reminders++; health.remindAt=now; fireSystem('lost');
-    }
-    const evq=[], ctx=viewCtx();
-    for(const t of store.targets){
-      const k=KINDS[t.kind]; if(!k) continue;
-      const st=stateOf(t.id);
-      if(ok && t.enabled && !reg){
-        const d0=performance.now(), det=k.detect(t,source,ctx);
-        if(det){ st.score=det.score; st.pos=det.pos; collectEvents(t,k.step(t,st,det,source,now,ctx),evq); }
-        else if(k.onSkip) collectEvents(t,k.step(t,st,null,source,now,ctx),evq);
-        const dt=performance.now()-d0; st.ms=st.ms==null?dt:st.ms*0.8+dt*0.2;     // 대상별 감지 시간(지수 이동 평균). 카드에 표시
-      } else if(k.onSkip && t.enabled) collectEvents(t,k.step(t,st,null,null,now,ctx),evq);   // 감지를 건너뛴 틱에도 부르는 종류(묶음 3)
-      if(!document.hidden) renderCard(t);
-    }
-    dispatchEvents(evq,now);
-    const slow=ok&&live?slowWatch.push(performance.now()-t0):null;
-    if(slow) setNote(`감지가 느려요 (평균 ${slow} ms) · 사용 안 하는 대상은 꺼 주세요`);
-    renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
-    pipUpdate(Date.now());   // 작은 창도 숨겨진 동안이 주 사용 조건이라 매 틱 갱신(묶음 5)
-    if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
+    batch(()=>{   // 이번 틱에 바뀐 상태줄·카드·알림 문구를 한 번에 그린다
+      if(source){ [frame.w,frame.h]=dims(source); }
+      const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
+      if(live){
+        if(ok){ health.okAt=now; health.badSince=null; if(health.badWarned){ health.badWarned=false; fireSystem('back'); } }
+        else { health.badSince=health.badSince||now; if(!health.badWarned && now-health.badSince>=STALL_MS){ health.badWarned=true; fireSystem('stall'); } }
+      } else if(!src && health.lostAt && health.reminders<LOST_REMIND_MAX && now-health.remindAt>=LOST_REMIND_MS){
+        health.reminders++; health.remindAt=now; fireSystem('lost');
+      }
+      const evq=[], ctx=viewCtx();
+      for(const t of store.targets){
+        const k=KINDS[t.kind]; if(!k) continue;
+        const st=stateOf(t.id);
+        if(ok && t.enabled && !reg){
+          const d0=performance.now(), det=k.detect(t,source,ctx);
+          if(det){ st.score=det.score; st.pos=det.pos; collectEvents(t,k.step(t,st,det,source,now,ctx),evq); }
+          else if(k.onSkip) collectEvents(t,k.step(t,st,null,source,now,ctx),evq);
+          const dt=performance.now()-d0; st.ms=st.ms==null?dt:st.ms*0.8+dt*0.2;     // 대상별 감지 시간(지수 이동 평균). 카드에 표시
+        } else if(k.onSkip && t.enabled) collectEvents(t,k.step(t,st,null,null,now,ctx),evq);   // 감지를 건너뛴 틱에도 부르는 종류(묶음 3)
+      }
+      dispatchEvents(evq,now);
+      const slow=ok&&live?slowWatch.push(performance.now()-t0):null;
+      if(slow) setNote(`감지가 느려요 (평균 ${slow} ms) · 사용 안 하는 대상은 꺼 주세요`);
+      renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
+      pipUpdate(Date.now());   // 작은 창도 숨겨진 동안이 주 사용 조건이라 매 틱 갱신(묶음 5)
+      if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
+    });
   } finally { busy=false; Alerts.flush(Date.now()); }
 }

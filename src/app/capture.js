@@ -4,7 +4,6 @@ import {$} from './dom.js';
 import {saveUi,ui} from './prefs.js';
 import {pctx,pv} from './register.js';
 import {store} from './store.js';
-import {renderCard} from './ui-cards.js';
 import {renderWatch,setNote} from './ui-watch.js';
 import {KINDS} from '../core/kinds.js';
 import {eunNeun} from '../core/util.js';
@@ -41,17 +40,19 @@ export async function grab(){
 }
 export function dims(s){ return s instanceof HTMLVideoElement ? [s.videoWidth,s.videoHeight] : [s.naturalWidth||s.width, s.naturalHeight||s.height]; }
 
-export function teardown(emptyText){
+// 게임 화면 자리의 안내문(화면이 없을 때만 보인다). 연결이 끊겨서 멈췄으면 다시 연결하라고 한다
+export const emptyText=()=>health.lostAt?EMPTY_LOST:EMPTY_DEFAULT;
+export function teardown(){
   Alerts.clear();   // 묶음 대기 중이던 알림은 연결 알림이 우선이라 버린다
-  src=null; pctx.clearRect(0,0,pv.width,pv.height);   // 멈춘 마지막 화면 대신 빈 화면 위에 안내문을 보여줌
-  $('#empty').textContent=emptyText; $('#empty').style.display=''; $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
-  store.targets.forEach(renderCard); renderWatch();
+  src=null; if(pctx) pctx.clearRect(0,0,pv.width,pv.height);   // 멈춘 마지막 화면 대신 빈 화면 위에 안내문을 보여줌
+  $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
+  renderWatch();
 }
 // 상태줄의 "감시 끝내기"·"테스트 끝내기"
 export function stopWatching(){
   const wasTest=src&&src.type==='image';
   if(src&&src.track) src.track.stop(); health.lostAt=null; health.badWarned=false;
-  teardown(EMPTY_DEFAULT); setNote(wasTest?'스크린샷 테스트를 끝냈어요':'감시를 끝냈어요','info');
+  teardown(); setNote(wasTest?'스크린샷 테스트를 끝냈어요':'감시를 끝냈어요','info');
 }
 export function initCapture(){
 $('#btnConnect').onclick=async()=>{
@@ -66,9 +67,9 @@ $('#btnConnect').onclick=async()=>{
     track.onended=()=>{
       if(!src||src.track!==track) return;
       Object.assign(health,{lostAt:Date.now(),reminders:0,remindAt:Date.now(),badSince:null,badWarned:false});
-      teardown(EMPTY_LOST); fireSystem('lost');
+      teardown(); fireSystem('lost');
     };
-    src={type:'stream',video,track,cap}; $('#empty').style.display='none';
+    src={type:'stream',video,track,cap};
     $('#btnConnect').textContent='다른 창 연결'; $('#btnConnect').classList.remove('primary');   // 연결 뒤에는 주된 행동이 아님
     Object.assign(health,{lostAt:null,badSince:null,badWarned:false,okAt:Date.now()});
     resetAllStates(false);
@@ -81,7 +82,7 @@ $('#btnConnect').onclick=async()=>{
 $('#btnImage').onclick=()=>$('#fileImage').click();
 $('#fileImage').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const img=new Image();
-  img.onload=()=>{ if(src&&src.track) src.track.stop(); src={type:'image',img}; health.lostAt=null; health.badWarned=false; $('#empty').style.display='none'; resetAllStates(true); renderWatch(); };
+  img.onload=()=>{ if(src&&src.track) src.track.stop(); src={type:'image',img}; health.lostAt=null; health.badWarned=false; resetAllStates(true); renderWatch(); };
   img.src=URL.createObjectURL(f); e.target.value='';
 };
 $('#btnNotify').onclick=async()=>{

@@ -1,10 +1,9 @@
 /* ----- 창 ----- */
 import {Alerts} from './alerts.js';
-import {$} from './dom.js';
+import {$,setText} from './dom.js';
 import {manual} from './manual.js';
 import {saveUi,ui} from './prefs.js';
 import {store} from './store.js';
-import {setText} from './ui-cards.js';
 import {setNote,snapshotNow,watchStatus} from './ui-watch.js';
 import {PIP_HOLD_MS,buildPipRows,pipFlashKind,pipLevel} from '../core/pip-core.js';
 export let pipWin=null, pipResizeTimer=null;
