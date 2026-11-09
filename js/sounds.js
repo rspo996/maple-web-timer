@@ -1,15 +1,8 @@
 /* ----- 알림 소리 바꾸기 (내 WAV 등) ----- */
-const SLOTS=[
-  {key:'sol.pre',        group:'솔 야누스', label:'미리 알림'},
-  {key:'sol.gone',       group:'솔 야누스', label:'꺼짐'},
-  {key:'booster.pre',    group:'부스터',    label:'미리 알림'},
-  {key:'booster.gone',   group:'부스터',    label:'꺼짐'},
-  {key:'booster.unread', group:'부스터',    label:'숫자 못 읽음'},
-  {key:'rune.appear',    group:'룬',        label:'나왔을 때'},
-  {key:'rune.remind',    group:'룬',        label:'아직 있을 때'},
-  {key:'sys.lost',       group:'연결 문제', label:'연결 끊김'},
-  {key:'sys.stall',      group:'연결 문제', label:'화면 안 들어옴'},
-];
+let SLOTS=[];   // 소리 설정 화면의 행. 대상 목록에서 계산한다(targets.js의 slotsOf)
+function refreshSlots(){ SLOTS=slotsOf(store.targets,{manual:typeof manualInit==='function'}); }
+// 대상이 추가·삭제·개명·순서 변경될 때 소리 설정 화면을 다시 만든다. 불러 둔 내 소리(customSounds)는 그대로 쓴다
+function rebuildSounds(){ refreshSlots(); buildSounds(); }
 const SOUND_MAX_SEC=10, SOUND_MAX_BYTES=5*1024*1024;   // 긴 소리는 다음 알림을 밀어내므로 제한
 const customSounds=new Map();   // slot → {name, data:ArrayBuffer, dur, buf:AudioBuffer|null}
 // 파일은 용량이 커서 localStorage 대신 IndexedDB에 보관
@@ -81,9 +74,15 @@ function renderSounds(){
     f.textContent=c?`${c.name} · ${c.dur.toFixed(1)}초`:'기본 소리'; f.title=c?c.name:''; f.classList.toggle('custom',!!c);
     const rb=s.row.querySelector('[data-a=reset]'); rb.style.visibility=c?'':'hidden'; rb.disabled=!c; }   // 자리는 남겨 버튼 줄을 맞춤
 }
-function initSounds(){ buildSounds(); loadSounds(); }
+function initSounds(){ refreshSlots(); buildSounds(); loadSounds(); }
+async function deleteSoundKeys(keys){
+  try{ const st=await soundStore('readwrite'); await Promise.all(keys.map(k=>idb(st.delete(k)))); }catch(e){}
+}
 async function loadSounds(){
-  try{ const st=await soundStore('readonly'); const keys=idb(st.getAllKeys()), vals=idb(st.getAll());
-    const [ks,vs]=await Promise.all([keys,vals]); ks.forEach((k,i)=>{ if(SLOTS.some(s=>s.key===k)) customSounds.set(k,{...vs[i],buf:null}); }); renderSounds(); predecodeSounds(); }
+  try{ const st=await soundStore('readonly'); const [ks,vs]=await Promise.all([idb(st.getAllKeys()),idb(st.getAll())]);
+    const orphans=new Set(orphanSlots(ks,store.targets,storeStatus));   // 지워진 대상의 소리(탭이 닫혀 10초 삭제를 못 한 것)를 정리
+    ks.forEach((k,i)=>{ if(!orphans.has(k)) customSounds.set(k,{...vs[i],buf:null}); });
+    if(orphans.size) deleteSoundKeys([...orphans]);
+    renderSounds(); predecodeSounds(); }
   catch(e){ soundNote('이 브라우저에서는 내 소리를 저장할 수 없어요. 기본 소리로 알려요',true); }
 }

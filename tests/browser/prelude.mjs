@@ -1,6 +1,6 @@
 // 브라우저 검사 공통 준비. ego-browser 스크립트에서:
 //   const { open, check, done } = await import("file:///ABS/tests/browser/prelude.mjs");
-//   const { page, ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-v1": {...} }, connect: true });
+//   const { page, ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-v1": {...} }, sounds: ["sol.pre"], connect: true });
 import fs from "node:fs/promises";
 const ROOT = new URL("../../", import.meta.url);
 export const BASE = "http://127.0.0.1:8766/index.html";      // 검증 전용 포트. 평소 쓰는 8765 origin의 설정·내 소리를 지우지 않으려고 분리
@@ -8,11 +8,19 @@ export async function open(taskSpace, opt = {}) {
   const task = await taskSpace("target-list-verify");
   const page = task.page("p1");
   await page.goto(opt.url || BASE);
-  await page.evaluate(async seed => {                          // 이 origin의 저장소를 비우고 시험 데이터를 넣는다
+  await page.evaluate(async ({ seed, sounds }) => {              // 이 origin의 저장소를 비우고 시험 데이터를 넣는다
     localStorage.clear();
     await new Promise(r => { const q = indexedDB.deleteDatabase("maple-web-timer"); q.onsuccess = q.onerror = q.onblocked = r; });
-    for (const [k, v] of Object.entries(seed || {})) localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v));
-  }, opt.seed || {});
+    for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v));
+    if (sounds.length) await new Promise((res, rej) => {         // 내 소리 슬롯 키마다 0.3초 WAV를 넣는다
+      const mk = () => { const n = 2400, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+        w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+        for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.sin(i / 8) * 8000, true); return b; };
+      const r = indexedDB.open("maple-web-timer", 1); r.onupgradeneeded = () => r.result.createObjectStore("sounds");
+      r.onsuccess = () => { const tx = r.result.transaction("sounds", "readwrite"), st = tx.objectStore("sounds"); for (const k of sounds) st.put({ name: k + ".wav", data: mk(), dur: 0.3 }, k); tx.oncomplete = () => { r.result.close(); res(); }; };
+      r.onerror = () => rej(r.error);
+    });
+  }, { seed: opt.seed || {}, sounds: opt.sounds || [] });
   await page.goto(opt.url || BASE);
   await page.evaluate(await fs.readFile(new URL("tests/browser/fake-screen.js", ROOT), "utf8"));
   if (opt.connect) { await page.click("#btnConnect"); await page.waitForTimeout(opt.settleMs ?? 3000); }

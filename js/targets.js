@@ -104,6 +104,25 @@ function targetSnapshot(targets,states,ctx,now){
   });
 }
 
+/* ----- 내 소리 슬롯 키 = 대상id.이벤트 (묶음 1 스펙 4.4·4.5) ----- */
+const MANUAL_SLOTS=[['manual.pre','미리 알림'],['manual.end','끝'],['manual.next1','구간 전환 1'],['manual.next2','구간 전환 2']];
+// 소리 설정 화면의 행 목록. 대상이 추가·삭제·개명될 때마다 다시 계산한다. opts.manual=false면 수동 타이머(묶음 2) 슬롯을 뺀다
+function slotsOf(targets,opts){
+  const out=[], manual=!(opts&&opts.manual===false);
+  for(const t of targets){ const k=KINDS[t.kind]; if(!k) continue; for(const e of k.events) out.push({key:`${t.id}.${e.key}`,group:t.name,label:e.label}); }
+  out.push({key:'grp.pre',group:'묶음 알림',label:'미리 알림'},{key:'grp.gone',group:'묶음 알림',label:'꺼짐'});
+  if(manual) for(const [key,label] of MANUAL_SLOTS) out.push({key,group:'수동 타이머',label});
+  out.push({key:'sys.lost',group:'연결 문제',label:'연결 끊김'},{key:'sys.stall',group:'연결 문제',label:'화면 안 들어옴'});
+  return out;
+}
+const RESERVED_OWNER=/^(sys|grp|manual|m\d+)$/;
+// 저장된 소리 키 중 지울 것: 소유자가 예약 접두어도 현재 대상도 아닌 것. 저장소를 정상으로 읽었을 때(ok·migrated)만 지운다
+function orphanSlots(keys,targets,status){
+  if(status!=='ok'&&status!=='migrated') return [];
+  const ids=new Set(targets.map(t=>t.id));
+  return keys.filter(k=>{ const owner=String(k).split('.')[0]; return !RESERVED_OWNER.test(owner)&&!ids.has(owner); });
+}
+
 /* ----- 실행 중 저장소. 소유: 이 파일. 다른 파일은 store.targets를 읽고, 바꾼 뒤에는 saveTargets()를 부른다 ----- */
 let store={ver:2,seq:0,targets:[],group:defaultGroup()}, storeStatus='fresh';   // initTargets()가 채운다(KINDS는 kinds.js가 뒤에 올라오므로 여기서 만들지 않음)
 const targetById=id=>store.targets.find(t=>t.id===id);
@@ -117,4 +136,4 @@ function initTargets(){
   if(r.status==='broken') setNote('설정을 읽지 못해 처음 상태로 시작했어요. 백업 파일이 있으면 불러오세요');
   else if(r.saveFailed){ saveWarned=true; setNote('설정을 저장하지 못했어요 (이 탭에서만 유지)'); }
 }
-if(typeof module==='object') module.exports={BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};
+if(typeof module==='object') module.exports={slotsOf,orphanSlots,BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};

@@ -132,3 +132,34 @@ test('targetSnapshot: 상태줄·PIP가 같이 쓰는 행', () => {
   assert.equal(rows[1].stripState, 'unseen'); assert.equal(rows[2].stripState, 'reg');
   assert.deepEqual([rows[3].stripState, rows[3].statusText], ['off', '이 버전에서 지원하지 않는 종류예요']);
 });
+
+// ---- 내 소리 슬롯 (묶음 1 스펙 4.4·4.5) ----
+const { slotsOf, orphanSlots } = L;
+const keysOf = r => plain(r).map(s => s.key);
+
+test('slotsOf: 대상 순서·이름을 따르고, 묶음·수동 타이머·시스템 슬롯이 뒤에 붙는다', () => {
+  const targets = plain(defaultStore()).targets;
+  targets.push({ id: 'u1', kind: 'buff', name: '유니온의 힘', p: {} });
+  const r = plain(slotsOf(targets));
+  assert.deepEqual(r.map(s => s.key), ['sol.pre', 'sol.gone', 'booster.pre', 'booster.gone', 'booster.unread', 'rune.appear', 'rune.remind', 'u1.pre', 'u1.gone',
+    'grp.pre', 'grp.gone', 'manual.pre', 'manual.end', 'manual.next1', 'manual.next2', 'sys.lost', 'sys.stall']);
+  assert.deepEqual([r[7].group, r[7].label, r[9].group, r[9].label, r[15].group], ['유니온의 힘', '미리 알림', '묶음 알림', '미리 알림', '연결 문제']);
+  targets[3].name = '새 이름';
+  assert.equal(plain(slotsOf(targets))[7].group, '새 이름');
+});
+
+test('slotsOf: 수동 타이머 파일이 없는 동안에는 manual 슬롯을 숨길 수 있다, 모르는 kind는 건너뛴다', () => {
+  const ks = keysOf(slotsOf([{ id: 'u1', kind: 'future', name: 'x', p: {} }], { manual: false }));
+  assert.deepEqual(ks, ['grp.pre', 'grp.gone', 'sys.lost', 'sys.stall']);
+});
+
+test('orphanSlots: 예약 접두어와 현재 대상은 보존, 대상 없는 id는 삭제', () => {
+  const targets = [{ id: 'sol' }, { id: 'u2' }];
+  const keys = ['sol.pre', 'u2.gone', 'u9.pre', 'u10.appear', 'sys.lost', 'grp.pre', 'manual.end', 'm3.pre', 'booster.gone', 'zzz.pre'];
+  assert.deepEqual(plain(orphanSlots(keys, targets, 'ok')), ['u9.pre', 'u10.appear', 'booster.gone', 'zzz.pre']);
+  assert.deepEqual(plain(orphanSlots(keys, targets, 'migrated')), ['u9.pre', 'u10.appear', 'booster.gone', 'zzz.pre']);
+});
+
+test('orphanSlots: 저장소가 비었거나 깨져서 기본 목록으로 시작한 경우(fresh·broken)에는 아무것도 지우지 않는다', () => {
+  for (const status of ['fresh', 'broken']) assert.deepEqual(plain(orphanSlots(['u9.pre'], [{ id: 'sol' }], status)), []);
+});
