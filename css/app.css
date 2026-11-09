@@ -33,7 +33,8 @@ button:disabled{opacity:.45;cursor:default}
 @media (prefers-reduced-motion:reduce){.watch .dot.beat{animation:none}}
 .watch .live{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-width:0}
 .watch .targets{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
-.watch .targets .off,.watch .targets .sep,.watch .targets .unseen{color:var(--muted)}
+.watch .targets .off,.watch .targets .sep,.watch .targets .unseen,.watch .targets .snooze{color:var(--muted)}
+.watch .targets .idle,.watch .targets .busy{color:var(--warn-text)}
 .watch .targets button{padding:2px 9px;font-size:13px}
 .watch .note{color:var(--warn-text)}
 .watch .note.info{color:var(--muted)}

@@ -13,7 +13,7 @@ function setNote(text, kind='warn'){
   clearTimeout(noteTimer); if(text&&kind==='info') noteTimer=setTimeout(()=>{ n.textContent=''; },8000);
 }
 // 상태줄과 묶음 5의 PIP가 같은 행을 쓴다. 순수 계산은 targets.js의 targetSnapshot
-const snapshotNow=()=>targetSnapshot(store.targets,states,{src:!!src,frame},Date.now());
+const snapshotNow=()=>targetSnapshot(store.targets,states,viewCtx(),Date.now());
 function renderWatch(){
   const w=watchStatus();
   const items=src?summarizeStrip(snapshotNow(),ui.stripOpen):[];     // 연결 안 됨 상태에서는 대상 목록을 보이지 않는다

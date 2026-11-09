@@ -34,8 +34,8 @@ function buildCard(t){
     <div class="sub" data-s="sub"></div>
     <div class="grid">
       ${k.cardFields(t).map(f=>fieldHtml(f,id)).join('')}
-      <label for="${id}-thr">기준값</label><span class="row"><input id="${id}-thr" type="range" min="0.4" max="0.98" step="0.01" data-k="threshold" style="flex:1"> <b data-s="thr"></b></span>
-      <span>일치도</span><span class="score" data-s="score">–</span>
+      ${k.usesThreshold?`<label for="${id}-thr">기준값</label><span class="row"><input id="${id}-thr" type="range" min="0.4" max="0.98" step="0.01" data-k="threshold" style="flex:1"> <b data-s="thr"></b></span>`:''}
+      <span data-s="scoreLabel">일치도</span><span class="score" data-s="score">–</span>
     </div>
     <div class="row" style="margin-top:10px">
       <button data-a="register">등록</button><button data-a="test">알림 테스트</button>
@@ -51,13 +51,12 @@ function buildCard(t){
   q('[data-s=name]').textContent=t.name;
   q('[data-k=enabled]').checked=t.enabled;
   q('[data-k=enabled]').onchange=e=>{ t.enabled=e.target.checked; if(!t.enabled){ states[t.id]=newState(); Alerts.drop(t.id); } saveTargets(); renderWatch(); renderCard(t); };   // 끄는 순간 상태를 새로 시작
-  q('[data-k=threshold]').value=t.threshold;
-  q('[data-k=threshold]').oninput=e=>{ t.threshold=+e.target.value; saveTargets(); renderCard(t); };
+  if(k.usesThreshold){ q('[data-k=threshold]').value=t.threshold; q('[data-k=threshold]').oninput=e=>{ t.threshold=+e.target.value; saveTargets(); renderCard(t); }; }
   for(const f of k.cardFields(t)){
     const inp=q(`[data-f=${f.key}]`); inp.value=f.get(t);
     inp.onchange=()=>{ const r=f.set(t,inp.value)||{}; if(r.msg) setNote(r.msg); inp.value=f.get(t); if(!r.revert) saveTargets(); };
   }
-  for(const a of k.actions) q(`[data-act=${a.key}]`).onclick=()=>a.run(t,stateOf(t.id),Date.now());
+  for(const a of k.actions) q(`[data-act=${a.key}]`).onclick=()=>{ a.run(t,stateOf(t.id),Date.now()); renderCard(t); renderWatch(); };
   if(t.preset) q('[data-a=reset]').onclick=()=>{ t.tpl=null; t.area=null; t.frameW=t.frameH=0; saveTargets(); states[t.id]=newState(); renderCard(t); setNote(`${t.name} 기본 아이콘으로 되돌렸어요`,'info'); };
   q('[data-a=register]').onclick=()=>startRegister(t);
   q('[data-a=toggle]').onclick=()=>{ ui.open=ui.open||{}; ui.open[t.id]=!isOpen(t); saveUi(); renderCard(t); };
@@ -84,12 +83,15 @@ function isOpen(t){ return ui.open&&t.id in ui.open ? !!ui.open[t.id] : needsAtt
 function renderCard(t){
   const el=document.getElementById('card-'+t.id), k=KINDS[t.kind]; if(!el||!k) return;
   const st=stateOf(t.id), q=s=>el.querySelector(s);
-  const tu=t.tpl?t.tpl.url:(t.preset?PRESETS[t.preset].icons[0].url:''), th=q('.thumb'); th.hidden=!tu; if(tu&&th.getAttribute('src')!==tu) th.src=tu;
+  const tu=k.thumb?k.thumb(t):t.tpl?t.tpl.url:(t.preset?PRESETS[t.preset].icons[0].url:''), th=q('.thumb'); th.hidden=!tu; if(tu&&th.getAttribute('src')!==tu) th.src=tu;
   const rb=q('[data-a=reset]'); if(rb) rb.style.display=t.tpl?'':'none';
-  setText(q('[data-s=thr]'),t.threshold.toFixed(2));
+  if(k.usesThreshold) setText(q('[data-s=thr]'),t.threshold.toFixed(2));
   const ms=st.ms==null?'':` · 감지 ${st.ms<10?st.ms.toFixed(1):Math.round(st.ms)} ms`;   // 이 대상의 감지에 든 시간(느린 대상을 찾는 용도)
-  setText(q('[data-s=score]'),src&&(t.tpl||t.preset)?st.score.toFixed(2)+(st.score>=t.threshold?' ✔':'')+ms:'–');
-  const s=cardStatus(t,st,Date.now(),{src:!!src,frame}), sEl=q('[data-s=status]');
+  const sr=k.scoreRow?k.scoreRow(t,st,Date.now()):null;   // 종류별 측정값 줄(사냥 멈춤: 변화량)
+  setText(q('[data-s=scoreLabel]'),sr?sr.label:'일치도');
+  setText(q('[data-s=score]'),sr?(src&&sr.text!=='–'?sr.text+ms:sr.text):src&&(t.tpl||t.preset)?st.score.toFixed(2)+(st.score>=t.threshold?' ✔':'')+ms:'–');
+  for(const a of k.actions) if(a.visible){ const b=q(`[data-act=${a.key}]`), v=!a.visible(t,st); if(b.hidden!==v) b.hidden=v; }   // 쉬는 중이면 쉬기 끝내기만 등
+  const s=cardStatus(t,st,Date.now(),viewCtx()), sEl=q('[data-s=status]');
   setText(sEl,s.text); const cls='status '+s.cls; if(sEl.className!==cls) sEl.className=cls; setText(q('[data-s=sub]'),s.sub);
   const mini=q('[data-s=mini]'); setText(mini,s.text); const mc='mini '+s.cls; if(mini.className!==mc) mini.className=mc;   // 접힌 카드의 한 줄 상태
   const open=isOpen(t), tg=q('[data-a=toggle]'); if(el.dataset.open!==(open?'1':'0')) el.dataset.open=open?'1':'0';
@@ -110,6 +112,9 @@ function renderAddMenu(){
   const buffs=group('버프 직접 등록');
   for(const n of BUFF_NAMES){ const b=menuBtn(n,()=>addFromMenu(()=>addBuff(store,n))); b.disabled=store.targets.some(t=>t.name===n); buffs.append(b); }
   buffs.append(menuBtn('이름 직접 입력…',()=>{ $('#addName').hidden=false; $('#addName input').focus(); }));
+  const kinds=Object.values(KINDS).filter(k=>k.menuLabel);   // 사냥 멈춤 등 다른 종류(종류별 개수 상한)
+  if(kinds.length){ const other=group('다른 알림');
+    for(const k of kinds){ const b=menuBtn(k.menuLabel,()=>addFromMenu(()=>addKindTarget(store,k.key))); b.disabled=store.targets.filter(t=>t.kind===k.key).length>=k.maxInstances; other.append(b); } }
   const f=document.createElement('form'); f.id='addName'; f.hidden=true;
   f.innerHTML='<label class="sw">이름 <input maxlength="12" aria-label="새 버프 이름"></label><button>추가</button>';
   f.onsubmit=e=>{ e.preventDefault(); addFromMenu(()=>addBuff(store,f.querySelector('input').value)); };

@@ -12,14 +12,16 @@ function drawPreview(source){
     // 점선 영역과 이름은 펼친 카드의 대상만(10개가 겹치지 않게). 일치 박스는 모든 대상에 그린다
     if(ar&&isOpen(t)){ pctx.setLineDash([lw*3,lw*2]); pctx.strokeStyle='rgba(255,255,255,.55)'; pctx.strokeRect(ar.x,ar.y,ar.w,ar.h);
       pctx.setLineDash([]); pctx.fillStyle='rgba(255,255,255,.8)'; pctx.fillText(t.name,ar.x+2,ar.y+lw*8); }
-    if(st.pos&&src){ const hit=st.score>=t.threshold;
-      pctx.setLineDash([]); pctx.strokeStyle=hit?'#3ccf7d':'rgba(255,107,107,.7)'; pctx.strokeRect(st.pos.x,st.pos.y,st.pos.w,st.pos.h);
+    // 종류가 박스·라벨을 정할 수 있다(사냥 멈춤: 영역과 "변화 N / 기준 M"). 기본은 찾은 위치와 일치도/기준값
+    const K=KINDS[t.kind], pl=!src?null:K.previewLabel?K.previewLabel(t,st):st.pos?{rect:st.pos,text:`${t.name} ${st.score.toFixed(2)} / ${t.threshold.toFixed(2)}`,hit:st.score>=t.threshold}:null;
+    if(pl){ const hit=pl.hit, P=pl.rect;
+      pctx.setLineDash([]); pctx.strokeStyle=pl.color||(hit?'#3ccf7d':'rgba(255,107,107,.7)'); pctx.strokeRect(P.x,P.y,P.w,P.h);
       // 기준값을 맞출 때 카드와 캔버스를 오가지 않도록 일치도/기준값을 박스 바로 아래에 표시
-      const label=`${t.name} ${st.score.toFixed(2)} / ${t.threshold.toFixed(2)}`, fs=Math.round(lw*9);
+      const label=pl.text, fs=Math.round(lw*9);
       pctx.save(); pctx.font=`600 ${fs}px sans-serif`;
       const bw=pctx.measureText(label).width+lw*4, bh=fs+lw*3;
-      let ly=st.pos.y+st.pos.h+lw*2; if(ly+bh>h) ly=Math.max(0,st.pos.y-bh-lw*2);
-      const lx=Math.min(Math.max(0,st.pos.x),w-bw);
+      let ly=P.y+P.h+lw*2; if(ly+bh>h) ly=Math.max(0,P.y-bh-lw*2);
+      const lx=Math.min(Math.max(0,P.x),w-bw);
       while(placed.some(p=>lx<p.x+p.w&&p.x<lx+bw&&ly<p.y+p.h&&p.y<ly+bh)) ly+=bh+lw;   // 다른 대상의 표시와 겹치면 아래로 비킴
       placed.push({x:lx,y:ly,w:bw,h:bh});
       pctx.fillStyle='rgba(0,0,0,.75)'; pctx.fillRect(lx,ly,bw,bh);
@@ -45,11 +47,12 @@ async function startRegister(t,opts={}){
   reg={t,steps:KINDS[t.kind].register.steps,i:0,snap,rects:{},drag:null,msg:'',fresh:!!opts.fresh,queue:opts.queue||[]}; updateBanner(); drawPreview(null);
   $('#stage').scrollIntoView({behavior:'smooth',block:'center'});
 }
-const STEP_TEXT={ area:l=>`${l.area}을 넉넉하게 드래그하세요`, icon:l=>`${l.icon} 하나만 꼭 맞게 드래그하세요` };
+const STEP_TEXT={ area:l=>`${eulReul(l.area)} 넉넉하게 드래그하세요`, icon:l=>`${l.icon} 하나만 꼭 맞게 드래그하세요` };
+const stepTextOf=(t,step)=>{ const o=KINDS[t.kind].register.stepText; return (o&&o[step]?o[step]:STEP_TEXT[step])(labelsOf(t)); };   // 종류가 문구를 덮어쓸 수 있다
 function updateBanner(){
   const b=$('#banner'); if(!reg){ b.classList.remove('on'); return; }
   b.classList.add('on');
-  $('#bannerText').textContent=(reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${STEP_TEXT[reg.steps[reg.i]](labelsOf(reg.t))}`+(reg.queue.length?` · 이어서 ${reg.queue.length}개 더`:'');
+  $('#bannerText').textContent=(reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${stepTextOf(reg.t,reg.steps[reg.i])}`+(reg.queue.length?` · 이어서 ${reg.queue.length}개 더`:'');
 }
 function cancelRegister(){
   const r=reg; reg=null; updateBanner();
@@ -61,7 +64,7 @@ function finishRegister(){
   if(why){ reg.msg=why; reg.rects={}; reg.i=0; updateBanner(); drawPreview(null); return; }
   k.register.save(t,reg.rects,reg.snap); saveTargets();
   states[t.id]=newState(); states[t.id].armed=!!(src&&src.type==='image');
-  const queue=reg.queue, snap=reg.snap; reg=null; updateBanner(); renderCard(t); renderWatch(); setNote(`${t.name} 등록했어요`,'info');
+  const queue=reg.queue, snap=reg.snap; reg=null; updateBanner(); renderCard(t); renderWatch(); setNote(k.register.doneNote?k.register.doneNote(t):`${t.name} 등록했어요`,'info');
   const next=queue.map(targetById).find(Boolean);           // 해상도가 바뀐 뒤 여러 대상을 차례로 다시 등록
   if(next) startRegister(next,{queue:queue.slice(queue.indexOf(next.id)+1),snap});
 }

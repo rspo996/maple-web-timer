@@ -20,7 +20,7 @@ function commonStatus(k,t,ctx){
 }
 const NOT_SEEN={text:'아직 못 찾음',cls:'off',sub:'이번 연결에서 아직 한 번도 못 봤어요 · 켜져 있는데도 이러면 “등록”으로 직접 지정'};
 const KIND_DEFAULTS={
-  label:'', needsTemplate:true, trackSeen:false, maxInstances:12, onSkip:false, events:[], actions:[],
+  label:'', needsTemplate:true, usesThreshold:true, trackSeen:false, maxInstances:12, onSkip:false, events:[], actions:[],
   defaults:()=>({}), normalizeP:p=>p,
   isRegistered:t=>!!(t.tpl||t.preset),
   needsReregister:(t,frame)=>!!(t.tpl&&t.frameW&&frame&&frame.w&&(t.frameW!==frame.w||t.frameH!==frame.h)),

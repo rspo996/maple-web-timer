@@ -16,6 +16,8 @@ function grabFrameWithin(cap, ms){
                          e=>{ if(!late){ clearTimeout(timer); reject(e); } });
   });
 }
+// 카드·상태줄·감지가 함께 쓰는 화면 상황. live=실제 화면 공유(스크린샷 테스트가 아님), fresh=마지막 프레임이 새 것
+function viewCtx(){ return {src:!!src,frame,live:!!src&&src.type==='stream',fresh:frameFresh}; }
 // {frame, fresh}를 돌려준다. frame이 null이면 프레임이 없는 것(화면 안 들어옴으로 집계)
 async function grab(){
   if(!src) return {frame:null,fresh:false};

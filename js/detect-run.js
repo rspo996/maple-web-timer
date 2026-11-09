@@ -16,7 +16,7 @@ function loadTpl(t){
   }; img.src=t.url; return null;
 }
 function areaOf(t){
-  if(t.area&&t.tpl) return t.area;
+  if(t.area&&(t.tpl||(KINDS[t.kind]&&KINDS[t.kind].needsTemplate===false))) return t.area;   // 사냥 멈춤처럼 템플릿 없이 영역만 쓰는 종류
   if(isPresetMode(t)&&frame.w) return PRESETS[t.preset].area(frame);   // 내장 아이콘: 솔 야누스는 오른쪽 위, 부스터는 위쪽 가운데
   return null;
 }
@@ -66,7 +66,7 @@ function collectEvents(t,evs,out){
   }
 }
 function reqFor(t,def,info,rank){
-  return {src:'target',id:t.id,event:def.key,text:def.msg(t,info||{}),beep:def.beep,slot:`${t.id}.${def.key}`,mode:'full',flash:'card-'+t.id,
+  return {src:'target',id:t.id,event:def.key,text:def.msg(t,info||{}),beep:def.beep,slot:def.noSlot?null:`${t.id}.${def.key}`,mode:'full',flash:'card-'+t.id,
     group:def.group?{cls:def.group,label:t.name,rank:rank==null?(t.p.leadSec||0):rank,order:store.targets.indexOf(t)}:null};
 }
 // 이번 틱의 이벤트를 알림으로 보낸다. 묶기가 켜져 있으면 미리 알림이 난 틱에 곧 끝나는 다른 대상을 같이 묶는다(당겨 알림)
@@ -108,7 +108,7 @@ async function tick(){
     } else if(!src && health.lostAt && health.reminders<LOST_REMIND_MAX && now-health.remindAt>=LOST_REMIND_MS){
       health.reminders++; health.remindAt=now; fireSystem('lost');
     }
-    const evq=[], ctx={src:!!src,frame,fresh:frameFresh};
+    const evq=[], ctx=viewCtx();
     for(const t of store.targets){
       const k=KINDS[t.kind]; if(!k) continue;
       const st=stateOf(t.id);
