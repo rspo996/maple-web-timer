@@ -125,6 +125,7 @@ async function tick(){
     const slow=ok&&live?slowWatch.push(performance.now()-t0):null;
     if(slow) setNote(`감지가 느려요 (평균 ${slow} ms) · 사용 안 하는 대상은 꺼 주세요`);
     renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
+    if(typeof pipUpdate==='function') pipUpdate(Date.now());   // 작은 창도 숨겨진 동안이 주 사용 조건이라 매 틱 갱신(묶음 5)
     if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
   } finally { busy=false; Alerts.flush(Date.now()); }
 }

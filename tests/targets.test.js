@@ -128,7 +128,7 @@ test('targetSnapshot: 상태줄·PIP가 같이 쓰는 행', () => {
   const st = newState(); st.present = true; st.seen = true; st.appearedAt = 1000;
   targets[0].p.durationSec = 100;
   const rows = plain(targetSnapshot(targets, { sol: st }, { src: true, frame: { w: 1280, h: 720 } }, 31_000));
-  assert.deepEqual(rows[0], { id: 'sol', name: '솔 야누스', kind: 'buff', enabled: true, stripState: 'ok', stripText: null, statusText: '남은 시간 01:10', remainSec: 70 });
+  assert.deepEqual(rows[0], { id: 'sol', name: '솔 야누스', kind: 'buff', enabled: true, stripState: 'ok', stripText: null, statusText: '남은 시간 01:10', statusCls: 'on', remainSec: 70 });
   assert.equal(rows[1].stripState, 'unseen'); assert.equal(rows[2].stripState, 'reg');
   assert.deepEqual([rows[3].stripState, rows[3].statusText], ['off', '이 버전에서 지원하지 않는 종류예요']);
 });

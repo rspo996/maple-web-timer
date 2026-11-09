@@ -102,7 +102,8 @@ function targetSnapshot(targets,states,ctx,now){
     const k=KINDS[t.kind], st=states[t.id]||newState();
     if(!k) return {id:t.id,name:t.name,kind:t.kind,enabled:false,stripState:'off',statusText:'이 버전에서 지원하지 않는 종류예요',remainSec:null};
     const s=k.stripState(t,st,now,ctx);
-    return {id:t.id,name:t.name,kind:t.kind,enabled:t.enabled,stripState:s,stripText:k.stripText?k.stripText(t,st,s):null,statusText:cardStatus(t,st,now,ctx).text,remainSec:k.remainSec(t,st,now)};
+    const cs=cardStatus(t,st,now,ctx);
+    return {id:t.id,name:t.name,kind:t.kind,enabled:t.enabled,stripState:s,stripText:k.stripText?k.stripText(t,st,s):null,statusText:cs.text,statusCls:cs.cls,remainSec:k.remainSec(t,st,now)};
   });
 }
 

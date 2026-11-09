@@ -14,6 +14,7 @@
     <button id="btnImage">스크린샷으로 테스트</button>
     <input id="fileImage" type="file" accept="image/*" hidden>
     <button id="btnNotify">브라우저 알림 허용</button>
+    <button id="btnPip" type="button">작은 창 열기</button> <span id="pipNote" class="sub" hidden>이 브라우저는 작은 창을 지원하지 않아요</span>
     <label class="sw">음량 <input id="vol" type="range" min="0" max="200" step="5" value="80" list="volTicks" aria-describedby="volNote"> <b id="volPct" class="vol-pct">80%</b></label>
     <datalist id="volTicks"><option value="100"></option></datalist>
     <span id="volNote" class="sub" hidden>음성은 100%까지만 커져요. 소리가 갈라지면 줄여 주세요</span>
@@ -76,6 +77,7 @@
         <li>다른 버프는 <b>“+ 대상 추가”</b>에서 이름을 고르고 영역 → 아이콘 순서로 등록하세요. 카드는 기본으로 접혀 있고 <b>펼치기</b>로 설정을 볼 수 있어요.</li>
         <li><b>사냥 멈춤</b>은 “+ 대상 추가 → 다른 알림”에서 만들고 경험치 막대와 숫자를 한 번에 드래그하세요. 경험치 숫자나 퍼센트가 영역에 들어가야 해요. 마을에 갈 때는 <b>쉬기</b>를 누르세요.</li>
         <li><b>설치기 쿨타임</b>은 “+ 대상 추가 → 다른 알림”에서 만들고, 쿨타임이 없어 밝을 때 퀵슬롯의 스킬 아이콘을 드래그하세요. 스킬을 쓴 뒤 쿨타임 중에 <b>쿨타임 중 찍기</b>를 누르면 더 정확해져요.</li>
+        <li><b>작은 창 열기</b>를 누르면 항상 위에 뜨는 작은 창에 상태가 보이고 알림이 울리면 그 줄이 깜빡여요. 게임이 전체 화면이면 작은 창이 안 보일 수 있어요. 창 모드나 전체 창 모드를 쓰면 보여요.</li>
         <li>지속시간 칸을 비워두면 한 번 켜졌다 꺼지는 걸 보고 <b>자동으로 학습</b>합니다. 알고 있으면 <code>분:초</code>로 직접 입력하세요.</li>
         <li>일치도 숫자를 보면서 켜져 있을 땐 기준값보다 높고, 꺼져 있을 땐 낮게 나오도록 기준값을 조절하세요.</li>
       </ol>
@@ -120,6 +122,7 @@
 <script src="js/manual-core.js"></script>
 <script src="js/manual-ui.js"></script>
 <script src="js/audio.js"></script>
+<script src="js/pip.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
