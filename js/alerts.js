@@ -6,6 +6,7 @@ const SOUNDS={
   booster:{wave:'square',  notes:[[1318,.08],[1318,.08],[1318,.08],[988,.28]]},  // 딱딱딱-동
   gone:   {wave:'square',  notes:[[784,.2],[523,.45]]},                          // 내려가는 두 음
   rune:   {wave:'square',  notes:[[880,.12],[1175,.12],[1568,.2]]},              // 올라가는 세 음
+  multi:  {wave:'square',  notes:[[1046,.1],[1046,.1],[1046,.1],[1568,.28]]},    // 같은 음 세 번 + 높은 음(묶인 알림)
   system: {wave:'sawtooth',notes:[[330,.22],[330,.22],[330,.22]],gain:.13},      // 낮은 경고음
 };
 let actx=null, beepEnd=0, audioOutNode=null; const audioWaiters=[];
@@ -65,21 +66,39 @@ function groupText(cls,items){
    AlertReq = {src:'target'|'manual'|'system'|'test', id, event, text, beep:string|null, slot:string|null, mode:'full'|'voice', group, flash:string|null}
    AlertRec = {at, src, ids[], event, text, grouped, custom}  (listen 구독자가 재생 직후 받음) */
 function createAlerts(io){
-  const listeners=new Set();
+  const listeners=new Set(), queue={pre:[],gone:[]}; let cfg={on:false,windowSec:10}, goneSince=0;
   const withDefaults=r=>Object.assign({},r,{
     slot:r.slot===undefined?`${r.id}.${r.event}`:r.slot, flash:r.flash===undefined?`card-${r.id}`:r.flash,
     mode:r.mode||'full', beep:r.beep===undefined?null:r.beep, group:r.group||null });
+  const notifyListeners=rec=>{ for(const fn of [...listeners]){ try{ fn(rec); }catch(e){ console.error(e); } } };
   function deliver(req){
     const custom=io.play(req);
     if(req.mode!=='voice'){ io.ui(req.text,req.id); if(req.flash) io.flash([req.flash]); }
-    const rec={at:io.now(),src:req.src,ids:[req.id],event:req.event,text:req.text,grouped:false,custom};
-    for(const fn of [...listeners]){ try{ fn(rec); }catch(e){ console.error(e); } }
+    notifyListeners({at:io.now(),src:req.src,ids:[req.id],event:req.event,text:req.text,grouped:false,custom});
+  }
+  // 묶인 알림 하나: 묶음 슬롯(grp.pre/grp.gone)의 내 소리 또는 multi 비프 + 합친 음성. 멤버 개별 소리는 쓰지 않는다
+  function deliverGroup(cls,items){
+    const text=groupText(cls,items.map(r=>({label:r.group.label,rank:r.group.rank,order:r.group.order||0})));
+    const custom=io.play({src:'target',id:'grp',event:cls,text,beep:'multi',slot:'grp.'+cls,mode:'full',flash:null,group:null});
+    io.ui(text,'grp.'+cls); io.flash(items.map(r=>r.flash).filter(Boolean));
+    notifyListeners({at:io.now(),src:'target',ids:items.map(r=>r.id),event:cls,text,grouped:true,custom});
+  }
+  function emit(cls){
+    const items=queue[cls].splice(0);
+    if(items.length===1) deliver(items[0]); else if(items.length>1) deliverGroup(cls,items);
   }
   return {
-    fire(req){ deliver(withDefaults(req)); },
-    flush(now){},                                    // tick() 끝에서 부른다. 묶기 대기열은 Task G2에서 채운다
-    drop(id){},                                      // 삭제·끈 대상의 대기 중 알림을 뺀다(Task G2)
-    clear(){},                                       // 연결이 끊겼을 때 대기열을 비운다(Task G2)
+    fire(r){
+      const req=withDefaults(r), q=req.group&&queue[req.group.cls];
+      if(!q||!cfg.on||req.src==='test'||req.src==='system'){ deliver(req); return; }
+      if(req.group.cls==='gone'&&!q.length) goneSince=io.now();
+      q.push(req);
+    },
+    // tick() 끝에서만 부른다(setTimeout을 쓰지 않는 이유: 숨은 탭의 타이머 지연). pre는 바로, gone은 첫 건 뒤 2초
+    flush(now){ if(queue.pre.length) emit('pre'); if(queue.gone.length&&now-goneSince>=2000) emit('gone'); },
+    configure(c){ cfg={...cfg,...c}; if(!cfg.on) for(const q of Object.values(queue)) for(const r of q.splice(0)) deliver(r); },   // 끄면 대기 중인 것은 개별로
+    drop(id){ for(const q of Object.values(queue)){ for(let i=q.length-1;i>=0;i--) if(q[i].id===id) q.splice(i,1); } },
+    clear(){ queue.pre.length=0; queue.gone.length=0; },                    // 연결이 끊기거나 감시를 끝내면 대기 중인 알림은 버린다
     listen(fn){ listeners.add(fn); return ()=>listeners.delete(fn); },
   };
 }
