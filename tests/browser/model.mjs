@@ -36,8 +36,8 @@ await drag(page, 298, 598, 318, 618);
 const reg = await ev(() => ({ t: store.targets[2], banner: document.querySelector("#banner").classList.contains("on"), v2: JSON.parse(localStorage.getItem("maple-web-timer-v2")).targets[2] }));
 check("등록: 배너 닫힘, tpl·area·frame 저장", !reg.banner && reg.t.tpl && reg.t.area && reg.t.frameW === 1280 && reg.v2.tpl && reg.v2.frameH === 720, reg);
 await ev(() => __fake.reset()); await wait(3500);
-const after = await ev(() => ({ st: document.querySelector("#card-rune [data-s=status]").textContent, spoken: __fake.spoken.slice() }));
-check("등록 뒤 룬 감지: 룬 있음 + 나왔어요 음성", after.st === "룬 있음!" && after.spoken.includes("룬이 나왔어요"), after);
+const after = await ev(() => ({ st: document.querySelector("#card-rune [data-s=status]").textContent, spoken: __fake.spoken.slice(), osc: JSON.stringify(__fake.osc.slice(0, 3)) }));
+check("등록 뒤 룬 감지: 룬 있음 + 나왔어요 음성 + 올라가는 세 음", after.st === "룬 있음!" && after.spoken.includes("룬이 나왔어요") && after.osc === JSON.stringify([["square", 880], ["square", 1175], ["square", 1568]]), after);
 
 // 3) 알림 테스트 버튼은 개별 알림
 await ev(() => __fake.reset());
