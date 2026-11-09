@@ -82,3 +82,91 @@ test('manualFmt: 올림, 1시간 미만은 m:ss, 이상은 h:mm:ss', () => {
   assert.equal(manualFmt(3_723_000), '1:02:03');
   assert.equal(manualFmt(-5000), '0:00');
 });
+
+// ---- Task 2: manualStep ----
+const { manualStep, MANUAL_LATE_MS } = M;
+// 0.5초 간격으로 from~to(ms, T0 기준)를 돌며 나온 이벤트를 모은다
+function runTicks(t, from, to, audible = true) {
+  const out = [];
+  for (let ms = from; ms <= to; ms += 500) { const r = manualStep(t, T0 + ms, audible); t = r.t; for (const e of r.events) out.push({ at: ms, ...e }); }
+  return { t, out };
+}
+const brief = evs => evs.map(e => `${e.type}@${e.at}${e.silent ? ':silent' : ''}${e.late ? ':late' : ''}`);
+
+test('manualStep: 카운트다운 미리 알림 한 번, 끝 한 번, 끝난 뒤에는 이벤트 없음', () => {
+  const { t, out } = runTicks(manualStart(cd(60, 10), T0), 0, 70_000);
+  assert.deepEqual(brief(out), ['pre@50000', 'end@60000:silent']);   // 미리 알림이 들렸으므로 끝은 무음(정책)
+  assert.deepEqual([t.status, t.doneAt, t.endAt, t.remainMs], ['done', T0 + 60_000, null, 0]);
+  assert.equal(out[0].slot, 'pre'); assert.equal(out[1].slot, 'end');
+  assert.deepEqual(manualStep(t, T0 + 99_000).events, []);
+});
+
+test('manualStep: 대기·멈춤 상태에서는 아무 일도 없다', () => {
+  assert.deepEqual(manualStep(cd(60), T0 + 99_000).events, []);
+  assert.deepEqual(manualStep(manualPause(manualStart(cd(60), T0), T0 + 1000), T0 + 99_000).events, []);
+});
+
+test('정책: 미리 알림 0초면 끝이 울린다', () => {
+  assert.deepEqual(brief(runTicks(manualStart(cd(60, 0), T0), 0, 61_000).out), ['end@60000']);
+});
+
+test('정책: 구간이 미리 알림+3초 이하면 미리 알림 없이 끝이 울린다', () => {
+  assert.deepEqual(brief(runTicks(manualStart(cd(13, 10), T0), 0, 14_000).out), ['end@13000']);
+  assert.deepEqual(brief(runTicks(manualStart(cd(14, 10), T0), 0, 15_000).out), ['pre@4000', 'end@14000:silent']);
+});
+
+test('정책: 틱이 늦어 미리 알림 창에 3초 넘게 늦게 들어오면 건너뛰고, 그러면 끝이 울린다', () => {
+  let t = manualStart(cd(60, 10), T0);
+  t = manualStep(t, T0 + 40_000).t;                       // 남은 20초
+  const late = manualStep(t, T0 + 54_000);                // 남은 6초: 10초 전 창에 4초 늦게 들어옴
+  assert.deepEqual(late.events, []); assert.equal(late.t.preDone, true); assert.equal(late.t.preHeard, false);
+  const ok = manualStep(t, T0 + 52_500);                  // 남은 7.5초: 2.5초 늦음 → 울림
+  assert.equal(ok.events[0].type, 'pre');
+  assert.deepEqual(manualStep(late.t, T0 + 60_000).events.map(e => [e.type, e.silent]), [['end', false]]);
+});
+
+test('정책: 오디오가 잠긴 채 울린 미리 알림은 들린 것으로 치지 않아 끝이 울린다', () => {
+  const { out } = runTicks(manualStart(cd(60, 10), T0), 0, 61_000, false);
+  assert.deepEqual(brief(out), ['pre@50000', 'end@60000']);
+});
+
+test('±조절로 창 밖에 나갔다 다시 들어오면 미리 알림이 다시 울린다', () => {
+  let { t } = runTicks(manualStart(cd(60, 10), T0), 0, 51_000);   // 미리 알림 울림
+  assert.equal(t.preHeard, true);
+  t = manualAdjust(t, 60_000, T0 + 51_000);                         // 남은 69초
+  const r = runTicks(t, 51_500, 125_000);
+  assert.deepEqual(brief(r.out), ['pre@110000', 'end@120000:silent']);
+});
+
+test('루틴: 1→2→1, 바퀴 수, 경계에서 endAt은 이전 endAt+구간 길이(드리프트 없음), 전환 뒤 미리 알림 기록 초기화', () => {
+  let t = manualStart(rt(20, 10, 5), T0);
+  const a = runTicks(t, 0, 15_000); assert.deepEqual(brief(a.out), ['pre@15000']);
+  const sw = manualStep(a.t, T0 + 20_400);                          // 0.4초 늦은 틱
+  assert.deepEqual(sw.events.map(e => [e.type, e.idx, e.slot, e.silent, e.late]), [['switch', 1, 'next1', true, false]]);
+  assert.deepEqual([sw.t.idx, sw.t.cycles, sw.t.endAt, sw.t.preDone, sw.t.preHeard], [1, 0, T0 + 30_000, false, false]);
+  const b = runTicks(sw.t, 20_500, 30_000);
+  assert.deepEqual(brief(b.out), ['pre@25000', 'switch@30000:silent']);
+  assert.deepEqual([b.t.idx, b.t.cycles, b.t.endAt, b.out[1].slot], [0, 1, T0 + 50_000, 'next2']);
+});
+
+test('늦은 판정: 마지막 경계에서 14.9초면 보통 알림, 15.1초면 late(소리 없이 따라잡음)', () => {
+  assert.equal(MANUAL_LATE_MS, 15_000);
+  const t = manualStart(cd(60, 0), T0);
+  const a = manualStep(t, T0 + 60_000 + 14_900).events[0], b = manualStep(t, T0 + 60_000 + 15_100).events[0];
+  assert.deepEqual([a.late, a.lateMs, b.late, b.lateMs], [false, 14_900, true, 15_100]);
+});
+
+test('루틴을 1시간 건너뛰면 이벤트는 하나, 지금 구간·바퀴·끝 시각이 수식과 같다', () => {
+  const t = manualStart(rt(20, 10, 5), T0);                           // 한 바퀴 30초. 1구간 진입 경계는 30초×k
+  const r = manualStep(t, T0 + 3_600_000 + 18_000);
+  assert.equal(r.events.length, 1);
+  assert.deepEqual([r.events[0].type, r.events[0].idx, r.events[0].late, r.events[0].lateMs], ['switch', 0, true, 18_000]);
+  assert.deepEqual([r.t.idx, r.t.cycles, r.t.endAt], [0, 120, T0 + 3_620_000]);
+});
+
+test('한 틱에 경계 둘을 지나면(늦음 아님) 전환 하나만 내고, 마지막 구간의 미리 알림은 못 들었으므로 소리를 낸다', () => {
+  const t = { ...manualStart(rt(10, 10, 0), T0), preHeard: true };
+  const r = manualStep(t, T0 + 21_000);
+  assert.deepEqual(r.events.map(e => [e.type, e.idx, e.slot, e.silent, e.late, e.lateMs]), [['switch', 0, 'next2', false, false, 1000]]);
+  assert.deepEqual([r.t.idx, r.t.cycles, r.t.endAt], [0, 1, T0 + 30_000]);
+});

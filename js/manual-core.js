@@ -46,6 +46,31 @@ function manualAdjust(t,deltaMs,now){
   if(!o.preDone) return {...o,preDone:true};
   return o;
 }
+/* 한 번의 판정. audible: 지금 소리가 실제로 날 수 있는지(오디오가 running). 미리 알림을 들었는지(preHeard)에 쓴다.
+   events: [{type:'pre'|'end'|'switch', idx, slot:'pre'|'end'|'next1'|'next2', late, lateMs, silent}]
+   - 정책(사용자 결정): 그 주기에 미리 알림이 들렸으면(preHeard) 끝·전환은 silent(화면만 바뀜)
+   - 늦음: 마지막으로 지난 경계에서 15초 넘게 지났으면 late(소리 없이 따라잡음). 경계를 여럿 지나도 이벤트는 하나 */
+function manualStep(t,now,audible=true){
+  if(t.status!=='running') return {t,events:[]};
+  if(now>=t.endAt){
+    if(t.kind!=='routine'){
+      const lateMs=now-t.endAt;
+      return {t:{...t,status:'done',endAt:null,remainMs:0,doneAt:t.endAt,preDone:false,preHeard:false},
+        events:[{type:'end',idx:0,slot:'end',late:lateMs>MANUAL_LATE_MS,lateMs,silent:t.preHeard}]};
+    }
+    let e=t.endAt, idx=t.idx, cycles=t.cycles, n=0, last=e;
+    while(now>=e){ last=e; idx=(idx+1)%t.phases.length; if(idx===0) cycles++; e+=phaseMs(t,idx); n++; }
+    const lateMs=now-last;
+    return {t:{...t,idx,cycles,endAt:e,preDone:false,preHeard:false},
+      events:[{type:'switch',idx,slot:idx===1?'next1':'next2',late:lateMs>MANUAL_LATE_MS,lateMs,silent:n===1&&t.preHeard}]};
+  }
+  if(t.preDone) return {t,events:[]};
+  const rem=t.endAt-now, preMs=t.preSec*1000;
+  if(t.preSec<=0||phaseMs(t,t.idx)<=preMs+MANUAL_PRE_SKIP_MS) return {t:{...t,preDone:true},events:[]};   // 시작하자마자 창 안이면 울리지 않는다
+  if(rem>preMs) return {t,events:[]};
+  if(rem<preMs-MANUAL_PRE_SKIP_MS) return {t:{...t,preDone:true},events:[]};                                // 틱이 늦어 이미 몇 초 지났으면 건너뛴다
+  return {t:{...t,preDone:true,preHeard:!!audible},events:[{type:'pre',idx:t.idx,slot:'pre',late:false,lateMs:0,silent:false}]};
+}
 // 올림해서 m:ss, 1시간 이상은 h:mm:ss
 function manualFmt(ms){
   const s=Math.max(0,Math.ceil(ms/1000)), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=String(s%60).padStart(2,'0');
@@ -53,4 +78,4 @@ function manualFmt(ms){
 }
 
 if(typeof module==='object') module.exports={MANUAL_STORE,MANUAL_MAX,MANUAL_MIN_SEC,MANUAL_PRE_MAX,MANUAL_PRE_SKIP_MS,MANUAL_LATE_MS,MANUAL_PRESETS,
-  manualEmptyStore,manualUniqueLabel,manualNew,manualRemainMs,manualStart,manualPause,manualReset,manualAdjust,manualFmt};
+  manualEmptyStore,manualUniqueLabel,manualNew,manualRemainMs,manualStart,manualPause,manualReset,manualAdjust,manualStep,manualFmt};
