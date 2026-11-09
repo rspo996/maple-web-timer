@@ -77,4 +77,11 @@ const cap = await ev(() => ({ n: manual.timers.length, dis: document.querySelect
 check("상한: 8개면 만들기 버튼이 꺼지고 안내", cap.n === 8 && cap.dis && cap.note === "타이머는 8개까지 만들 수 있어요", cap);
 const clr = await ev(() => { document.querySelector("#manualClearDone").click(); return manual.timers.filter(t => t.status === "done").length; });
 check("끝난 것 모두 지우기", clr === 0);
+
+// 9) 소리 설정: 수동 타이머 슬롯 4개 라벨, 듣기는 예시 문구(루틴이 없으면 "회수 시간이에요")
+const rows = await ev(() => { const g = [...document.querySelectorAll("#soundRows .snd-group")].find(x => x.querySelector("b").textContent === "수동 타이머"); return g ? [...g.querySelectorAll(".snd-row > span:first-child")].map(s => s.textContent) : null; });
+check("소리 설정: 수동 타이머 슬롯 라벨", J(rows) === J(["미리 알림", "타이머 끝", "구간 1 → 구간 2", "구간 2 → 구간 1"]), rows);
+await ev(() => { __fake.reset(); document.querySelector("#soundsDetails").open = true; [...document.querySelectorAll("#soundRows [data-a=play]")].find(b => b.getAttribute("aria-label") === "수동 타이머 구간 1 → 구간 2 소리 듣기").click(); });
+await wait(1500);
+check("소리 설정: 구간 1 → 구간 2 듣기", J(await spoken()) === J(["회수 시간이에요"]), await spoken());
 done();

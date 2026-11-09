@@ -28,6 +28,7 @@ function previewSlot(s){
   const [id,ev]=s.key.split('.');
   if(id==='sys'){ playDefault(SYS_MSG[ev],'system'); return; }
   if(id==='grp'){ playDefault(groupText(ev,groupPreviewItems(ev)),'multi'); return; }   // 켜진 버프 앞 두 개의 실제 이름으로
+  if(id==='manual'){ if(typeof manualPreviewText==='function') playDefault(manualPreviewText(ev),MANUAL_BEEP[ev]); return; }   // 수동 타이머: 실제 타이머 이름 또는 예시 문구
   const t=targetById(id), def=t&&KINDS[t.kind]&&KINDS[t.kind].events.find(e=>e.key===ev);
   if(def) playDefault(def.msg(t,{}),def.beep);   // 대상을 못 찾으면 소리 미리듣기만
 }

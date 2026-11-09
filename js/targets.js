@@ -160,7 +160,7 @@ function summarizeStrip(rows,open){
 }
 
 /* ----- 내 소리 슬롯 키 = 대상id.이벤트 (묶음 1 스펙 4.4·4.5) ----- */
-const MANUAL_SLOTS=[['manual.pre','미리 알림'],['manual.end','끝'],['manual.next1','구간 전환 1'],['manual.next2','구간 전환 2']];
+const MANUAL_SLOTS=[['manual.pre','미리 알림'],['manual.end','타이머 끝'],['manual.next1','구간 1 → 구간 2'],['manual.next2','구간 2 → 구간 1']];   // 묶음 2 스펙 6.1
 // 소리 설정 화면의 행 목록. 대상이 추가·삭제·개명될 때마다 다시 계산한다. opts.manual=false면 수동 타이머(묶음 2) 슬롯을 뺀다
 function slotsOf(targets,opts){
   const out=[], manual=!(opts&&opts.manual===false);
