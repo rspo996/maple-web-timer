@@ -1,5 +1,11 @@
 /* ----- 카드 UI: 대상 목록(store.targets)에서 만들고, 입력 칸은 KINDS[kind].cardFields로 만든다 ----- */
 const setText=(el,txt)=>{ if(el.textContent!==txt) el.textContent=txt; };   // 같은 값이면 DOM을 건드리지 않는다
+// 남은 시간 게이지(카드·수동 타이머 공통). g={frac,low} 또는 null(숨김). 바뀔 때만 쓴다
+function setGauge(el,g){
+  if(!el) return; if(el.hidden!==!g) el.hidden=!g; if(!g) return;
+  const f=g.frac.toFixed(3); if(el.style.getPropertyValue('--f')!==f) el.style.setProperty('--f',f);
+  el.classList.toggle('low',!!g.low);
+}
 function fieldHtml(f,id){
   const num=f.type==='number', fid=`${id}-${f.key}`;
   return `<label for="${fid}">${f.label}</label><span><input id="${fid}" type="${num?'number':'text'}" data-f="${f.key}"${num?` min="${f.min}" max="${f.max}"`:''}${f.placeholder?` placeholder="${f.placeholder}"`:''}${f.suffix?` aria-describedby="${fid}-sfx"`:''}>`
@@ -29,6 +35,7 @@ function buildCard(t){
       <span class="mini" data-s="mini"></span>
       <label class="sw"><input type="checkbox" data-k="enabled"> 사용</label>
       <button data-a="toggle" aria-expanded="false" aria-controls="body-${t.id}"></button></div>
+    <div class="gauge" data-s="gauge" aria-hidden="true" hidden><i></i></div>
     <div class="body" id="body-${t.id}">
     <div class="status off" data-s="status">등록 필요</div>
     <div class="sub" data-s="sub"></div>
@@ -94,6 +101,7 @@ function renderCard(t){
   const s=cardStatus(t,st,Date.now(),viewCtx()), sEl=q('[data-s=status]');
   setText(sEl,s.text); const cls='status '+s.cls; if(sEl.className!==cls) sEl.className=cls; setText(q('[data-s=sub]'),s.sub);
   const mini=q('[data-s=mini]'); setText(mini,s.text); const mc='mini '+s.cls; if(mini.className!==mc) mini.className=mc;   // 접힌 카드의 한 줄 상태
+  setGauge(q('[data-s=gauge]'),src&&t.enabled?k.gauge(t,st,Date.now()):null);
   const open=isOpen(t), tg=q('[data-a=toggle]'); if(el.dataset.open!==(open?'1':'0')) el.dataset.open=open?'1':'0';
   setText(tg,open?'접기 ▴':'펼치기 ▾'); tg.setAttribute('aria-expanded',open?'true':'false'); tg.setAttribute('aria-label',`${t.name} ${open?'접기':'펼치기'}`);
 }

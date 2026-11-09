@@ -32,21 +32,25 @@ let pipWin=null, pipResizeTimer=null;
 const pipFlash={};            // 행 id(또는 맨 위 줄 'sys') → {kind, at}
 const pipSupported=()=>!!(window.documentPictureInPicture&&typeof window.documentPictureInPicture.requestWindow==='function');
 const PIP_CSS=`
-:root{color-scheme:light dark;--bg:#ffffff;--ink:#1c1f26;--muted:#646b7a;--line:#dde1e8;--ok:#1f9d55;--warn:#b83232}
-@media (prefers-color-scheme:dark){:root{--bg:#1d2027;--ink:#e9ecf2;--muted:#9aa2b1;--line:#2d313b;--ok:#3ccf7d;--warn:#ff6b6b}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.35 "Pretendard","Malgun Gothic",system-ui,sans-serif}
+:root{color-scheme:light dark;--bg:#fffaf0;--ink:#3b2814;--muted:#7a5f45;--line:#e3cfae;--ok:#23803a;--warn:#b52f22;--bar:#e8791f;--bar-ink:#ffffff;--bar-o:#7a3a0a;--rim:#5c3a1a}
+@media (prefers-color-scheme:dark){:root{--bg:#1a2547;--ink:#e9eefc;--muted:#a3b2d6;--line:#2f3f6e;--ok:#5fd37a;--warn:#ff8173;--bar:#2c4385;--bar-ink:#ffd666;--bar-o:#060a18;--rim:#060a18}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.35 "Pretendard","Malgun Gothic",system-ui,sans-serif;border:2px solid var(--rim);min-height:100vh}
 #pipStatus,.r{position:relative;display:flex;gap:6px;align-items:baseline;padding:6px 10px;border-bottom:1px solid var(--line);min-height:34px}
-#pipStatus{font-weight:600}.r .l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.r .s{color:var(--muted);white-space:nowrap}.r .t{font-variant-numeric:tabular-nums;font-weight:600;min-width:3.2em;text-align:right}
+:where(#pipStatus){background:var(--bar);color:var(--bar-ink);border-bottom:2px solid var(--rim);font:16px/1.3 "Jua Tabular","Pretendard","Malgun Gothic",system-ui,sans-serif;
+  text-shadow:-1px 0 var(--bar-o),1px 0 var(--bar-o),0 -1px var(--bar-o),0 1px var(--bar-o),0 2px var(--bar-o)}
+:where(#pipStatus).bad{background:#c8321f;color:#fff;--bar-o:#5a1209}
+.r .l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r .s{color:var(--muted);white-space:nowrap}.r .t{font:15px/1.2 "Jua Tabular","Pretendard",system-ui,sans-serif;min-width:3.2em;text-align:right}
 .r .m{font-weight:700;min-width:.8em}.r>span{position:relative;z-index:1}
 .lv-ok .s{color:var(--ok)}.lv-warn .s,.lv-alert .s,.lv-alert .t{color:var(--warn)}.lv-idle{opacity:.7}
-.flash-pre,.hold-pre{background:#f5b041;color:#1a1206}.flash-gone,.hold-gone{background:#b83232;color:#fff}
-.flash-info,.hold-info{background:#2f6fd6;color:#fff}.flash-bad,.hold-bad{background:repeating-linear-gradient(135deg,#555 0 8px,#666 8px 16px);color:#fff}
+.flash-pre,.hold-pre{background:#ffc53d;color:#3b2208;text-shadow:none}.flash-gone,.hold-gone{background:#c8321f;color:#fff;text-shadow:none}
+.flash-info,.hold-info{background:#2a6fc9;color:#fff;text-shadow:none}.flash-bad,.hold-bad{background:repeating-linear-gradient(135deg,#555 0 8px,#666 8px 16px);color:#fff;text-shadow:none}
 [class*=flash-] .s,[class*=hold-] .s,[class*=flash-] .t,[class*=hold-] .t{color:inherit}
 [class*=flash-]::after{content:"";position:absolute;inset:0;background:var(--bg);animation:pipblink 1s step-end infinite}
 @keyframes pipblink{0%{opacity:0}50%{opacity:1}}
-@media (prefers-reduced-motion:reduce){[class*=flash-]::after{animation:none;opacity:0}}
-#pipStatus.bad{color:var(--warn)}`;
+@media (prefers-reduced-motion:reduce){[class*=flash-]::after{animation:none;opacity:0}}`;
+// 작은 창 문서는 about:blank라 상대 경로가 안 풀린다. 이 페이지 기준 절대 주소로 서체를 건다(못 읽으면 시스템 글꼴)
+const pipFontCss=()=>`@font-face{font-family:"Jua Tabular";src:url("${new URL('fonts/jua-tabular.woff2',document.baseURI).href}") format("woff2");font-display:swap}`;
 function pipInit(){
   const b=$('#btnPip');
   if(!pipSupported()){ b.disabled=true; $('#pipNote').hidden=false; return; }
@@ -68,7 +72,7 @@ async function pipOpen(){
   catch(e){ setNote('작은 창을 열지 못했어요. 한 번 더 눌러 주세요'); return; }
   pipWin=w; const d=w.document;
   d.title='재획 알리미'; d.documentElement.lang='ko';
-  const st=d.createElement('style'); st.textContent=PIP_CSS; d.head.append(st);
+  const st=d.createElement('style'); st.textContent=pipFontCss()+PIP_CSS; d.head.append(st);
   d.body.innerHTML='<div id="pipStatus"></div><div id="pipRows"></div>';
   w.addEventListener('pagehide',()=>{ pipRemember(); pipWin=null; setText($('#btnPip'),'작은 창 열기'); });
   w.addEventListener('resize',()=>{ clearTimeout(pipResizeTimer); pipResizeTimer=setTimeout(pipRemember,400); });   // 크기는 다음에 열 때 쓴다

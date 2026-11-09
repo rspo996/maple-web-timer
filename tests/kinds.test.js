@@ -159,3 +159,16 @@ test('registerKind: 묶음 3·4가 종류를 더할 때 쓰는 기본값', () =>
   assert.equal(k.remainSec({}, {}, 0), null);
   assert.equal(k.isRegistered({ tpl: null, preset: null }), false);
 });
+
+test('게이지: 지속시간을 아는 버프만, 미리 알림 뒤에도 끝날 때까지 줄어듦', () => {
+  const t = mk('buff', REG); t.p.durationSec = 100; t.p.leadSec = 10;
+  const T0 = 1_000_000, on = (over = {}) => Object.assign(newState(), { present: true, seen: true, appearedAt: T0 }, over);
+  assert.deepEqual(L.plain(KINDS.buff.gauge(t, on(), T0 + 25000)), { frac: 0.75, low: false });
+  assert.deepEqual(L.plain(KINDS.buff.gauge(t, on({ alertedPre: true }), T0 + 95000)), { frac: 0.05, low: true });
+  assert.equal(KINDS.buff.gauge(t, on(), T0 + 100000), null);                     // 끝남
+  assert.equal(KINDS.buff.gauge(t, on({ present: false }), T0 + 25000), null);    // 꺼짐
+  assert.equal(KINDS.buff.gauge(t, on({ appearedAt: null }), T0 + 25000), null);  // 켜진 시점 모름
+  t.p.durationSec = null; assert.equal(KINDS.buff.gauge(t, on(), T0 + 25000), null);   // 학습 전
+  assert.equal(KINDS.countdown.gauge(mk('countdown'), on({ remain: 30, remainAt: 0 }), 0), null);   // 부스터는 전체 길이를 몰라 그리지 않음
+  assert.equal(KINDS.rune.gauge(mk('rune'), on(), 0), null);
+});

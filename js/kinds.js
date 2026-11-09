@@ -30,6 +30,7 @@ const KIND_DEFAULTS={
   step:()=>[],
   markPre:st=>{ st.alertedPre=true; },                        // 묶기로 미리 당겨 알렸거나 자체 pre를 울린 주기를 표시
   remainSec:()=>null, applyEffect:()=>{}, cardFields:()=>[], cost:t=>t.tpl?5:80,
+  gauge:()=>null,                                              // 카드 게이지 {frac:0~1, low}. 전체 길이를 아는 종류만 돌려준다(모르면 그리지 않음)
   status:(t,st,now,ctx)=>commonStatus(KINDS[t.kind],t,ctx)||{text:'',cls:'off',sub:''},
   stripState(t,st,now,ctx){
     const k=KINDS[t.kind];
@@ -64,6 +65,10 @@ registerKind('buff',{
   remainSec(t,st,now){
     if(!st.present||st.alertedPre||!st.appearedAt||!t.p.durationSec) return null;
     const r=(st.appearedAt+t.p.durationSec*1000-now)/1000; return r>0?r:null;
+  },
+  gauge(t,st,now){   // remainSec와 달리 미리 알림 뒤에도 끝날 때까지 줄어든다(화면 표시용)
+    if(!st.present||!st.appearedAt||!t.p.durationSec) return null;
+    const r=(st.appearedAt+t.p.durationSec*1000-now)/1000; return r>0?{frac:Math.min(1,r/t.p.durationSec),low:r<=t.p.leadSec}:null;
   },
   applyEffect(t,ev){
     if(ev.effect!=='learn'||ev.durationSec<=t.p.leadSec) return;      // 미리 알림 이하로 학습하면 켜지자마자 알림이 울리므로 버린다

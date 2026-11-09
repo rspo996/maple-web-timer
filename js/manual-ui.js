@@ -106,6 +106,7 @@ function buildManualCard(t){
   const name=document.createElement('b'); name.textContent=t.label; head.append(name);
   const phase=document.createElement('span'); phase.className='sub'; phase.dataset.s='phase'; head.append(phase);
   const time=document.createElement('div'); time.className='mt-time'; time.dataset.s='time';
+  const gauge=document.createElement('div'); gauge.className='gauge'; gauge.dataset.s='gauge'; gauge.setAttribute('aria-hidden','true'); gauge.hidden=true; gauge.append(document.createElement('i'));
   const info=document.createElement('div'); info.className='sub'; info.dataset.s='info';
   const btns=document.createElement('div'); btns.className='row mt-btns';
   const now=Date.now();
@@ -120,7 +121,7 @@ function buildManualCard(t){
   const del=mkBtn(manualDelArm[t.id]?'정말 지울까요?':'삭제',()=>manualDelete(t.id),`${t.label} 삭제`); del.classList.add('mt-del'); btns.append(del);
   const edit=mkBtn('고치기',()=>{ form.hidden=!form.hidden; if(!form.hidden) form.querySelector('input').focus(); },`${t.label} 고치기`); head.append(edit);
   const form=buildManualEdit(t);
-  el.append(head,time,info,btns,form);
+  el.append(head,time,gauge,info,btns,form);
   return el;
 }
 function manualDelete(id){
@@ -172,9 +173,11 @@ function renderManualTimes(now){
     if(t.status==='done'){
       setText(q('time'),'끝났어요');
       const ago=Math.max(0,Math.floor((now-(t.doneAt||now))/60000));
-      setText(q('info'),ago?`${ago}분 전에 끝났어요`:'방금 끝났어요'); setText(q('phase'),''); continue;
+      setText(q('info'),ago?`${ago}분 전에 끝났어요`:'방금 끝났어요'); setText(q('phase'),''); setGauge(q('gauge'),null); continue;
     }
-    setText(q('time'),manualFmt(manualRemainMs(t,now)));
+    const rem=manualRemainMs(t,now), total=t.phases[t.idx].sec*1000;
+    setText(q('time'),manualFmt(rem));
+    setGauge(q('gauge'),total>0?{frac:Math.max(0,Math.min(1,rem/total)),low:t.status==='running'&&!!t.preSec&&rem<=t.preSec*1000}:null);
     const pre=t.preSec?`${t.preSec}초 전 알림`:'미리 알림 없음';
     const kind=t.kind==='routine'?`${t.phases[0].name} ${durLabel(t.phases[0].sec)} ↔ ${t.phases[1].name} ${durLabel(t.phases[1].sec)}`:'카운트다운';
     setText(q('info'),(t.status==='paused'?'멈춤 · ':t.status==='idle'?'대기 · ':'')+`${kind} · ${pre}`);
