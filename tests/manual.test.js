@@ -170,3 +170,72 @@ test('한 틱에 경계 둘을 지나면(늦음 아님) 전환 하나만 내고,
   assert.deepEqual(r.events.map(e => [e.type, e.idx, e.slot, e.silent, e.late, e.lateMs]), [['switch', 0, 'next2', false, false, 1000]]);
   assert.deepEqual([r.t.idx, r.t.cycles, r.t.endAt], [0, 1, T0 + 30_000]);
 });
+
+// ---- Task 3: 저장·내보내기·문구 ----
+const { manualLoad, manualExport, manualImport, manualText } = M;
+function sampleStore() {
+  const s = manualEmptyStore();
+  s.timers.push(manualStart(manualNew(s, 'countdown', '경쿠', [{ name: '경쿠', sec: 1800 }], 10), T0));
+  s.timers.push(manualNew(s, 'routine', '사냥·회수', [{ name: '사냥', sec: 720 }, { name: '회수', sec: 180 }], 10));
+  return s;
+}
+
+test('manualLoad: 저장값이 없으면 기본(프리셋 7개), 실행 상태를 그대로 복원', () => {
+  const empty = manualLoad(null);
+  assert.equal(empty.ok, true); assert.deepEqual(empty.store.presets.map(p => p.label), ['5분', '10분', '15분', '20분', '30분', '1시간', '2시간']);
+  const s = sampleStore(), r = manualLoad(JSON.stringify(s));
+  assert.equal(r.ok, true); assert.deepEqual(r.store, s);
+});
+
+test('manualLoad: JSON 오류·v 불일치·형식 오류면 빈 저장소와 ok:false', () => {
+  for (const raw of ['{oops', JSON.stringify({ v: 2, timers: [] }), JSON.stringify([1, 2]), JSON.stringify({ v: 1, timers: 'x' })]) {
+    const r = manualLoad(raw); assert.equal(r.ok, false, raw); assert.deepEqual(r.store, manualEmptyStore());
+  }
+});
+
+test('manualLoad: 잘못된 타이머는 버리고 값은 범위로 보정, seq는 가장 큰 m번호 이상, 8개 상한', () => {
+  const s = sampleStore();
+  s.seq = 0;
+  s.timers.push({ id: 'x9', kind: 'countdown', label: 'a', phases: [{ name: 'a', sec: 60 }] });                       // 잘못된 id
+  s.timers.push({ id: 'm7', kind: 'routine', label: 'b', phases: [{ name: 'a', sec: 60 }] });                         // 루틴인데 구간 1개
+  s.timers.push({ ...s.timers[0], id: 'm1' });                                                                        // 중복 id
+  s.timers.push({ id: 'm5', kind: 'countdown', label: '  ', phases: [{ name: 'z', sec: 3 }], preSec: 999, status: 'running', endAt: 'x' });
+  const r = manualLoad(JSON.stringify(s));
+  assert.deepEqual(r.store.timers.map(t => t.id), ['m1', 'm2', 'm5']);
+  const m5 = r.store.timers[2];
+  assert.deepEqual([m5.label, m5.phases[0].sec, m5.preSec, m5.status, m5.endAt, m5.remainMs], ['z', 10, 120, 'idle', null, 10_000]);   // 실행 중인데 끝 시각이 없으면 대기로
+  assert.equal(r.store.seq, 7);
+  const many = manualEmptyStore();
+  for (let i = 0; i < 10; i++) many.timers.push(manualNew(many, 'countdown', 't' + i, [{ name: 't', sec: 60 }], 10));
+  assert.equal(manualLoad(JSON.stringify(many)).store.timers.length, 8);
+});
+
+test('manualExport: 정의만 내보내고 실행 상태는 뺀다', () => {
+  const e = manualExport(sampleStore());
+  assert.deepEqual(Object.keys(e.timers[0]).sort(), ['id', 'kind', 'label', 'phases', 'preSec']);
+  assert.equal(e.v, 1); assert.equal(e.presets.length, 7); assert.deepEqual(e.prefs, { preSec: 10 });
+});
+
+test('manualImport: 불러온 타이머는 모두 대기, 남은 시간은 첫 구간 전체. 잘못된 값은 ok:false', () => {
+  const r = manualImport(manualExport(sampleStore()));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.store.timers.map(t => [t.status, t.endAt, t.remainMs, t.idx, t.cycles, t.preDone, t.preHeard]),
+    [['idle', null, 1_800_000, 0, 0, false, false], ['idle', null, 720_000, 0, 0, false, false]]);
+  const old = { ...sampleStore() }; old.timers = old.timers.map(t => ({ ...t, status: 'running', endAt: 5 }));
+  assert.equal(manualImport(old).store.timers[0].status, 'idle');      // 며칠 전 파일의 오래된 끝 시각이 살아나지 않음
+  assert.equal(manualImport('nope').ok, false); assert.equal(manualImport({ v: 9 }).ok, false);
+});
+
+test('manualText: 카운트다운·루틴 문구, 루틴이 둘 이상이면 루틴 이름을 앞에 붙인다', () => {
+  const s = sampleStore(), [c, r] = s.timers;
+  assert.equal(manualText(c, { type: 'pre', idx: 0 }, s.timers), '경쿠 10초 전');
+  assert.equal(manualText(c, { type: 'end', idx: 0 }, s.timers), '경쿠 끝났어요');
+  assert.equal(manualText(r, { type: 'pre', idx: 0 }, s.timers), '회수 10초 전');
+  assert.equal(manualText(r, { type: 'pre', idx: 1 }, s.timers), '사냥 10초 전');
+  assert.equal(manualText(r, { type: 'switch', idx: 1 }, s.timers), '회수 시간이에요');
+  assert.equal(manualText(r, { type: 'switch', idx: 0 }, s.timers), '사냥 시간이에요');
+  const r2 = manualNew(s, 'routine', '사냥·회수', [{ name: '사냥', sec: 600 }, { name: '회수', sec: 120 }], 10); s.timers.push(r2);
+  assert.equal(r2.label, '사냥·회수 2');
+  assert.equal(manualText(r2, { type: 'pre', idx: 0 }, s.timers), '사냥·회수 2, 회수 10초 전');
+  assert.equal(manualText(r, { type: 'switch', idx: 0 }, s.timers), '사냥·회수, 사냥 시간이에요');
+});

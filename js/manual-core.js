@@ -77,5 +77,73 @@ function manualFmt(ms){
   return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`;
 }
 
+/* ----- 저장값 읽기·내보내기·불러오기 ----- */
+const MANUAL_SEC_MAX=24*3600;
+const cleanText=(v,max)=>typeof v==='string'?v.trim().slice(0,max):'';
+const intIn=(v,lo,hi,def)=>{ const n=Math.round(+v); return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):def; };
+const finite=v=>typeof v==='number'&&Number.isFinite(v);
+// 타이머 하나를 검사·보정한다. 형식이 맞지 않으면 null(버림). keepRuntime=false면 실행 상태를 버리고 대기로
+function manualNormalizeTimer(raw,keepRuntime){
+  if(!raw||typeof raw!=='object'||!/^m\d+$/.test(String(raw.id))) return null;
+  const kind=raw.kind, need=kind==='countdown'?1:kind==='routine'?2:0;
+  if(!need||!Array.isArray(raw.phases)||raw.phases.length!==need) return null;
+  const phases=[];
+  for(const p of raw.phases){
+    if(!p||typeof p!=='object'||!Number.isFinite(+p.sec)) return null;
+    phases.push({name:cleanText(p.name,MANUAL_LABEL_MAX)||(need===1?'타이머':'구간'),sec:intIn(p.sec,MANUAL_MIN_SEC,MANUAL_SEC_MAX,MANUAL_MIN_SEC)});
+  }
+  const base={id:String(raw.id),label:cleanText(raw.label,MANUAL_LABEL_MAX)||phases[0].name,kind,phases,preSec:intIn(raw.preSec,0,MANUAL_PRE_MAX,10)};
+  const idle=manualReset(base);
+  if(!keepRuntime) return idle;
+  const status=['idle','running','paused','done'].includes(raw.status)?raw.status:'idle';
+  if(status==='running'&&!finite(raw.endAt)) return idle;                  // 끝 시각을 모르면 이어 갈 수 없다
+  const t={...idle,status,idx:intIn(raw.idx,0,phases.length-1,0),cycles:intIn(raw.cycles,0,1e9,0),preDone:raw.preDone===true,preHeard:raw.preHeard===true,
+    doneAt:finite(raw.doneAt)?raw.doneAt:null};
+  if(status==='running') t.endAt=raw.endAt;
+  else if(status==='done') t.remainMs=0;
+  else t.remainMs=finite(raw.remainMs)&&raw.remainMs>=0?raw.remainMs:phaseMs(t,t.idx);
+  return t;
+}
+function manualNormalizeStore(raw,keepRuntime){
+  if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.v!==1||!Array.isArray(raw.timers)) return null;
+  const s=manualEmptyStore(), seen=new Set(); let maxM=0;
+  s.prefs.preSec=intIn(raw.prefs&&raw.prefs.preSec,0,MANUAL_PRE_MAX,10);
+  if(Array.isArray(raw.presets)) s.presets=raw.presets.filter(p=>p&&typeof p.id==='string'&&cleanText(p.label,MANUAL_LABEL_MAX)&&Number.isFinite(+p.sec))
+    .slice(0,20).map(p=>({id:p.id,label:cleanText(p.label,MANUAL_LABEL_MAX),sec:intIn(p.sec,MANUAL_MIN_SEC,MANUAL_SEC_MAX,MANUAL_MIN_SEC)}));
+  for(const r of raw.timers){
+    const m=r&&/^m(\d+)$/.exec(String(r.id)); if(m) maxM=Math.max(maxM,+m[1]);
+    const t=manualNormalizeTimer(r,keepRuntime); if(!t||seen.has(t.id)||s.timers.length>=MANUAL_MAX) continue;
+    seen.add(t.id); s.timers.push(t);
+  }
+  s.seq=Math.max(intIn(raw.seq,0,1e9,0),maxM);
+  return s;
+}
+// localStorage 원문을 읽는다. 없으면 기본, 깨졌으면 빈 저장소와 ok:false(상태줄에 알림)
+function manualLoad(raw){
+  if(raw==null) return {store:manualEmptyStore(),ok:true};
+  let o; try{ o=JSON.parse(raw); }catch(e){ return {store:manualEmptyStore(),ok:false}; }
+  const s=manualNormalizeStore(o,true);
+  return s?{store:s,ok:true}:{store:manualEmptyStore(),ok:false};
+}
+// 백업(묶음 5)용: 정의만. 오래된 끝 시각이 되살아나지 않게 실행 상태는 뺀다
+function manualExport(store){
+  return {v:1,seq:store.seq,prefs:{...store.prefs},presets:store.presets.map(p=>({...p})),
+    timers:store.timers.map(t=>({id:t.id,label:t.label,kind:t.kind,phases:t.phases.map(p=>({...p})),preSec:t.preSec}))};
+}
+function manualImport(x){
+  let o=x; if(typeof x==='string'){ try{ o=JSON.parse(x); }catch(e){ return {store:manualEmptyStore(),ok:false}; } }
+  const s=manualNormalizeStore(o,false);
+  return s?{store:s,ok:true}:{store:manualEmptyStore(),ok:false};
+}
+
+/* ----- 문구 (스펙 4.5. 해요체, 음성으로 읽힌다) ----- */
+function manualText(t,ev,timers){
+  if(t.kind!=='routine') return ev.type==='pre'?`${t.label} ${t.preSec}초 전`:`${t.label} 끝났어요`;
+  const prefix=(timers||[]).filter(x=>x.kind==='routine').length>=2?`${t.label}, `:'';   // 루틴이 둘 이상이면 어느 루틴인지
+  if(ev.type==='pre') return `${prefix}${t.phases[(ev.idx+1)%t.phases.length].name} ${t.preSec}초 전`;
+  return `${prefix}${t.phases[ev.idx].name} 시간이에요`;
+}
+
 if(typeof module==='object') module.exports={MANUAL_STORE,MANUAL_MAX,MANUAL_MIN_SEC,MANUAL_PRE_MAX,MANUAL_PRE_SKIP_MS,MANUAL_LATE_MS,MANUAL_PRESETS,
-  manualEmptyStore,manualUniqueLabel,manualNew,manualRemainMs,manualStart,manualPause,manualReset,manualAdjust,manualStep,manualFmt};
+  manualEmptyStore,manualUniqueLabel,manualNew,manualRemainMs,manualStart,manualPause,manualReset,manualAdjust,manualStep,manualFmt,
+  manualNormalizeTimer,manualLoad,manualExport,manualImport,manualText};
