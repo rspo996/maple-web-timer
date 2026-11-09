@@ -25,3 +25,10 @@ export function check(name, cond, detail) {
   console.log(`${cond ? "PASS" : "FAIL"} ${name}${cond ? "" : "  <- " + JSON.stringify(detail)}`);
 }
 export function done() { console.log(`RESULT ${pass} passed, ${fail} failed`); }
+
+// 미리보기 캔버스 위에서 이미지 좌표 (x0,y0)→(x1,y1)로 드래그한다(영역·아이콘 등록용)
+export async function drag(page, x0, y0, x1, y1) {
+  const r = await page.evaluate(() => { const c = document.querySelector("#preview"), b = c.getBoundingClientRect(); return { l: b.left, t: b.top, sx: b.width / c.width, sy: b.height / c.height }; });
+  const P = (x, y) => [r.l + x * r.sx, r.t + y * r.sy];
+  await page.mouse.move(...P(x0, y0)); await page.mouse.down(); await page.mouse.move(...P((x0 + x1) / 2, (y0 + y1) / 2)); await page.mouse.move(...P(x1, y1)); await page.mouse.up();
+}

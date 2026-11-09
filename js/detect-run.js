@@ -1,5 +1,8 @@
 const states={}; const tplCache={};
-function initStates(){ for(const d of DEFS) states[d.id]=newState(); }
+const stateOf=id=>states[id]||(states[id]=newState());
+// 모든 대상의 감지 상태를 새로 시작. armed=true는 스크린샷 테스트(처음부터 켜짐 시각을 믿음)
+function resetAllStates(armed){ for(const t of store.targets){ states[t.id]=newState(); if(armed) states[t.id].armed=true; } }
+
 /* ----- 감지 ----- */
 function scaleFor(tw,th){ return Math.min(1,Math.max(0.25,14/Math.min(tw,th))); }
 function loadTpl(t){
@@ -12,32 +15,30 @@ function loadTpl(t){
     Object.assign(ent,{k,m:m*s,ready:true},prepTemplate(toGray(wctx.getImageData(0,0,w,h).data,w*h),w,h));
   }; img.src=t.url; return null;
 }
-const PRESET_SCALES=[1,1.25,1.5];
-const defOf=id=>DEFS.find(d=>d.id===id);
-const usingPreset=id=>!cfgs[id].tpl && !!defOf(id).presets;
-function areaOf(id){
-  const c=cfgs[id]; if(c.area&&c.tpl) return c.area;
-  if(usingPreset(id)&&frame.w&&defOf(id).presetArea) return defOf(id).presetArea(frame);
-  if(usingPreset(id)&&frame.w) return {x:Math.round(frame.w*0.35),y:0,w:Math.round(frame.w*0.65),h:Math.round(frame.h*0.3)};  // 버프창: 화면 오른쪽 위
+function areaOf(t){
+  if(t.area&&t.tpl) return t.area;
+  if(isPresetMode(t)&&frame.w) return PRESETS[t.preset].area(frame);   // 내장 아이콘: 솔 야누스는 오른쪽 위, 부스터는 위쪽 가운데
   return null;
 }
-function detect(d, source){
-  const c=cfgs[d.id], a=areaOf(d.id); if(!a) return null;
-  if(c.tpl && c.frameW && (c.frameW!==frame.w||c.frameH!==frame.h)) return null;
+// 템플릿 매칭으로 대상을 찾는다. buff·countdown·rune이 공용(KINDS.detect의 기본값). 돌려주는 값은 {score, pos} 또는 null
+function detectTemplate(t, source){
+  const a=areaOf(t); if(!a) return null;
+  if(t.tpl && t.frameW && (t.frameW!==frame.w||t.frameH!==frame.h)) return null;
   // 기본 아이콘은 UI 배율이 달라도 찾도록 여러 크기로 검색. 한 번 찾으면 그 크기부터 먼저 확인
-  const cands=c.tpl?[c.tpl]:d.presets.flatMap(p=>(d.presetScales||PRESET_SCALES).map(s=>({...p,s})));
-  const st=states[d.id], hit=st.hit&&cands.find(t=>t.url===st.hit.url&&t.s===st.hit.s);
-  const order=hit?[hit,...cands.filter(t=>t!==hit)]:cands;
+  const P=t.preset&&PRESETS[t.preset];
+  const cands=t.tpl?[t.tpl]:P.icons.flatMap(p=>P.scales.map(s=>({...p,s})));
+  const st=stateOf(t.id), hit=st.hit&&cands.find(x=>x.url===st.hit.url&&x.s===st.hit.s);
+  const order=hit?[hit,...cands.filter(x=>x!==hit)]:cands;
   let best=null;
-  for(const t of order){
-    const tp=loadTpl(t); if(!tp) continue;
-    if(best&&best.score>=c.threshold&&t!==order[0]) break;
+  for(const c of order){
+    const tp=loadTpl(c); if(!tp) continue;
+    if(best&&best.score>=t.threshold&&c!==order[0]) break;
     const W=Math.round(a.w*tp.k), H=Math.round(a.h*tp.k);
     work.width=W; work.height=H; wctx.drawImage(source,a.x,a.y,a.w,a.h,0,0,W,H);
     const r=matchTemplate(toGray(wctx.getImageData(0,0,W,H).data,W*H),W,H,tp);
-    if(!best||r.score>best.score) best={score:r.score,t,pos:{x:a.x+r.x/tp.k-tp.m,y:a.y+r.y/tp.k-tp.m,w:t.w*(t.s||1),h:t.h*(t.s||1)}};
+    if(!best||r.score>best.score) best={score:r.score,t:c,pos:{x:a.x+r.x/tp.k-tp.m,y:a.y+r.y/tp.k-tp.m,w:c.w*(c.s||1),h:c.h*(c.s||1)}};
   }
-  if(best&&best.score>=c.threshold) st.hit={url:best.t.url,s:best.t.s};
+  if(best&&best.score>=t.threshold) st.hit={url:best.t.url,s:best.t.s};
   return best;
 }
 // “남은시간” 글자 오른쪽의 숫자 영역을 원본 해상도로 잘라 읽기
@@ -55,11 +56,27 @@ function isBlank(s){
   for(let i=0;i<p.length;i+=4) if(0.299*p[i]+0.587*p[i+1]+0.114*p[i+2]>=8) return false;
   return true;
 }
+// 종류의 step이 돌려준 이벤트를 알림 후보로 모은다. events에 선언된 키만 알림이 되고(appear-unknown 같은 내부 이벤트는 버림), effect는 종류가 처리한다
+function collectEvents(t,evs,out){
+  const k=KINDS[t.kind];
+  for(const ev of evs){
+    const e=typeof ev==='string'?{key:ev}:ev;
+    if(e.effect){ k.applyEffect(t,e); continue; }
+    const def=k.events.find(x=>x.key===e.key); if(def) out.push({t,def,info:e.info||{}});
+  }
+}
+function reqFor(t,def,info,rank){
+  return {src:'target',id:t.id,event:def.key,text:def.msg(t,info||{}),beep:def.beep,slot:`${t.id}.${def.key}`,mode:'full',flash:'card-'+t.id,
+    group:def.group?{cls:def.group,label:t.name,rank:rank==null?(t.p.leadSec||0):rank,order:store.targets.indexOf(t)}:null};
+}
+function dispatchEvents(list,now){ for(const x of list) Alerts.fire(reqFor(x.t,x.def,x.info)); }
+// 카드의 "알림 테스트": 묶지 않고 첫 이벤트를 개별 알림으로 재생
+function testAlert(t){ const def=KINDS[t.kind].events[0]; Alerts.fire({...reqFor(t,def,{}),src:'test',group:null}); }
 let busy=false;
 async function tick(){
   if(busy) return; busy=true;
   try{
-    const now=Date.now(), source=await grab();
+    const now=Date.now(), g=await grab(), source=g.frame; frameFresh=g.fresh;
     if(source){ [frame.w,frame.h]=dims(source); }
     const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
     if(live){
@@ -68,23 +85,19 @@ async function tick(){
     } else if(!src && health.lostAt && health.reminders<LOST_REMIND_MAX && now-health.remindAt>=LOST_REMIND_MS){
       health.reminders++; health.remindAt=now; fireSystem('lost');
     }
-    for(const d of DEFS){
-      const c=cfgs[d.id], st=states[d.id];
-      if(ok && c.enabled && !reg){
-        const r=detect(d,source);
-        if(r){ st.score=r.score; st.pos=r.pos;
-          const evs=stepDetector(st,c,r.score>=c.threshold,now); if(st.present) st.seen=true;
-          if(d.kind==='countdown'){ const o=st.present&&r.score>=c.threshold?readTimer(source,r.pos):null; st.ocrRect=o&&o.rect; if(o&&o.read) st.lastText=o.read.text;
-            evs.push(...stepCountdown(st,c,o&&o.read?o.read.value:null,now)); }
-          for(const ev of evs){
-            if(ev.learn){ c.durationSec=ev.learn; save(); const inp=document.querySelector(`#card-${d.id} [data-k=duration]`); if(inp) inp.value=fmt(ev.learn); }
-            else if(ev==='pre'||ev==='gone'||ev==='remind'||ev==='unread'||(ev==='appear'&&d.kind==='rune')||(ev==='appear-unknown'&&d.kind==='rune')) fire(d,ev.startsWith('appear')?'appear':ev);
-          }
-        }
-      }
-      if(!document.hidden) renderCard(d);
+    const evq=[], ctx={src:!!src,frame,fresh:frameFresh};
+    for(const t of store.targets){
+      const k=KINDS[t.kind]; if(!k) continue;
+      const st=stateOf(t.id);
+      if(ok && t.enabled && !reg){
+        const det=k.detect(t,source,ctx);
+        if(det){ st.score=det.score; st.pos=det.pos; collectEvents(t,k.step(t,st,det,source,now,ctx),evq); }
+        else if(k.onSkip) collectEvents(t,k.step(t,st,null,source,now,ctx),evq);
+      } else if(k.onSkip && t.enabled) collectEvents(t,k.step(t,st,null,null,now,ctx),evq);   // 감지를 건너뛴 틱에도 부르는 종류(묶음 3)
+      if(!document.hidden) renderCard(t);
     }
+    dispatchEvents(evq,now);
     renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
     if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
-  } finally { busy=false; }
+  } finally { busy=false; Alerts.flush(Date.now()); }
 }

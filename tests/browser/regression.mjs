@@ -16,7 +16,7 @@ await ev(() => { __fake.reset(); __fake.image("sol", document.querySelector("#ca
 await wait(2500);
 check("솔 야누스 켜짐 · 학습 중", (await txt("#card-sol [data-s=status]")) === "켜짐 · 학습 중");
 check("일치도 표시", (await txt("#card-sol [data-s=score]")).startsWith("1.00 ✔"));
-await ev(() => { const i = document.querySelector("#t-sol-dur"); i.value = "1:00"; i.dispatchEvent(new Event("change")); __fake.skew(51000); });
+await ev(() => { const i = document.querySelector("#card-sol [data-f=durationSec]"); i.value = "1:00"; i.dispatchEvent(new Event("change")); __fake.skew(51000); });
 await wait(3500);
 const pre = await ev(() => ({ spoken: __fake.spoken.slice(), beeps: __fake.beeps }));
 check("미리 알림 음성 한 번", JSON.stringify(pre.spoken) === JSON.stringify(["솔 야누스 10초 전"]), pre);

@@ -7,6 +7,7 @@ let src=null;            // {type:'stream', video, track, cap} | {type:'image', 
 const frame={w:0,h:0};
 const work=document.createElement('canvas'); const wctx=work.getContext('2d',{willReadFrequently:true});
 let lastBitmap=null;
+let frameFresh=true;     // 마지막 grab()이 새 프레임이었는지. 숨은 탭에서 grabFrame 실패 뒤 video로 대체했으면 false(묶음 3이 화면 변화 판단에서 제외)
 // grabFrame()은 새 프레임이 올 때까지 기다리므로, 화면이 멈추면 감지 루프 전체가 멈추지 않게 시간 제한을 둠
 function grabFrameWithin(cap, ms){
   return new Promise((resolve,reject)=>{ let late=false;
@@ -15,21 +16,23 @@ function grabFrameWithin(cap, ms){
                          e=>{ if(!late){ clearTimeout(timer); reject(e); } });
   });
 }
+// {frame, fresh}를 돌려준다. frame이 null이면 프레임이 없는 것(화면 안 들어옴으로 집계)
 async function grab(){
-  if(!src) return null;
-  if(src.type==='image') return src.img;
+  if(!src) return {frame:null,fresh:false};
+  if(src.type==='image') return {frame:src.img,fresh:true};
+  let fresh=true;
   if(src.cap && document.hidden){
-    try{ const b=await grabFrameWithin(src.cap,1500); if(lastBitmap&&lastBitmap.close) lastBitmap.close(); lastBitmap=b; return b; }
-    catch(e){ if(e.message==='timeout') return null; }   // 새 프레임이 없음 → 화면 안 들어옴으로 집계
+    try{ const b=await grabFrameWithin(src.cap,1500); if(lastBitmap&&lastBitmap.close) lastBitmap.close(); lastBitmap=b; return {frame:b,fresh:true}; }
+    catch(e){ if(e.message==='timeout') return {frame:null,fresh:false}; fresh=false; }   // 새 프레임이 없음 → 화면 안 들어옴으로 집계. 다른 오류는 video로 대체(오래된 프레임일 수 있음)
   }
-  return src.video.readyState>=2 ? src.video : null;
+  return {frame:src.video.readyState>=2 ? src.video : null, fresh};
 }
 function dims(s){ return s instanceof HTMLVideoElement ? [s.videoWidth,s.videoHeight] : [s.naturalWidth||s.width, s.naturalHeight||s.height]; }
 
 function teardown(emptyText){
   src=null; pctx.clearRect(0,0,pv.width,pv.height);   // 멈춘 마지막 화면 대신 빈 화면 위에 안내문을 보여줌
   $('#empty').textContent=emptyText; $('#empty').style.display=''; $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
-  DEFS.forEach(renderCard); renderWatch();
+  store.targets.forEach(renderCard); renderWatch();
 }
 function initCapture(){
 $('#btnConnect').onclick=async()=>{
@@ -49,9 +52,9 @@ $('#btnConnect').onclick=async()=>{
     src={type:'stream',video,track,cap}; $('#empty').style.display='none';
     $('#btnConnect').textContent='다른 창 연결'; $('#btnConnect').classList.remove('primary');   // 연결 뒤에는 주된 행동이 아님
     Object.assign(health,{lostAt:null,badSince:null,badWarned:false,okAt:Date.now()});
-    for(const d of DEFS){ states[d.id]=newState(); }
+    resetAllStates(false);
     ui.connectedOnce=true; saveUi();
-    const need=DEFS.filter(d=>cfgs[d.id].enabled&&needsRegister(d)).map(d=>d.name);
+    const need=store.targets.filter(t=>t.enabled&&KINDS[t.kind]&&!KINDS[t.kind].isRegistered(t)).map(t=>t.name);
     speak('감시 시작할게요'+(need.length?`. ${eunNeun(need.join(', '))} 등록이 필요해요`:''));
     renderWatch();
   }catch(e){ if(e.name!=='NotAllowedError') setNote(`화면 연결에 실패했어요 (${e.message}). “게임 화면 연결”을 다시 눌러 주세요.`); }
@@ -64,7 +67,7 @@ $('#btnStop').onclick=()=>{
 $('#btnImage').onclick=()=>$('#fileImage').click();
 $('#fileImage').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const img=new Image();
-  img.onload=()=>{ if(src&&src.track) src.track.stop(); src={type:'image',img}; health.lostAt=null; health.badWarned=false; $('#empty').style.display='none'; for(const d of DEFS){ states[d.id]=newState(); states[d.id].armed=true; } renderWatch(); };
+  img.onload=()=>{ if(src&&src.track) src.track.stop(); src={type:'image',img}; health.lostAt=null; health.badWarned=false; $('#empty').style.display='none'; resetAllStates(true); renderWatch(); };
   img.src=URL.createObjectURL(f); e.target.value='';
 };
 $('#btnNotify').onclick=async()=>{

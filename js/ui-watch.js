@@ -5,25 +5,27 @@ function watchStatus(){
   if(health.lostAt) return {cls:'bad',state:'연결 끊김 · 알림이 멈췄어요',title:'⚠ 연결 끊김'};
   return {cls:'',state:'연결 안 됨 · 감시하지 않아요',title:''};
 }
-function baseTitle(){ const t=watchStatus().title; return (t?t+' · ':'')+'메이플 재획 알리미'; }
+let titlePrefix='';   // 묶음 2가 수동 타이머 상태를 탭 제목 앞에 붙이는 자리
+function baseTitle(){ const t=watchStatus().title; return (titlePrefix?titlePrefix+' · ':'')+(t?t+' · ':'')+'메이플 재획 알리미'; }
 let watchKey='', noteTimer;
 function setNote(text, kind='warn'){
   const n=$('#watchNote'); n.textContent=text; n.className='note'+(kind==='info'?' info':'');
   clearTimeout(noteTimer); if(text&&kind==='info') noteTimer=setTimeout(()=>{ n.textContent=''; },8000);
 }
+// 상태줄과 묶음 5의 PIP가 같은 행을 쓴다. 순수 계산은 targets.js의 targetSnapshot
+const snapshotNow=()=>targetSnapshot(store.targets,states,{src:!!src,frame},Date.now());
 function renderWatch(){
   const w=watchStatus();
-  const targets=src ? DEFS.map(d=>({d, s:!cfgs[d.id].enabled?'off':needsRegister(d)?'reg':needsReregister(d)?'rereg'
-    :(d.kind!=='rune'&&!states[d.id].seen)?'unseen':'ok'})) : [];
-  const key=w.cls+'|'+w.state+'|'+targets.map(t=>t.d.id+':'+t.s).join(',')+'|'+(src&&src.type);
+  const rows=src?snapshotNow():[];
+  const key=w.cls+'|'+w.state+'|'+rows.map(r=>r.id+':'+r.name+':'+r.stripState).join(',')+'|'+(src&&src.type);
   if(key!==watchKey){   // 바뀔 때만 다시 그려서 화면 낭독기가 매 틱 읽지 않게 함
     watchKey=key; $('#watch').className='watch '+w.cls; $('#watchState').textContent=w.state;
     const box=$('#watchTargets'); box.textContent='';
-    targets.forEach(({d,s},i)=>{
+    rows.forEach((r,i)=>{
       if(i){ const sep=document.createElement('span'); sep.className='sep'; sep.setAttribute('aria-hidden','true'); sep.textContent='·'; box.append(sep); }
       // 연결 뒤 다음에 할 일(등록)이 주된 버튼이 되도록 primary로 강조
-      if(s==='reg'||s==='rereg'){ const b=document.createElement('button'); b.className='primary'; b.textContent=`${d.name} ${s==='reg'?'등록하기':'다시 등록'}`; b.onclick=()=>startRegister(d); box.append(b); }
-      else { const sp=document.createElement('span'); if(s!=='ok') sp.className=s; sp.textContent=s==='off'?`${d.name} 꺼둠`:s==='unseen'?`${d.name} 아직 못 찾음`:d.name; box.append(sp); }
+      if(r.stripState==='reg'||r.stripState==='rereg'){ const b=document.createElement('button'); b.className='primary'; b.textContent=`${r.name} ${r.stripState==='reg'?'등록하기':'다시 등록'}`; b.onclick=()=>startRegister(targetById(r.id)); box.append(b); }
+      else { const sp=document.createElement('span'); if(r.stripState!=='ok') sp.className=r.stripState; sp.textContent=r.stripState==='off'?`${r.name} 꺼둠`:r.stripState==='unseen'?`${r.name} 아직 못 찾음`:r.name; box.append(sp); }
     });
     const stop=$('#btnStop'); stop.hidden=!src; stop.textContent=src&&src.type==='image'?'테스트 끝내기':'감시 끝내기';
   }

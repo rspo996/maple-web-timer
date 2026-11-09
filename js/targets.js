@@ -1,23 +1,4 @@
-const DEFS=[
-  {id:'sol',name:'솔 야누스',kind:'buff',areaLabel:'버프창 영역',iconLabel:'솔 야누스 아이콘',threshold:0.75,
-   presets:PRESET_ICONS.sol},
-  {id:'booster',name:'부스터',kind:'countdown',areaLabel:'남은시간 타이머 주변',iconLabel:'“◷ 남은시간” 글자',threshold:0.7,
-   presetArea:f=>({x:Math.round(f.w*0.2),y:0,w:Math.round(f.w*0.6),h:Math.round(f.h*0.3)}), presetScales:[0.8,1,1.25,1.5],
-   presets:PRESET_ICONS.booster},
-  {id:'rune',name:'룬',kind:'rune',areaLabel:'미니맵 영역',iconLabel:'룬 아이콘',threshold:0.8},
-];
-const STORE='maple-web-timer-v1';
-let cfgs={};
-function loadLegacyStore(){
-  try{ cfgs=JSON.parse(localStorage.getItem(STORE)||'{}'); }catch(e){}
-for(const d of DEFS){ cfgs[d.id]=Object.assign({enabled:true,area:null,tpl:null,frameW:0,frameH:0,threshold:d.threshold,durationSec:null,leadSec:10,repeatSec:60},cfgs[d.id]||{},{kind:d.kind}); }
-if(cfgs.booster && cfgs.booster.ver!==2){ Object.assign(cfgs.booster,{ver:2,tpl:null,area:null,frameW:0,frameH:0,threshold:0.7}); }
-}
-function save(){ try{ localStorage.setItem(STORE,JSON.stringify(cfgs)); }catch(e){} }
-const needsRegister=d=>!cfgs[d.id].tpl && !d.presets;
-const needsReregister=d=>{ const c=cfgs[d.id]; return !!(c.tpl && c.frameW && frame.w && (c.frameW!==frame.w||c.frameH!==frame.h)); };
-
-/* ===== 감지 대상 모델 (묶음 1 스펙 3절). 위의 DEFS·cfgs는 Task E1에서 이 모델로 바뀔 때까지 남아 있는 예전 코드 ===== */
+/* ===== 감지 대상 모델 (묶음 1 스펙 3절) + 실행 중 저장소 ===== */
 const TARGET_MAX=12;
 // 내장 3개: 기존 id를 그대로 써서 내 소리 슬롯 키(sol.pre 등)를 이전 없이 이어간다
 const BUILTIN={
@@ -121,5 +102,19 @@ function targetSnapshot(targets,states,ctx,now){
     if(!k) return {id:t.id,name:t.name,kind:t.kind,enabled:false,stripState:'off',statusText:'이 버전에서 지원하지 않는 종류예요',remainSec:null};
     return {id:t.id,name:t.name,kind:t.kind,enabled:t.enabled,stripState:k.stripState(t,st,now,ctx),statusText:cardStatus(t,st,now,ctx).text,remainSec:k.remainSec(t,st,now)};
   });
+}
+
+/* ----- 실행 중 저장소. 소유: 이 파일. 다른 파일은 store.targets를 읽고, 바꾼 뒤에는 saveTargets()를 부른다 ----- */
+let store={ver:2,seq:0,targets:[],group:defaultGroup()}, storeStatus='fresh';   // initTargets()가 채운다(KINDS는 kinds.js가 뒤에 올라오므로 여기서 만들지 않음)
+const targetById=id=>store.targets.find(t=>t.id===id);
+let saveWarned=false;
+function saveTargets(){
+  if(saveStore(store)||saveWarned) return;
+  saveWarned=true; setNote('설정을 저장하지 못했어요 (이 탭에서만 유지)');
+}
+function initTargets(){
+  const r=loadStore(); store=r.store; storeStatus=r.status;
+  if(r.status==='broken') setNote('설정을 읽지 못해 처음 상태로 시작했어요. 백업 파일이 있으면 불러오세요');
+  else if(r.saveFailed){ saveWarned=true; setNote('설정을 저장하지 못했어요 (이 탭에서만 유지)'); }
 }
 if(typeof module==='object') module.exports={BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};

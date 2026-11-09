@@ -3,7 +3,6 @@
 const BUFF_BEEP={wave:'square',notes:[[1046,.15],[1046,.15],[784,.3]]};   // 딩딩-동
 const SOUNDS={
   buff:   BUFF_BEEP,                                                              // 모든 버프 공용(솔 야누스 포함)
-  sol:    BUFF_BEEP,                                                              // 예전 호출부용 별칭(Task E1에서 삭제)
   booster:{wave:'square',  notes:[[1318,.08],[1318,.08],[1318,.08],[988,.28]]},  // 딱딱딱-동
   gone:   {wave:'square',  notes:[[784,.2],[523,.45]]},                          // 내려가는 두 음
   rune:   {wave:'square',  notes:[[880,.12],[1175,.12],[1568,.2]]},              // 올라가는 세 음
@@ -57,6 +56,8 @@ function createAlerts(io){
   return {
     fire(req){ deliver(withDefaults(req)); },
     flush(now){},                                    // tick() 끝에서 부른다. 묶기 대기열은 Task G2에서 채운다
+    drop(id){},                                      // 삭제·끈 대상의 대기 중 알림을 뺀다(Task G2)
+    clear(){},                                       // 연결이 끊겼을 때 대기열을 비운다(Task G2)
     listen(fn){ listeners.add(fn); return ()=>listeners.delete(fn); },
   };
 }
@@ -84,17 +85,6 @@ const Alerts=Object.assign(createAlerts(browserIO),{
   onAudioReady:fn=>{ if(actx) fn(actx); else audioWaiters.push(fn); },
 });
 
-/* ----- 예전 호출부(Task E1에서 KINDS 기반 호출로 바뀌며 사라짐) ----- */
-const MSG={
-  pre:(d,c)=>`${d.name} ${c.leadSec}초 전`,
-  gone:d=>`${d.name} 꺼졌어요`,
-  appear:()=>'룬이 나왔어요',
-  remind:()=>'룬 아직 있어요',
-  unread:d=>`${d.name} 숫자를 못 읽고 있어요`,
-};
-const soundName=(d,kind)=> kind==='gone' ? 'gone' : kind==='unread' ? 'system' : d.kind==='rune' ? 'rune'
-                         : SOUNDS[d.id] ? d.id : d.kind==='countdown' ? 'booster' : 'sol';
-function fire(d, kind){ Alerts.fire({src:'target',id:d.id,event:kind,text:MSG[kind](d,cfgs[d.id]),beep:soundName(d,kind)}); }
 // 화면을 받는 쪽의 문제(끊김·멈춤)는 게임 알림과 다른 소리로 알림. 회복은 음성만
 function fireSystem(kind){ Alerts.fire({src:'system',id:'sys',event:kind,text:SYS_MSG[kind],beep:'system',slot:'sys.'+kind,mode:kind==='back'?'voice':'full',flash:null}); }
 if(typeof module==='object') module.exports={createAlerts};

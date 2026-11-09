@@ -32,9 +32,10 @@ const slotName=s=>`${s.group} ${s.label}`;
 function soundNote(text, warn){ const n=$('#soundNote'); n.textContent=text; n.className='sub'+(warn?' warn':''); }
 function previewSlot(s){
   unlockAudio(); if(playCustom(s.key)) return;
-  const [id,kind]=s.key.split('.');
-  if(id==='sys') playDefault(SYS_MSG[kind],'system');
-  else { const d=defOf(id); playDefault(MSG[kind](d,cfgs[d.id]), soundName(d,kind)); }
+  const [id,ev]=s.key.split('.');
+  if(id==='sys'){ playDefault(SYS_MSG[ev],'system'); return; }
+  const t=targetById(id), def=t&&KINDS[t.kind]&&KINDS[t.kind].events.find(e=>e.key===ev);
+  if(def) playDefault(def.msg(t,{}),def.beep);   // 대상을 못 찾으면 소리 미리듣기만
 }
 async function pickSound(s, file){
   unlockAudio();
@@ -80,6 +81,7 @@ function renderSounds(){
     f.textContent=c?`${c.name} · ${c.dur.toFixed(1)}초`:'기본 소리'; f.title=c?c.name:''; f.classList.toggle('custom',!!c);
     const rb=s.row.querySelector('[data-a=reset]'); rb.style.visibility=c?'':'hidden'; rb.disabled=!c; }   // 자리는 남겨 버튼 줄을 맞춤
 }
+function initSounds(){ buildSounds(); loadSounds(); }
 async function loadSounds(){
   try{ const st=await soundStore('readonly'); const keys=idb(st.getAllKeys()), vals=idb(st.getAll());
     const [ks,vs]=await Promise.all([keys,vals]); ks.forEach((k,i)=>{ if(SLOTS.some(s=>s.key===k)) customSounds.set(k,{...vs[i],buf:null}); }); renderSounds(); predecodeSounds(); }
