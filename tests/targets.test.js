@@ -128,7 +128,7 @@ test('targetSnapshot: 상태줄·PIP가 같이 쓰는 행', () => {
   const st = newState(); st.present = true; st.seen = true; st.appearedAt = 1000;
   targets[0].p.durationSec = 100;
   const rows = plain(targetSnapshot(targets, { sol: st }, { src: true, frame: { w: 1280, h: 720 } }, 31_000));
-  assert.deepEqual(rows[0], { id: 'sol', name: '솔 야누스', kind: 'buff', enabled: true, stripState: 'ok', statusText: '남은 시간 01:10', remainSec: 70 });
+  assert.deepEqual(rows[0], { id: 'sol', name: '솔 야누스', kind: 'buff', enabled: true, stripState: 'ok', stripText: null, statusText: '남은 시간 01:10', remainSec: 70 });
   assert.equal(rows[1].stripState, 'unseen'); assert.equal(rows[2].stripState, 'reg');
   assert.deepEqual([rows[3].stripState, rows[3].statusText], ['off', '이 버전에서 지원하지 않는 종류예요']);
 });
@@ -266,4 +266,19 @@ test('summarizeStrip: 다시 등록이 3개 이상이면 개별 버튼 대신 "�
 test('summarizeStrip: 꺼둔 대상은 켜진 대상 수에 세지 않는다', () => {
   const rows = ['a', 'b', 'c', 'd', 'e'].map(id => row(id, 'ok')).concat([row('f', 'off'), row('g', 'off')]);
   assert.equal(labels(summarizeStrip(rows, false)).length, 7);                      // 켜진 것 5개 → 나열
+});
+
+// ---- 묶음 3: 종류별 대상 추가·슬롯 없는 이벤트·상태줄 글자 ----
+test('addKindTarget: 종류 기본 이름, u 번호, 종류별 인스턴스 상한', () => {
+  const LI = load(['js/util.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/idle.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+  const s = LI.defaultStore(), r = LI.addKindTarget(s, 'idle');
+  assert.deepEqual([r.ok, r.target.id, r.target.kind, r.target.name, r.target.area], [true, 'u1', 'idle', '사냥 멈춤', null]);
+  assert.deepEqual(LI.plain(LI.addKindTarget(s, 'idle')), { ok: false, msg: '사냥 멈춤은 1개까지 둘 수 있어요' });
+  const keys = LI.plain(LI.slotsOf(s.targets, { manual: false })).map(x => x.key);
+  assert.ok(keys.includes('u1.alarm') && !keys.includes('u1.busy'), keys);
+});
+
+test('summarizeStrip: 종류가 준 상태줄 글자를 쓴다', () => {
+  const rows = [{ id: 'u1', name: '사냥 멈춤', enabled: true, stripState: 'snooze', stripText: '사냥 멈춤 쉬는 중' }, { id: 'sol', name: '솔 야누스', enabled: true, stripState: 'ok', stripText: null }];
+  assert.deepEqual(plain(summarizeStrip(rows, false)).map(i => [i.cls, i.text]), [['snooze', '사냥 멈춤 쉬는 중'], ['', '솔 야누스']]);
 });

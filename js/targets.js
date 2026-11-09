@@ -100,7 +100,8 @@ function targetSnapshot(targets,states,ctx,now){
   return targets.map(t=>{
     const k=KINDS[t.kind], st=states[t.id]||newState();
     if(!k) return {id:t.id,name:t.name,kind:t.kind,enabled:false,stripState:'off',statusText:'이 버전에서 지원하지 않는 종류예요',remainSec:null};
-    return {id:t.id,name:t.name,kind:t.kind,enabled:t.enabled,stripState:k.stripState(t,st,now,ctx),statusText:cardStatus(t,st,now,ctx).text,remainSec:k.remainSec(t,st,now)};
+    const s=k.stripState(t,st,now,ctx);
+    return {id:t.id,name:t.name,kind:t.kind,enabled:t.enabled,stripState:s,stripText:k.stripText?k.stripText(t,st,s):null,statusText:cardStatus(t,st,now,ctx).text,remainSec:k.remainSec(t,st,now)};
   });
 }
 
@@ -120,6 +121,16 @@ function addBuff(store,rawName){
   if(store.targets.length>=TARGET_MAX) return {ok:false,msg:FULL_MSG};
   const c=checkName(rawName,store.targets,null); if(!c.ok) return {ok:false,msg:c.msg};
   const t=newTarget(makeId(store),'buff',c.name,{threshold:0.75}); store.targets.push(t); return {ok:true,target:t};
+}
+
+// 종류로 새 대상(사냥 멈춤 등). 종류의 기본 이름(겹치면 번호), 종류별 인스턴스 상한
+function addKindTarget(store,kind){
+  const k=KINDS[kind]; if(!k) return {ok:false,msg:'이 버전에서 지원하지 않는 종류예요'};
+  if(store.targets.length>=TARGET_MAX) return {ok:false,msg:FULL_MSG};
+  const base=k.defaultName||k.label;
+  if(store.targets.filter(t=>t.kind===kind).length>=k.maxInstances) return {ok:false,msg:`${eunNeun(base)} ${k.maxInstances}개까지 둘 수 있어요`};
+  let name=base, n=2; while(store.targets.some(t=>t.name===name)) name=`${base} ${n++}`;
+  const t=newTarget(makeId(store),kind,name); store.targets.push(t); return {ok:true,target:t};
 }
 
 /* ----- 이름 바꾸기·순서·삭제 (순수. 화면 처리는 ui-cards.js) ----- */
@@ -153,7 +164,7 @@ function summarizeStrip(rows,open){
     if(s==='rereg'&&reIds.length>=3){ if(!reDone){ reDone=true; items.push({type:'reregAll',ids:reIds,n:reIds.length,label:`다시 등록 ${reIds.length}개 · 차례로 등록`}); } continue; }
     if(s==='reg'||s==='rereg'){ items.push({type:'btn',id:r.id,label:`${r.name} ${s==='reg'?'등록하기':'다시 등록'}`}); continue; }
     if(s==='ok'&&group){ oks.push(r.name); continue; }
-    items.push({type:'text',id:r.id,cls:s==='ok'?'':s,text:s==='off'?`${r.name} 꺼둠`:s==='unseen'?`${r.name} 아직 못 찾음`:r.name});
+    items.push({type:'text',id:r.id,cls:s==='ok'?'':s,text:r.stripText||(s==='off'?`${r.name} 꺼둠`:s==='unseen'?`${r.name} 아직 못 찾음`:r.name)});
   }
   if(oks.length){ items.push({type:'okGroup',n:oks.length,open:!!open,label:`정상 ${oks.length}개`}); if(open) for(const n of oks) items.push({type:'text',id:null,cls:'',text:n}); }
   return items;
@@ -164,7 +175,7 @@ const MANUAL_SLOTS=[['manual.pre','미리 알림'],['manual.end','타이머 끝'
 // 소리 설정 화면의 행 목록. 대상이 추가·삭제·개명될 때마다 다시 계산한다. opts.manual=false면 수동 타이머(묶음 2) 슬롯을 뺀다
 function slotsOf(targets,opts){
   const out=[], manual=!(opts&&opts.manual===false);
-  for(const t of targets){ const k=KINDS[t.kind]; if(!k) continue; for(const e of k.events) out.push({key:`${t.id}.${e.key}`,group:t.name,label:e.label}); }
+  for(const t of targets){ const k=KINDS[t.kind]; if(!k) continue; for(const e of k.events) if(!e.noSlot) out.push({key:`${t.id}.${e.key}`,group:t.name,label:e.label}); }
   out.push({key:'grp.pre',group:'묶음 알림',label:'미리 알림'},{key:'grp.gone',group:'묶음 알림',label:'꺼짐'});
   if(manual) for(const [key,label] of MANUAL_SLOTS) out.push({key,group:'수동 타이머',label});
   out.push({key:'sys.lost',group:'연결 문제',label:'연결 끊김'},{key:'sys.stall',group:'연결 문제',label:'화면 안 들어옴'});
@@ -191,4 +202,4 @@ function initTargets(){
   if(r.status==='broken') setNote('설정을 읽지 못해 처음 상태로 시작했어요. 백업 파일이 있으면 불러오세요');
   else if(r.saveFailed){ saveWarned=true; setNote('설정을 저장하지 못했어요 (이 탭에서만 유지)'); }
 }
-if(typeof module==='object') module.exports={summarizeStrip,renameTarget,moveTarget,insertTargetAt,deleteConfirmText,ownedSlotKeys,missingBuiltins,addBuiltin,addBuff,slotsOf,orphanSlots,BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};
+if(typeof module==='object') module.exports={addKindTarget,summarizeStrip,renameTarget,moveTarget,insertTargetAt,deleteConfirmText,ownedSlotKeys,missingBuiltins,addBuiltin,addBuff,slotsOf,orphanSlots,BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};
