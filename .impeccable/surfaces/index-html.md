@@ -36,7 +36,4 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## 정한 것
 
 - 카드 토글의 "펼치기 ▾ / 접기 ▴"와 상태줄·탭 제목의 "⏱"는 그대로 둔다(사용자 결정, 2026-11-09). 기존 문구이고, 탭 제목에는 그림을 넣을 수 없다. 마감 리뷰가 기호 아이콘으로 지적했지만 사용자가 "이대로 둬"라고 정했으니 다시 고치자고 하지 않는다.
-
-## 미정
-
-- 호스팅할 곳(PRODUCT.md). 서체 파일은 프로젝트 안(`src/fonts/`)에 두고 빌드에 포함한다.
+- 호스팅은 Vercel(https://maple-web-timer.vercel.app, 2026-11-10). 서체 파일은 프로젝트 안(`src/fonts/`)에 두고 빌드에 포함한다.
