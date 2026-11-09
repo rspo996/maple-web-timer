@@ -3,7 +3,7 @@
 let manual=manualEmptyStore();
 const manualDelArm={};                                       // 실행 중 삭제: 두 번 눌러야 지운다(id → 타이머)
 const manualAudible=()=>!!actx&&actx.state==='running';     // 지금 소리가 실제로 나는지(미리 알림을 '들었는지' 판정)
-function manualSave(){ try{ localStorage.setItem(MANUAL_STORE,JSON.stringify(manual)); }catch(e){} }   // 실패하면 이 탭에서만 유지
+function manualSave(){ if(importing) return; try{ localStorage.setItem(MANUAL_STORE,JSON.stringify(manual)); }catch(e){} }   // 실패하면 이 탭에서만 유지
 const manualCurName=t=>t.kind==='routine'?t.phases[t.idx].name:t.label;
 const durLabel=sec=>sec%3600===0?`${sec/3600}시간`:sec%60===0?`${sec/60}분`:manualFmt(sec*1000);
 const manualById=id=>manual.timers.find(t=>t.id===id);

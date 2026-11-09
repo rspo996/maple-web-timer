@@ -126,3 +126,8 @@ summary{cursor:pointer}
 #soundLock .note{color:var(--warn-text)}
 .vol-pct{display:inline-block;min-width:3.2em;font-variant-numeric:tabular-nums}
 #volNote{color:var(--warn-text)}
+#backupDetails{margin-top:12px}#backupDetails .row{margin-top:8px}#backupNote.warn{color:var(--warn-text)}
+#importDialog{max-width:min(520px,calc(100vw - 32px));border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:16px 18px}
+#importDialog::backdrop{background:rgba(0,0,0,.45)}#importDialog h3{margin:0 0 8px;font-size:18px}
+#importDialog fieldset{border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:4px 14px;padding:6px 12px 8px}
+#importDialog .warn{color:var(--warn-text)}#importDialog ul{margin:6px 0;padding-left:20px;font-size:13px}

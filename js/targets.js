@@ -198,6 +198,7 @@ let store={ver:2,seq:0,targets:[],group:defaultGroup()}, storeStatus='fresh';   
 const targetById=id=>store.targets.find(t=>t.id===id);
 let saveWarned=false;
 function saveTargets(){
+  if(importing) return;   // 백업을 불러와 새로고침하기 전까지 쓰지 않는다
   if(saveStore(store)||saveWarned) return;
   saveWarned=true; setNote('설정을 저장하지 못했어요 (이 탭에서만 유지)');
 }
