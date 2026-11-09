@@ -4,7 +4,7 @@ import {areaOf,stateOf,states} from './detect-run.js';
 import {bump} from './bus.js';
 import {saveTargets,store,targetById} from './store.js';
 import {isOpen,removeTargetNow} from './cards.js';
-import {renderWatch,setNote} from './ui-watch.js';
+import {renderWatch,setNote} from './watch.js';
 import {newState} from '../core/detect-core.js';
 import {KINDS,labelsOf} from '../core/kinds.js';
 import {eulReul} from '../core/util.js';

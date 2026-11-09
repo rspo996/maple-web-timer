@@ -8,7 +8,7 @@ import {saveUi,ui} from './prefs.js';
 import {clearRegister,reg,startRegister} from './register.js';
 import {customSounds,deleteSoundKeys,rebuildSounds,renderSounds} from './sounds.js';
 import {saveTargets,store} from './store.js';
-import {renderWatch,setNote} from './ui-watch.js';
+import {renderWatch,setNote} from './watch.js';
 import {newState} from '../core/detect-core.js';
 import {KINDS,cardStatus} from '../core/kinds.js';
 import {FULL_MSG,PRESETS,TARGET_MAX,deleteConfirmText,insertTargetAt,moveTarget,ownedSlotKeys,renameTarget} from '../core/targets.js';

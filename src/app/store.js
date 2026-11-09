@@ -1,6 +1,6 @@
 /* ----- 실행 중 저장소. 소유: 이 파일. 다른 파일은 store.targets를 읽고, 바꾼 뒤에는 saveTargets()를 부른다 ----- */
 import {importing} from './prefs.js';
-import {setNote} from './ui-watch.js';
+import {setNote} from './watch.js';
 import {defaultGroup,loadStore,saveStore} from '../core/targets.js';
 export let store={ver:2,seq:0,targets:[],group:defaultGroup()}, storeStatus='fresh';   // initTargets()가 채운다(모든 종류가 KINDS에 등록된 뒤 main.js가 부른다)
 export const targetById=id=>store.targets.find(t=>t.id===id);

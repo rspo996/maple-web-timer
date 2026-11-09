@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useBus } from './useBus.js';
-import { CommitInput, Gauge } from './parts.jsx';
+import { NativeInput, Gauge } from './parts.jsx';
 import { unlockAudio } from '../app/alerts.js';
 import {
   durLabel, manual, manualAct, manualClearDone, manualCreateCountdown, manualCreateRoutine, manualDelArm, manualDelete,
@@ -118,7 +118,7 @@ export function ManualPanel() {
             미리 알림
             {' '}
             {/* 새로 만드는 타이머에 쓴다 */}
-            <CommitInput id="manualPre" type="number" min="0" max="120" aria-describedby="manualPreSfx"
+            <NativeInput id="manualPre" type="number" min="0" max="120" aria-describedby="manualPreSfx"
               value={String(manual.prefs.preSec)} onCommit={el => { el.value = manualSetPre(el.value); }} />
             {' '}
             <span id="manualPreSfx" className="sub">초 전 (0=끔)</span>

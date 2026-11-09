@@ -2,7 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> 표기: **[확인]** = 사용자가 2026-11-09 init 인터뷰에서 답한 것. **[코드]** = 코드(`index.html`, `src/`)에서 읽은 현재 동작. 둘 다 아닌 것은 "미정"으로 둔다.
+> 표기: **[확인]** = 사용자가 2026-11-09 init 인터뷰에서 답한 것. **[코드]** = 코드(`src/`)에서 읽은 현재 동작. 둘 다 아닌 것은 "미정"으로 둔다.
 
 ## Platform
 
@@ -80,7 +80,7 @@ web
 
 인터뷰에서 바꾸면 안 되는 제약으로 고르지 않았다. 지금은 이렇게 되어 있지만, 이유가 있으면 바꿀 수 있다.
 
-- 2026-11-09부터 Vite로 빌드한다(사용자 결정: Vite + React, JavaScript 유지, 단계별 전환, `file://`로 여는 것은 포기). 정적 파일(`dist/`)로 빌드되어 어디든 올릴 수 있다. 런타임 외부 라이브러리는 React뿐이고, 표시 글꼴만 Google Fonts에서 받는다.
+- 2026-11-10부터 Vite + React(JavaScript)다(사용자 결정: 이번에는 JavaScript를 유지하고 TypeScript는 나중에 따로 정함, `file://`로 여는 것은 포기). `npm run dev`(8765)로 열고, `npm run build`의 정적 파일(`dist/`)은 하위 경로를 포함해 어디든 올릴 수 있다. 런타임 외부 라이브러리는 React뿐이고, 표시 글꼴만 Google Fonts에서 받는다.
 - 서버나 외부 API 없이 브라우저 안에서만 처리하고, 게임 화면은 밖으로 나가지 않는다.
 
 ### 용어
@@ -104,8 +104,8 @@ web
 
 ## Evidence on Hand
 
-- `index.html`·`src/`: 앱 전체. 순수 계산은 `src/core/`(`detect-core.js`, `match.js`, `targets.js`, `kinds.js`, `manual-core.js`, `idle.js`, `cooldown.js`, `pip-core.js`, `backup-core.js`, `alerts-core.js`)이고 화면·알림은 `src/app/`(`alerts.js`, `ui-*.js`, `register.js`, `capture.js`, `detect-run.js`, `sounds.js`, `manual-ui.js`, `audio.js`).
-- 자동 테스트(2026-11-09 추가): `npm test`(`node --test`, 순수 함수), `tests/browser/*.mjs`(가짜 화면 공유로 브라우저 시나리오, `ego-browser`). 모두 합성 화면이라 실제 게임 화면에서의 정확도는 확인하지 못했다.
+- `src/`: 앱 전체. 순수 계산은 `src/core/`(`detect-core.js`, `match.js`, `targets.js`, `kinds.js`, `manual-core.js`, `idle.js`, `cooldown.js`, `pip-core.js`, `backup-core.js`, `alerts-core.js`), 감지 루프·캡처·알림·저장 같은 엔진은 `src/app/`, 화면은 `src/ui/`(React 컴포넌트)다. 엔진은 상태를 바꾼 뒤 `bump()`(`src/app/bus.js`)로 화면 갱신을 알리고, 탭이 숨겨진 동안에는 그리기를 미룬다. 작은 창(PiP) 안쪽만 `src/app/pip.js`가 직접 그린다(숨은 동안에도 갱신).
+- 자동 테스트(2026-11-09 추가): `npm test`(`node --test`, 순수 함수), `tests/browser/*.mjs`(가짜 화면 공유로 브라우저 시나리오, `ego-browser`. `npm run dev:test`를 띄우고 `sh tests/browser/run.sh`). 모두 합성 화면이라 실제 게임 화면에서의 정확도는 확인하지 못했다.
 - 내장 템플릿 이미지: 솔 야누스 아이콘 32×32 세 장, 부스터 "◷ 남은시간" 글자 65×19 한 장(`src/core/preset-data.js`). 게임 화면에서 잘라낸 매칭용 이미지다.
 - 없는 것: 테스트용 게임 스크린샷 샘플, README, 사용 기록·정확도 데이터. 그래서 사냥 멈춤의 변화 기준(24·8픽셀, 높이 8%·너비 40%)과 설치기의 밝기 기준(0.85·0.65, 숫자 획을 뺀 일치도 0.85)은 실제 화면으로 확인하지 않은 값이다. 이후 작업에서 이런 것을 있는 것처럼 지어내지 않는다.
 

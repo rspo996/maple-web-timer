@@ -1,10 +1,12 @@
-/* ----- 창 ----- */
+/* ===== 작은 창(Document Picture-in-Picture, 묶음 5): 상태를 항상 위 창에 보이고, 알림이 울리면 그 행을 깜빡인다. 계산은 core/pip-core.js.
+   창 안쪽은 React 밖에서 이 파일이 직접 그린다: 다른 문서이고, 메인 탭이 숨겨져 있어도 틱마다 갱신해야 한다(화면 갱신 신호는 숨은 동안 미룬다) ===== */
 import {Alerts} from './alerts.js';
-import {$,setText} from './dom.js';
+import {bump} from './bus.js';
+import {setText} from './dom.js';
 import {manual} from './manual.js';
 import {saveUi,ui} from './prefs.js';
 import {store} from './store.js';
-import {setNote,snapshotNow,watchStatus} from './ui-watch.js';
+import {setNote,snapshotNow,watchStatus} from './watch.js';
 import {PIP_HOLD_MS,buildPipRows,pipFlashKind,pipLevel} from '../core/pip-core.js';
 export let pipWin=null, pipResizeTimer=null;
 export const pipFlash={};            // 행 id(또는 맨 위 줄 'sys') → {kind, at}
@@ -29,11 +31,12 @@ export const PIP_CSS=`
 @media (prefers-reduced-motion:reduce){[class*=flash-]::after{animation:none;opacity:0}}`;
 // 작은 창 문서는 about:blank라 상대 경로가 안 풀린다. 표시 글꼴은 절대 주소(Google Fonts)로 건다(못 읽으면 시스템 고딕)
 export const pipFontCss=()=>'@import url("https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap");';
+// 헤더의 "작은 창 열기"·"작은 창 닫기". requestWindow는 클릭 안에서만 부른다
+export function togglePip(){ if(pipWin) pipClose(); else pipOpen(); }
+export const pipIsOpen=()=>!!pipWin;
 export function pipInit(){
-  const b=$('#btnPip');
-  if(!pipSupported()){ b.disabled=true; $('#pipNote').hidden=false; return; }
-  b.disabled=false; $('#pipNote').hidden=true;
-  b.onclick=()=>{ if(pipWin) pipClose(); else pipOpen(); };   // requestWindow는 클릭 안에서만 부른다
+  bump();   // 지원 여부에 따라 버튼을 막거나 안내를 보인다(헤더가 pipSupported()로 그린다)
+  if(!pipSupported()) return;
   if(!pipInit.listening){ pipInit.listening=true;
     Alerts.listen(rec=>{
       if(rec.event==='back'){ delete pipFlash.sys; return; }
@@ -52,13 +55,13 @@ export async function pipOpen(){
   d.title='재획 알리미'; d.documentElement.lang='ko';
   const st=d.createElement('style'); st.textContent=pipFontCss()+PIP_CSS; d.head.append(st);
   d.body.innerHTML='<div id="pipStatus"></div><div id="pipRows"></div>';
-  w.addEventListener('pagehide',()=>{ pipRemember(); pipWin=null; setText($('#btnPip'),'작은 창 열기'); });
+  w.addEventListener('pagehide',()=>{ pipRemember(); pipWin=null; bump(); });
   w.addEventListener('resize',()=>{ clearTimeout(pipResizeTimer); pipResizeTimer=setTimeout(pipRemember,400); });   // 크기는 다음에 열 때 쓴다
-  setText($('#btnPip'),'작은 창 닫기');
+  bump();
   pipUpdate(Date.now());
 }
 export function pipRemember(){ if(pipWin&&pipWin.innerWidth){ ui.pip={w:Math.round(pipWin.innerWidth),h:Math.round(pipWin.innerHeight)}; saveUi(); } }
-export function pipClose(){ pipRemember(); const w=pipWin; pipWin=null; try{ w&&w.close(); }catch(e){} setText($('#btnPip'),'작은 창 열기'); }
+export function pipClose(){ pipRemember(); const w=pipWin; pipWin=null; try{ w&&w.close(); }catch(e){} bump(); }
 // tick마다(탭이 숨겨져 있어도) 부른다. 바뀐 글자·클래스만 쓴다. 화면 낭독기가 매번 읽지 않게 aria-live는 두지 않는다
 export function pipUpdate(now){
   if(!pipWin) return;

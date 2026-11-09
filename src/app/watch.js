@@ -3,7 +3,6 @@ import {titleTimer} from './alerts.js';
 import {bump} from './bus.js';
 import {health,src,viewCtx} from './capture.js';
 import {states} from './detect-run.js';
-import {$} from './dom.js';
 import {saveUi,ui} from './prefs.js';
 import {store} from './store.js';
 import {summarizeStrip,targetSnapshot} from '../core/targets.js';
@@ -38,4 +37,4 @@ export function beatText(){
   const stale=src&&src.type==='stream' ? (Date.now()-health.okAt)/1000 : 0;
   return stale>2 ? `마지막 확인 ${Math.floor(stale)}초 전` : '';
 }
-export function pulse(){ const dot=$('#watchDot'); if(!dot) return; dot.classList.remove('beat'); void dot.offsetWidth; dot.classList.add('beat'); }
+export function pulse(){ const dot=document.getElementById('watchDot'); if(!dot) return; dot.classList.remove('beat'); void dot.offsetWidth; dot.classList.add('beat'); }

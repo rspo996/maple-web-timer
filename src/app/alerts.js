@@ -1,10 +1,10 @@
 /* ===== 알림 경로 (묶음 1 스펙 7절). 모든 알림은 Alerts.fire 한 곳을 지난다 ===== */
 import {bump} from './bus.js';
-import {$} from './dom.js';
+import {volPct,voiceOn} from './audio.js';
 import {customSounds,playCustom} from './sounds.js';
-import {baseTitle} from './ui-watch.js';
+import {baseTitle} from './watch.js';
 import {createAlerts} from '../core/alerts-core.js';
-import {clampVolumePct,ttsVolume} from '../core/util.js';
+import {ttsVolume} from '../core/util.js';
 // 소리만 듣고도 무슨 알림인지 알 수 있게 대상·이벤트마다 패턴을 나눔. 연결 문제는 음색부터 다르게(톱니파, 낮은 음)
 export const BUFF_BEEP={wave:'square',notes:[[1046,.15],[1046,.15],[784,.3]]};   // 딩딩-동
 export const SOUNDS={
@@ -39,10 +39,10 @@ export function beep(name){
 // 음성은 끊지 않고 차례로 말함. 같은 문구가 8초 안에 또 오면 건너뛰고, 큐가 15초 넘게 막혀 있으면 비운 뒤 다시 말함
 export const spokenAt=new Map(); export let speakQueuedAt=0;
 export function speak(text){
-  if(!$('#voice').checked||!('speechSynthesis' in window)) return;
+  if(!voiceOn()||!('speechSynthesis' in window)) return;
   const now=Date.now(); if(now-(spokenAt.get(text)||0)<8000) return; spokenAt.set(text,now);
   if((speechSynthesis.speaking||speechSynthesis.pending) && now-speakQueuedAt>15000) speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.volume=ttsVolume(clampVolumePct($('#vol').value)); u.rate=1.1;
+  const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.volume=ttsVolume(volPct()); u.rate=1.1;
   speechSynthesis.speak(u); speakQueuedAt=now;
 }
 export const SYS_MSG={ lost:'화면 연결이 끊겼어요. 다시 연결해 주세요', stall:'게임 화면이 들어오지 않아요', back:'게임 화면이 다시 들어와요' };

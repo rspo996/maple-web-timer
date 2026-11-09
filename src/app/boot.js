@@ -6,7 +6,6 @@ import {setHooks} from '../core/hooks.js';
 import {Alerts} from './alerts.js';
 import {initCapture,src} from './capture.js';
 import {detectTemplate,loadTpl,readTimer,tick} from './detect-run.js';
-import {$} from './dom.js';
 import {manualInit,manualTick} from './manual.js';
 import {audioInit} from './audio.js';
 import {pipInit} from './pip.js';
@@ -15,7 +14,7 @@ import {initRegister} from './register.js';
 import {initSounds} from './sounds.js';
 import {initTargets,store} from './store.js';
 import {onTargetChanged} from './cards.js';
-import {renderWatch,setNote} from './ui-watch.js';
+import {renderWatch,setNote} from './watch.js';
 
 function onWorkerTick(){
   manualTick(Date.now());   // 수동 타이머는 감지 tick의 busy·grabFrame 대기에 묶이지 않게 먼저 동기로
@@ -30,7 +29,7 @@ export function boot(){
   initTargets(); initCapture(); initRegister(); initSounds();
   manualInit(); audioInit(); pipInit();
   renderWatch();
-  $('#helpDetails').open = !(ui.connectedOnce || store.targets.some(t=>t.tpl));   // 처음에만 펼침
+  document.getElementById('helpDetails').open = !(ui.connectedOnce || store.targets.some(t=>t.tpl));   // 설명서는 처음에만 펼친다
   try{
     // 숨은 탭에서도 500ms 간격을 지키도록 Worker 타이머를 쓴다
     const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),500)'],{type:'text/javascript'})));

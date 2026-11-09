@@ -3,7 +3,7 @@
 import {Alerts,actx,titleTimer,unlockAudio} from './alerts.js';
 import {bump} from './bus.js';
 import {importing} from './prefs.js';
-import {baseTitle,setNote,setTitlePrefix,titlePrefix} from './ui-watch.js';
+import {baseTitle,setNote,setTitlePrefix,titlePrefix} from './watch.js';
 import {MANUAL_LABEL_MAX,MANUAL_MAX,MANUAL_MIN_SEC,MANUAL_PRE_MAX,MANUAL_STORE,manualAdjust,manualEmptyStore,manualFmt,manualLoad,manualNew,manualRemainMs,manualReset,manualStart,manualStep,manualText} from '../core/manual-core.js';
 import {clampInt,parseDur} from '../core/util.js';
 export let manual=manualEmptyStore();

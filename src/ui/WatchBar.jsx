@@ -5,7 +5,7 @@ import { src, stopWatching } from '../app/capture.js';
 import { manualStripText, manualWake, soundLocked } from '../app/manual.js';
 import { startRegister, startRegisterQueue } from '../app/register.js';
 import { targetById } from '../app/store.js';
-import { beatText, note, stripItems, toggleStripOpen, watchStatus } from '../app/ui-watch.js';
+import { beatText, note, stripItems, toggleStripOpen, watchStatus } from '../app/watch.js';
 
 // 상태줄 항목 하나. 연결 뒤 다음에 할 일(등록)이 주된 버튼이 되도록 primary로 강조
 function StripItem({ it }) {

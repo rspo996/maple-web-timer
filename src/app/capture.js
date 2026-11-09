@@ -1,10 +1,10 @@
 import {Alerts,fireSystem,speak,unlockAudio} from './alerts.js';
 import {resetAllStates} from './detect-run.js';
-import {$} from './dom.js';
+import {bump} from './bus.js';
 import {saveUi,ui} from './prefs.js';
 import {pctx,pv} from './register.js';
 import {store} from './store.js';
-import {renderWatch,setNote} from './ui-watch.js';
+import {renderWatch,setNote} from './watch.js';
 import {KINDS} from '../core/kinds.js';
 import {eunNeun} from '../core/util.js';
 export const EMPTY_DEFAULT='“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.';
@@ -45,7 +45,7 @@ export const emptyText=()=>health.lostAt?EMPTY_LOST:EMPTY_DEFAULT;
 export function teardown(){
   Alerts.clear();   // 묶음 대기 중이던 알림은 연결 알림이 우선이라 버린다
   src=null; if(pctx) pctx.clearRect(0,0,pv.width,pv.height);   // 멈춘 마지막 화면 대신 빈 화면 위에 안내문을 보여줌
-  $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
+  Object.assign(connectBtn,{label:'게임 화면 연결',primary:true});
   renderWatch();
 }
 // 상태줄의 "감시 끝내기"·"테스트 끝내기"
@@ -54,8 +54,9 @@ export function stopWatching(){
   if(src&&src.track) src.track.stop(); health.lostAt=null; health.badWarned=false;
   teardown(); setNote(wasTest?'스크린샷 테스트를 끝냈어요':'감시를 끝냈어요','info');
 }
-export function initCapture(){
-$('#btnConnect').onclick=async()=>{
+// 헤더의 "게임 화면 연결" 버튼. 연결 뒤에는 주된 행동이 아니므로 "다른 창 연결"로 바꾸고 강조를 뺀다
+export const connectBtn={label:'게임 화면 연결',primary:true};
+export async function connect(){
   unlockAudio(); setNote('');
   try{
     const stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:5,max:10},cursor:'never'},audio:false});
@@ -70,7 +71,7 @@ $('#btnConnect').onclick=async()=>{
       teardown(); fireSystem('lost');
     };
     src={type:'stream',video,track,cap};
-    $('#btnConnect').textContent='다른 창 연결'; $('#btnConnect').classList.remove('primary');   // 연결 뒤에는 주된 행동이 아님
+    Object.assign(connectBtn,{label:'다른 창 연결',primary:false});
     Object.assign(health,{lostAt:null,badSince:null,badWarned:false,okAt:Date.now()});
     resetAllStates(false);
     ui.connectedOnce=true; saveUi();
@@ -78,18 +79,21 @@ $('#btnConnect').onclick=async()=>{
     speak('감시 시작할게요'+(need.length?`. ${eunNeun(need.join(', '))} 등록이 필요해요`:''));
     renderWatch();
   }catch(e){ if(e.name!=='NotAllowedError') setNote(`화면 연결에 실패했어요 (${e.message}). “게임 화면 연결”을 다시 눌러 주세요.`); }
-};
-$('#btnImage').onclick=()=>$('#fileImage').click();
-$('#fileImage').onchange=e=>{
-  const f=e.target.files[0]; if(!f) return; const img=new Image();
+}
+// "스크린샷으로 테스트": 고른 이미지를 화면 대신 쓴다(처음부터 켜짐 시각을 믿는다)
+export function loadImageFile(f){
+  const img=new Image();
   img.onload=()=>{ if(src&&src.track) src.track.stop(); src={type:'image',img}; health.lostAt=null; health.badWarned=false; resetAllStates(true); renderWatch(); };
-  img.src=URL.createObjectURL(f); e.target.value='';
-};
-$('#btnNotify').onclick=async()=>{
+  img.src=URL.createObjectURL(f);
+}
+// "브라우저 알림 허용" 버튼 문구
+export const notifyBtn={label:'브라우저 알림 허용'};
+export async function requestNotify(){
   unlockAudio();
   if(!('Notification' in window)){ setNote('이 브라우저는 알림을 지원하지 않아요. 소리와 음성으로만 알려요','info'); return; }
-  const p=await Notification.requestPermission(); $('#btnNotify').textContent=p==='granted'?'알림 허용됨':'알림 차단됨';
+  const p=await Notification.requestPermission(); notifyBtn.label=p==='granted'?'알림 허용됨':'알림 차단됨'; bump();
   if(p!=='granted') setNote('브라우저 알림이 차단돼 있어요. 소리와 음성으로만 알려요','info');
-};
-if('Notification' in window && Notification.permission==='granted') $('#btnNotify').textContent='알림 허용됨';
+}
+export function initCapture(){
+  if('Notification' in window && Notification.permission==='granted'){ notifyBtn.label='알림 허용됨'; bump(); }
 }

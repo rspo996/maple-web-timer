@@ -2,7 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useBus } from './useBus.js';
-import { CommitInput, Gauge } from './parts.jsx';
+import { NativeInput, Gauge } from './parts.jsx';
 import { unlockAudio } from '../app/alerts.js';
 import {
   BUFF_NAMES, addFromMenu, addFull, addMenu, cardView, commitField, deleteTarget, moveCard, renameCard, resetToPreset,
@@ -21,7 +21,7 @@ function Field({ t, f, id }) {
     <>
       <label htmlFor={fid}>{f.label}</label>
       <span>
-        <CommitInput id={fid} type={num ? 'number' : 'text'} data-f={f.key} min={num ? f.min : undefined} max={num ? f.max : undefined}
+        <NativeInput id={fid} type={num ? 'number' : 'text'} data-f={f.key} min={num ? f.min : undefined} max={num ? f.max : undefined}
           placeholder={f.placeholder} aria-describedby={f.suffix ? `${fid}-sfx` : undefined}
           value={String(f.get(t))} onCommit={el => { el.value = commitField(t, f, el.value); }} />
         {f.suffix && <>{' '}<span className="sub" id={`${fid}-sfx`}>{f.suffix}</span></>}

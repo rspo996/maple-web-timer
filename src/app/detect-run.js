@@ -4,7 +4,7 @@ import {LOST_REMIND_MAX,LOST_REMIND_MS,STALL_MS,dims,frame,grab,health,setFrameF
 import {pipUpdate} from './pip.js';
 import {drawPreview,reg} from './register.js';
 import {store,targetById} from './store.js';
-import {pulse,renderWatch,setNote} from './ui-watch.js';
+import {pulse,renderWatch,setNote} from './watch.js';
 import {planGroup} from '../core/alerts-core.js';
 import {newState,ocrSevenSeg} from '../core/detect-core.js';
 import {KINDS,isPresetMode} from '../core/kinds.js';

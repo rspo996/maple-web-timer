@@ -2,14 +2,14 @@
 version: 1
 slug: "index-html"
 primary_target: "index.html"
-related_targets: ["src/styles/app.css"]
+related_targets: ["src/ui/App.jsx", "src/styles/app.css"]
 ---
 
 # 메이플 재획 알리미 · 메인 화면 (index.html)
 
 ## 범위와 모드
 
-- 범위: `index.html` 한 화면 전체(헤더·감시 상태창·게임 화면·감지 대상·수동 타이머·설명서·소리·백업)와 작은 창(PiP) 스타일.
+- 범위: 한 화면 전체(헤더·감시 상태창·게임 화면·감지 대상·수동 타이머·설명서·소리·백업)와 작은 창(PiP) 스타일. 화면은 `src/ui/*.jsx`가 그리고 `index.html`은 빈 `#root`만 둔다.
 - 모드: Operate. 설정과 등록을 하고, 탭을 숨기기 직전에 "감시 중"을 확인하는 화면이다. 사냥 중에는 보지 않는다.
 
 ## 사용자 요청 (2026-11-09)
