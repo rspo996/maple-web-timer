@@ -21,8 +21,8 @@ function buildCards(){
 function buildCard(t){
   const k=KINDS[t.kind], el=document.createElement('div'), id='t-'+t.id; el.className='card'; el.id='card-'+t.id;
   if(!k){   // 이 버전이 모르는 종류(미래 버전 데이터)는 지우지 않고 안내만
-    el.innerHTML='<div class="top"><h2><span data-s="name"></span></h2></div><div class="sub">이 버전에서 지원하지 않는 종류예요</div>';
-    el.querySelector('[data-s=name]').textContent=t.name; return el;
+    el.innerHTML='<div class="top"><h2><span data-s="name"></span></h2></div><div class="sub">이 버전에서 지원하지 않는 종류예요</div><div class="row manage" style="margin-top:10px"><button data-a="delete">삭제</button></div>';
+    el.querySelector('[data-s=name]').textContent=t.name; el.querySelector('[data-a=delete]').onclick=()=>deleteTarget(t); return el;
   }
   el.innerHTML=`
     <div class="top"><h2><img class="thumb" alt="" hidden><span data-s="name"></span></h2>
@@ -38,7 +38,11 @@ function buildCard(t){
       <button data-a="register">등록</button><button data-a="test">알림 테스트</button>
       ${k.actions.map(a=>`<button data-act="${a.key}">${a.label}</button>`).join('')}
       ${t.preset?'<button data-a="reset">기본 아이콘으로 되돌리기</button>':''}
-    </div>`;
+    </div>
+    <div class="row manage" style="margin-top:10px">
+      <button data-a="rename">이름 바꾸기</button><button data-a="up" aria-label="${t.name} 위로 옮기기">위로</button><button data-a="down" aria-label="${t.name} 아래로 옮기기">아래로</button><button data-a="delete">삭제</button>
+    </div>
+    <form class="row" data-s="renameForm" hidden><input maxlength="12" aria-label="새 이름"><button>저장</button><button type="button" data-a="renameCancel">취소</button><span class="sub" role="alert" data-s="renameErr"></span></form>`;
   const q=s=>el.querySelector(s);
   q('[data-s=name]').textContent=t.name;
   q('[data-k=enabled]').checked=t.enabled;
@@ -52,6 +56,13 @@ function buildCard(t){
   for(const a of k.actions) q(`[data-act=${a.key}]`).onclick=()=>a.run(t,stateOf(t.id),Date.now());
   if(t.preset) q('[data-a=reset]').onclick=()=>{ t.tpl=null; t.area=null; t.frameW=t.frameH=0; saveTargets(); states[t.id]=newState(); renderCard(t); setNote(`${t.name} 기본 아이콘으로 되돌렸어요`,'info'); };
   q('[data-a=register]').onclick=()=>startRegister(t);
+  const idx=store.targets.indexOf(t), form=q('[data-s=renameForm]'), nameInp=form.querySelector('input');
+  q('[data-a=up]').disabled=idx===0; q('[data-a=down]').disabled=idx===store.targets.length-1;
+  q('[data-a=up]').onclick=()=>moveCard(t,-1); q('[data-a=down]').onclick=()=>moveCard(t,1);
+  q('[data-a=delete]').onclick=()=>deleteTarget(t);
+  q('[data-a=rename]').onclick=()=>{ form.hidden=false; nameInp.value=t.name; nameInp.select(); };
+  q('[data-a=renameCancel]').onclick=()=>{ form.hidden=true; q('[data-s=renameErr]').textContent=''; };
+  form.onsubmit=e=>{ e.preventDefault(); const r=renameTarget(store,t.id,nameInp.value); if(!r.ok){ q('[data-s=renameErr]').textContent=r.msg; return; } saveTargets(); onTargetsChanged(); };
   q('[data-a=test]').onclick=()=>{ unlockAudio(); testAlert(t); };
   return el;
 }
@@ -108,4 +119,28 @@ function removeTargetNow(t){
   if(reg&&reg.t===t){ reg=null; updateBanner(); }
   store.targets.splice(i,1); delete states[t.id]; Alerts.drop(t.id);
   saveTargets(); onTargetsChanged(); return i;
+}
+
+function moveCard(t,delta){ if(moveTarget(store,t.id,delta)>=0){ saveTargets(); onTargetsChanged(); } }
+/* ----- 삭제: 확인 → 바로 뺌 → 10초 되돌리기. 내 소리 파일은 10초 뒤에 지운다(그 사이 탭이 닫히면 다음 로드의 고아 정리가 지움) ----- */
+const UNDO_MS=10000, trash=new Map();   // id → {t, index, sounds:Map(slot→소리), timer}
+function deleteTarget(t){
+  const keys=ownedSlotKeys([...customSounds.keys()],t.id);
+  if(!confirm(deleteConfirmText(t.name,keys.length))) return;
+  const sounds=new Map(keys.map(k=>[k,customSounds.get(k)])); keys.forEach(k=>customSounds.delete(k));
+  const index=removeTargetNow(t);           // 등록 중이면 취소하고, 목록·소리 설정·상태줄을 다시 그림
+  const e={t,index,sounds,timer:setTimeout(()=>finalizeDelete(t.id),UNDO_MS)}; trash.set(t.id,e);
+  $('#undoText').textContent=`"${t.name}" 지웠어요 ·`; $('#undoBar').hidden=false; $('#undoBtn').onclick=()=>undoDelete(t.id); $('#undoBtn').focus();
+}
+function finalizeDelete(id){
+  const e=trash.get(id); if(!e) return; trash.delete(id); deleteSoundKeys([...e.sounds.keys()]);
+  if(!trash.size) $('#undoBar').hidden=true;
+}
+function undoDelete(id){
+  const e=trash.get(id); if(!e) return;
+  if(store.targets.length>=TARGET_MAX){ setNote(FULL_MSG+' · 다른 대상을 지우고 되돌려 주세요'); return; }
+  clearTimeout(e.timer); trash.delete(id);
+  insertTargetAt(store,e.t,e.index); states[e.t.id]=newState(); e.sounds.forEach((v,k)=>customSounds.set(k,v));
+  saveTargets(); onTargetsChanged(); renderSounds();
+  if(!trash.size) $('#undoBar').hidden=true;
 }

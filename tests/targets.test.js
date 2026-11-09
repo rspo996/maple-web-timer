@@ -195,3 +195,40 @@ test('addBuff: 이름 검사를 거쳐 u번호 id로 추가, 12개 상한, seq�
   while (s.targets.length < 12) addBuff(s, '버프' + s.seq);
   const full = addBuff(s, '하나 더'); assert.deepEqual(plain([full.ok, full.msg]), [false, '대상은 12개까지 둘 수 있어요']);
 });
+
+// ---- 이름 바꾸기·순서·삭제 (묶음 1 스펙 3.3·4.5) ----
+const { renameTarget, moveTarget, insertTargetAt, deleteConfirmText, ownedSlotKeys } = L;
+
+test('renameTarget: id·슬롯은 그대로, 이름만 바뀐다. 중복·빈 이름·13자는 거절하고 이름을 바꾸지 않는다', () => {
+  const s = plain(defaultStore());
+  assert.deepEqual(plain(renameTarget(s, 'sol', '  솔  ')), { ok: true, msg: '' });
+  assert.deepEqual([s.targets[0].id, s.targets[0].name], ['sol', '솔']);
+  assert.equal(renameTarget(s, 'sol', '룬').ok, false);
+  assert.equal(renameTarget(s, 'sol', '룬').msg, '이름을 1~12자로, 다른 대상과 다르게 입력해 주세요');
+  assert.equal(renameTarget(s, 'sol', '').ok, false); assert.equal(renameTarget(s, 'sol', '가'.repeat(13)).ok, false);
+  assert.equal(s.targets[0].name, '솔');
+  assert.equal(renameTarget(s, 'sol', '솔').ok, true);                    // 자기 자신과 같은 이름은 허용
+  assert.equal(renameTarget(s, 'nope', 'x').ok, false);
+});
+
+test('moveTarget: 위(-1)·아래(+1)로 한 칸, 끝에서는 아무 일도 없다', () => {
+  const s = plain(defaultStore()), order = () => s.targets.map(t => t.id).join();
+  assert.equal(moveTarget(s, 'rune', -1), 1); assert.equal(order(), 'sol,rune,booster');
+  assert.equal(moveTarget(s, 'sol', -1), -1); assert.equal(order(), 'sol,rune,booster');
+  assert.equal(moveTarget(s, 'booster', 1), -1);
+  assert.equal(moveTarget(s, 'sol', 1), 1); assert.equal(order(), 'rune,sol,booster');
+  assert.equal(moveTarget(s, 'zzz', 1), -1);
+});
+
+test('insertTargetAt: 되돌리기 위치(범위를 넘으면 끝), 이름이 겹치면 (복원)', () => {
+  const s = plain(defaultStore()), t = { id: 'u1', name: '유니온의 힘' };
+  insertTargetAt(s, t, 1); assert.deepEqual(s.targets.map(x => x.id), ['sol', 'u1', 'booster', 'rune']);
+  const s2 = plain(defaultStore()); insertTargetAt(s2, { id: 'u2', name: '룬' }, 99);
+  assert.deepEqual(s2.targets.map(x => [x.id, x.name]).slice(2), [['rune', '룬'], ['u2', '룬 (복원)']]);
+});
+
+test('삭제 확인 문구와 대상이 가진 내 소리 키', () => {
+  assert.equal(deleteConfirmText('유니온의 힘', 0), '"유니온의 힘" 대상을 지울까요?');
+  assert.equal(deleteConfirmText('유니온의 힘', 2), '"유니온의 힘" 대상을 지울까요? 내 소리 2개도 함께 지워져요.');
+  assert.deepEqual(plain(ownedSlotKeys(['u3.pre', 'u3.gone', 'u30.pre', 'sol.pre', 'sys.lost'], 'u3')), ['u3.pre', 'u3.gone']);
+});
