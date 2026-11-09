@@ -1,1309 +1,385 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-09T05:38:14.475322+00:00",
+  "generatedAt": "2026-11-09T07:04:40.015Z",
   "title": "Design System: 메이플 재획 알리미",
   "extensions": {
     "colorMeta": {
-      "sky": {
+      "daylight-lilac-paper": {
         "role": "neutral",
-        "displayName": "Sky",
-        "canonical": "#a7dbf5",
+        "displayName": "Daylight Lilac Paper",
+        "canonical": "oklch(97% 0.01 315)",
         "tonalRamp": [
-          "#132d3a",
-          "#1c516b",
-          "#2076a2",
-          "#1f9ddd",
-          "#4fb4e6",
-          "#88c8e8",
-          "#bcddee",
-          "#ecf4f9"
+          "oklch(15% 0.005 315)",
+          "oklch(25% 0.007 315)",
+          "oklch(35% 0.009 315)",
+          "oklch(45% 0.010 315)",
+          "oklch(55% 0.010 315)",
+          "oklch(70% 0.008 315)",
+          "oklch(85% 0.005 315)",
+          "oklch(95% 0.002 315)"
         ]
       },
-      "sky-pale": {
+      "lilac-well": {
         "role": "neutral",
-        "displayName": "Sky Pale",
-        "canonical": "#e3f4fc",
+        "displayName": "Lilac Well",
+        "canonical": "oklch(94% 0.014 315)",
         "tonalRamp": [
-          "#132d3a",
-          "#1b526c",
-          "#1f78a2",
-          "#1ea0de",
-          "#4eb6e7",
-          "#88c9e8",
-          "#bcdeee",
-          "#ecf5f9"
+          "oklch(15% 0.006 315)",
+          "oklch(25% 0.010 315)",
+          "oklch(35% 0.012 315)",
+          "oklch(45% 0.014 315)",
+          "oklch(55% 0.014 315)",
+          "oklch(70% 0.011 315)",
+          "oklch(85% 0.006 315)",
+          "oklch(95% 0.002 315)"
         ]
       },
-      "parchment": {
+      "lilac-press": {
         "role": "neutral",
-        "displayName": "Parchment",
-        "canonical": "#fffaf0",
+        "displayName": "Lilac Press",
+        "canonical": "oklch(90.5% 0.018 315)",
         "tonalRamp": [
-          "#3f2e0e",
-          "#755411",
-          "#b27c0f",
-          "#f5a506",
-          "#faba3c",
-          "#f4cc7c",
-          "#f4dfb6",
-          "#faf5ea"
+          "oklch(15% 0.008 315)",
+          "oklch(25% 0.013 315)",
+          "oklch(35% 0.016 315)",
+          "oklch(45% 0.018 315)",
+          "oklch(55% 0.018 315)",
+          "oklch(70% 0.015 315)",
+          "oklch(85% 0.008 315)",
+          "oklch(95% 0.003 315)"
         ]
       },
-      "well-cream": {
+      "aubergine-ink": {
         "role": "neutral",
-        "displayName": "Well Cream",
-        "canonical": "#f7ecd9",
+        "displayName": "Aubergine Ink",
+        "canonical": "oklch(20% 0.045 312)",
         "tonalRamp": [
-          "#362b16",
-          "#644c23",
-          "#966f2b",
-          "#cb9230",
-          "#d9ab5d",
-          "#dfc291",
-          "#e9dbc1",
-          "#f8f4ed"
+          "oklch(15% 0.020 312)",
+          "oklch(25% 0.032 312)",
+          "oklch(35% 0.040 312)",
+          "oklch(45% 0.044 312)",
+          "oklch(55% 0.044 312)",
+          "oklch(70% 0.036 312)",
+          "oklch(85% 0.020 312)",
+          "oklch(95% 0.007 312)"
         ]
       },
-      "well-line": {
+      "aubergine-ink-soft": {
         "role": "neutral",
-        "displayName": "Well Line",
-        "canonical": "#e3cfae",
+        "displayName": "Aubergine Ink Soft",
+        "canonical": "oklch(33% 0.045 312)",
         "tonalRamp": [
-          "#32291a",
-          "#5c492b",
-          "#886a39",
-          "#b88c44",
-          "#c9a66d",
-          "#d5bf9b",
-          "#e4d9c6",
-          "#f6f3ee"
+          "oklch(15% 0.020 312)",
+          "oklch(25% 0.032 312)",
+          "oklch(35% 0.040 312)",
+          "oklch(45% 0.044 312)",
+          "oklch(55% 0.044 312)",
+          "oklch(70% 0.036 312)",
+          "oklch(85% 0.020 312)",
+          "oklch(95% 0.007 312)"
         ]
       },
-      "field-white": {
+      "aubergine-muted": {
         "role": "neutral",
-        "displayName": "Field White",
-        "canonical": "#ffffff",
+        "displayName": "Aubergine Muted",
+        "canonical": "oklch(47% 0.035 312)",
         "tonalRamp": [
-          "#262626",
-          "#434343",
-          "#616161",
-          "#7e7e7e",
-          "#9b9b9b",
-          "#b8b8b8",
-          "#d5d5d5",
-          "#f2f2f2"
+          "oklch(15% 0.016 312)",
+          "oklch(25% 0.025 312)",
+          "oklch(35% 0.031 312)",
+          "oklch(45% 0.035 312)",
+          "oklch(55% 0.035 312)",
+          "oklch(70% 0.028 312)",
+          "oklch(85% 0.016 312)",
+          "oklch(95% 0.005 312)"
         ]
       },
-      "field-line": {
+      "lilac-rule": {
         "role": "neutral",
-        "displayName": "Field Line",
-        "canonical": "#cfb48b",
+        "displayName": "Lilac Rule",
+        "canonical": "oklch(85% 0.025 312)",
         "tonalRamp": [
-          "#30281c",
-          "#58482f",
-          "#82683f",
-          "#af884c",
-          "#c2a373",
-          "#d1bd9f",
-          "#e2d8c8",
-          "#f6f3ef"
+          "oklch(15% 0.011 312)",
+          "oklch(25% 0.018 312)",
+          "oklch(35% 0.022 312)",
+          "oklch(45% 0.025 312)",
+          "oklch(55% 0.025 312)",
+          "oklch(70% 0.020 312)",
+          "oklch(85% 0.011 312)",
+          "oklch(95% 0.004 312)"
         ]
       },
-      "bark-ink": {
-        "role": "neutral",
-        "displayName": "Bark Ink",
-        "canonical": "#3b2814",
-        "tonalRamp": [
-          "#32271a",
-          "#5c442b",
-          "#896238",
-          "#b97f43",
-          "#ca9c6c",
-          "#d6b99a",
-          "#e4d6c6",
-          "#f6f2ee"
-        ]
-      },
-      "bark-muted": {
-        "role": "neutral",
-        "displayName": "Bark Muted",
-        "canonical": "#7a5f45",
-        "tonalRamp": [
-          "#2d261f",
-          "#514336",
-          "#77604a",
-          "#9f7d5d",
-          "#b59a80",
-          "#c9b8a7",
-          "#ded5cc",
-          "#f5f2f0"
-        ]
-      },
-      "rim-umber": {
-        "role": "secondary",
-        "displayName": "Rim Umber",
-        "canonical": "#5c3a1a",
-        "tonalRamp": [
-          "#342619",
-          "#5f4327",
-          "#8e5f33",
-          "#c07c3b",
-          "#d09966",
-          "#dab796",
-          "#e7d5c4",
-          "#f7f2ee"
-        ]
-      },
-      "frame-wood": {
-        "role": "secondary",
-        "displayName": "Frame Wood",
-        "canonical": "#c98d4f",
-        "tonalRamp": [
-          "#332619",
-          "#5e4429",
-          "#8c6135",
-          "#bd7f3e",
-          "#cd9c68",
-          "#d8b898",
-          "#e6d5c5",
-          "#f7f2ee"
-        ]
-      },
-      "frame-wood-hi": {
-        "role": "secondary",
-        "displayName": "Frame Wood Hi",
-        "canonical": "#efc58f",
-        "tonalRamp": [
-          "#392914",
-          "#69481e",
-          "#9e6823",
-          "#d78924",
-          "#e2a454",
-          "#e5be8b",
-          "#ecd8be",
-          "#f8f3ec"
-        ]
-      },
-      "bar-ember": {
+      "cabinet-ember": {
         "role": "primary",
-        "displayName": "Bar Ember",
-        "canonical": "#e8791f",
+        "displayName": "Cabinet Ember",
+        "canonical": "oklch(64% 0.22 40)",
         "tonalRamp": [
-          "#3a2412",
-          "#6c3f1b",
-          "#a35a1e",
-          "#df741d",
-          "#e8934d",
-          "#e9b387",
-          "#eed2bc",
-          "#f9f2ec"
+          "oklch(15% 0.100 40)",
+          "oklch(25% 0.156 40)",
+          "oklch(35% 0.196 40)",
+          "oklch(45% 0.217 40)",
+          "oklch(55% 0.217 40)",
+          "oklch(70% 0.178 40)",
+          "oklch(85% 0.100 40)",
+          "oklch(95% 0.034 40)"
         ]
       },
-      "bar-ember-hi": {
+      "ember-text": {
         "role": "primary",
-        "displayName": "Bar Ember Hi",
-        "canonical": "#ffad55",
+        "displayName": "Ember Text",
+        "canonical": "oklch(52% 0.2 36)",
         "tonalRamp": [
-          "#3f270e",
-          "#754511",
-          "#b2630f",
-          "#f58206",
-          "#fa9e3c",
-          "#f4ba7c",
-          "#f4d6b6",
-          "#faf3ea"
+          "oklch(15% 0.091 36)",
+          "oklch(25% 0.141 36)",
+          "oklch(35% 0.178 36)",
+          "oklch(45% 0.198 36)",
+          "oklch(55% 0.198 36)",
+          "oklch(70% 0.162 36)",
+          "oklch(85% 0.091 36)",
+          "oklch(95% 0.031 36)"
         ]
       },
-      "bar-ember-edge": {
-        "role": "primary",
-        "displayName": "Bar Ember Edge",
-        "canonical": "#9c4e12",
-        "tonalRamp": [
-          "#3a2413",
-          "#6b3e1c",
-          "#a15820",
-          "#dc711f",
-          "#e6914f",
-          "#e8b288",
-          "#eed2bc",
-          "#f9f1ec"
-        ]
-      },
-      "bar-outline": {
-        "role": "neutral",
-        "displayName": "Bar Outline",
-        "canonical": "#6e3207",
-        "tonalRamp": [
-          "#3c2311",
-          "#6f3c17",
-          "#a85519",
-          "#e76c15",
-          "#ee8d47",
-          "#edaf83",
-          "#f1d1ba",
-          "#f9f1eb"
-        ]
-      },
-      "bar-sub": {
-        "role": "neutral",
-        "displayName": "Bar Sub",
-        "canonical": "#4a2406",
-        "tonalRamp": [
-          "#3b2411",
-          "#6e3e19",
-          "#a6581b",
-          "#e37218",
-          "#ec914a",
-          "#ebb285",
-          "#f0d2bb",
-          "#f9f1eb"
-        ]
-      },
-      "shut-wood": {
+      "acid-lime": {
         "role": "secondary",
-        "displayName": "Shut Wood",
-        "canonical": "#a8713c",
+        "displayName": "Acid Lime",
+        "canonical": "oklch(87% 0.2 115)",
         "tonalRamp": [
-          "#32261b",
-          "#5b432c",
-          "#87603a",
-          "#b67d45",
-          "#c89a6e",
-          "#d4b79c",
-          "#e4d5c6",
-          "#f6f2ee"
+          "oklch(15% 0.091 115)",
+          "oklch(25% 0.141 115)",
+          "oklch(35% 0.178 115)",
+          "oklch(45% 0.198 115)",
+          "oklch(55% 0.198 115)",
+          "oklch(70% 0.162 115)",
+          "oklch(85% 0.091 115)",
+          "oklch(95% 0.031 115)"
         ]
       },
-      "shut-wood-hi": {
+      "acid-olive": {
         "role": "secondary",
-        "displayName": "Shut Wood Hi",
-        "canonical": "#d09a5c",
+        "displayName": "Acid Olive",
+        "canonical": "oklch(47% 0.13 128)",
         "tonalRamp": [
-          "#342719",
-          "#5f4528",
-          "#8e6433",
-          "#c0823c",
-          "#cf9e66",
-          "#d9ba97",
-          "#e6d6c4",
-          "#f7f3ee"
+          "oklch(15% 0.059 128)",
+          "oklch(25% 0.092 128)",
+          "oklch(35% 0.116 128)",
+          "oklch(45% 0.128 128)",
+          "oklch(55% 0.128 128)",
+          "oklch(70% 0.105 128)",
+          "oklch(85% 0.059 128)",
+          "oklch(95% 0.020 128)"
         ]
       },
-      "shut-wood-edge": {
-        "role": "secondary",
-        "displayName": "Shut Wood Edge",
-        "canonical": "#6e4419",
+      "test-teal": {
+        "role": "tertiary",
+        "displayName": "Test Teal",
+        "canonical": "oklch(50% 0.11 215)",
         "tonalRamp": [
-          "#362617",
-          "#634424",
-          "#94612d",
-          "#c97f33",
-          "#d79c5f",
-          "#deb892",
-          "#e9d5c2",
-          "#f7f2ed"
+          "oklch(15% 0.050 215)",
+          "oklch(25% 0.078 215)",
+          "oklch(35% 0.098 215)",
+          "oklch(45% 0.109 215)",
+          "oklch(55% 0.109 215)",
+          "oklch(70% 0.089 215)",
+          "oklch(85% 0.050 215)",
+          "oklch(95% 0.017 215)"
         ]
       },
-      "shut-sub": {
-        "role": "secondary",
-        "displayName": "Shut Sub",
-        "canonical": "#1f0e02",
-        "tonalRamp": [
-          "#3c2311",
-          "#6f3c17",
-          "#a85419",
-          "#e66c15",
-          "#ee8c47",
-          "#edaf83",
-          "#f0d0ba",
-          "#f9f1eb"
-        ]
-      },
-      "button-cream": {
+      "crt-black": {
         "role": "neutral",
-        "displayName": "Button Cream",
-        "canonical": "#fff6e6",
+        "displayName": "CRT Black",
+        "canonical": "oklch(10% 0.03 312)",
         "tonalRamp": [
-          "#3f2d0e",
-          "#755111",
-          "#b2770f",
-          "#f59f06",
-          "#fab53c",
-          "#f4c97c",
-          "#f4deb6",
-          "#faf5ea"
+          "oklch(15% 0.014 312)",
+          "oklch(25% 0.021 312)",
+          "oklch(35% 0.027 312)",
+          "oklch(45% 0.030 312)",
+          "oklch(55% 0.030 312)",
+          "oklch(70% 0.024 312)",
+          "oklch(85% 0.014 312)",
+          "oklch(95% 0.005 312)"
         ]
       },
-      "button-edge": {
+      "crt-screen-ink": {
         "role": "neutral",
-        "displayName": "Button Edge",
-        "canonical": "#c99d68",
+        "displayName": "CRT Screen Ink",
+        "canonical": "oklch(92% 0.012 315)",
         "tonalRamp": [
-          "#32271b",
-          "#5b462c",
-          "#87643a",
-          "#b68345",
-          "#c89f6e",
-          "#d4bb9c",
-          "#e4d6c6",
-          "#f6f3ee"
+          "oklch(15% 0.005 315)",
+          "oklch(25% 0.008 315)",
+          "oklch(35% 0.011 315)",
+          "oklch(45% 0.012 315)",
+          "oklch(55% 0.012 315)",
+          "oklch(70% 0.010 315)",
+          "oklch(85% 0.005 315)",
+          "oklch(95% 0.002 315)"
         ]
       },
-      "accent-gold": {
-        "role": "primary",
-        "displayName": "Accent Gold",
-        "canonical": "#ffc53d",
-        "tonalRamp": [
-          "#3f300e",
-          "#755811",
-          "#b2810f",
-          "#f5ae06",
-          "#fac13c",
-          "#f4d07c",
-          "#f4e2b6",
-          "#faf6ea"
-        ]
-      },
-      "accent-gold-hi": {
-        "role": "primary",
-        "displayName": "Accent Gold Hi",
-        "canonical": "#ffe390",
-        "tonalRamp": [
-          "#3f320e",
-          "#755c11",
-          "#b2890f",
-          "#f5b906",
-          "#faca3c",
-          "#f4d67c",
-          "#f4e5b6",
-          "#faf6ea"
-        ]
-      },
-      "accent-gold-edge": {
-        "role": "primary",
-        "displayName": "Accent Gold Edge",
-        "canonical": "#b9780f",
-        "tonalRamp": [
-          "#3b2b11",
-          "#6e4d19",
-          "#a6711b",
-          "#e39618",
-          "#ecae4a",
-          "#ebc485",
-          "#f0dbbb",
-          "#f9f4eb"
-        ]
-      },
-      "accent-ink": {
-        "role": "primary",
-        "displayName": "Accent Ink",
-        "canonical": "#3b2208",
-        "tonalRamp": [
-          "#392714",
-          "#6a441d",
-          "#9f6222",
-          "#d87f23",
-          "#e39c52",
-          "#e6b98a",
-          "#edd6bd",
-          "#f8f2ec"
-        ]
-      },
-      "control-orange": {
-        "role": "secondary",
-        "displayName": "Control Orange",
-        "canonical": "#d9741a",
-        "tonalRamp": [
-          "#392513",
-          "#6b411c",
-          "#a15d20",
-          "#db7820",
-          "#e69750",
-          "#e7b589",
-          "#eed4bd",
-          "#f9f2ec"
-        ]
-      },
-      "slot-rim": {
+      "crt-red": {
         "role": "neutral",
-        "displayName": "Slot Rim",
-        "canonical": "#3d2611",
+        "displayName": "CRT Red",
+        "canonical": "oklch(63% 0.24 25)",
         "tonalRamp": [
-          "#342618",
-          "#604227",
-          "#8f5e32",
-          "#c17b3a",
-          "#d09865",
-          "#dab696",
-          "#e7d4c4",
-          "#f7f2ee"
+          "oklch(15% 0.109 25)",
+          "oklch(25% 0.170 25)",
+          "oklch(35% 0.214 25)",
+          "oklch(45% 0.237 25)",
+          "oklch(55% 0.237 25)",
+          "oklch(70% 0.194 25)",
+          "oklch(85% 0.109 25)",
+          "oklch(95% 0.038 25)"
         ]
       },
-      "link-blue": {
+      "crt-green": {
         "role": "neutral",
-        "displayName": "Link Blue",
-        "canonical": "#1f5fae",
+        "displayName": "CRT Green",
+        "canonical": "oklch(80% 0.25 140)",
         "tonalRamp": [
-          "#152437",
-          "#204066",
-          "#285b99",
-          "#2b75d1",
-          "#5994dd",
-          "#8eb4e2",
-          "#bfd3eb",
-          "#edf2f8"
+          "oklch(15% 0.113 140)",
+          "oklch(25% 0.177 140)",
+          "oklch(35% 0.223 140)",
+          "oklch(45% 0.247 140)",
+          "oklch(55% 0.247 140)",
+          "oklch(70% 0.202 140)",
+          "oklch(85% 0.113 140)",
+          "oklch(95% 0.039 140)"
         ]
       },
-      "ok-green": {
-        "role": "tertiary",
-        "displayName": "Ok Green",
-        "canonical": "#23803a",
-        "tonalRamp": [
-          "#18341f",
-          "#276035",
-          "#328f49",
-          "#3ac25b",
-          "#65d17f",
-          "#96daa7",
-          "#c3e7cc",
-          "#eef7f0"
-        ]
-      },
-      "ok-fill": {
-        "role": "tertiary",
-        "displayName": "Ok Fill",
-        "canonical": "#46bd5a",
-        "tonalRamp": [
-          "#1b321f",
-          "#2c5b34",
-          "#3a8747",
-          "#45b658",
-          "#6ec87d",
-          "#9bd4a5",
-          "#c6e4cb",
-          "#eef6f0"
-        ]
-      },
-      "ok-num": {
-        "role": "tertiary",
-        "displayName": "Ok Num",
-        "canonical": "#3fbf58",
-        "tonalRamp": [
-          "#1a331f",
-          "#2a5d34",
-          "#378a47",
-          "#42ba59",
-          "#6bcb7e",
-          "#9ad6a6",
-          "#c5e5cc",
-          "#eef6f0"
-        ]
-      },
-      "ok-outline": {
-        "role": "tertiary",
-        "displayName": "Ok Outline",
-        "canonical": "#123d1c",
-        "tonalRamp": [
-          "#19341f",
-          "#285f35",
-          "#348d49",
-          "#3dbf5b",
-          "#67cf7f",
-          "#97d9a6",
-          "#c4e6cc",
-          "#eef7f0"
-        ]
-      },
-      "warn-red": {
-        "role": "tertiary",
-        "displayName": "Warn Red",
-        "canonical": "#d63c2b",
-        "tonalRamp": [
-          "#371916",
-          "#652822",
-          "#983429",
-          "#ce3d2d",
-          "#db675b",
-          "#e1978f",
-          "#eac4c0",
-          "#f8eeed"
-        ]
-      },
-      "warn-text": {
-        "role": "tertiary",
-        "displayName": "Warn Text",
-        "canonical": "#b52f22",
-        "tonalRamp": [
-          "#371816",
-          "#662721",
-          "#983329",
-          "#cf3b2c",
-          "#dc655a",
-          "#e1968f",
-          "#eac4c0",
-          "#f8eeed"
-        ]
-      },
-      "warn-num": {
-        "role": "tertiary",
-        "displayName": "Warn Num",
-        "canonical": "#f0503a",
-        "tonalRamp": [
-          "#3b1611",
-          "#6e2318",
-          "#a72b1a",
-          "#e43017",
-          "#ec5d49",
-          "#ec9184",
-          "#f0c1ba",
-          "#f9edeb"
-        ]
-      },
-      "warn-outline": {
-        "role": "tertiary",
-        "displayName": "Warn Outline",
-        "canonical": "#4f0d06",
-        "tonalRamp": [
-          "#3b1511",
-          "#6e2118",
-          "#a7281a",
-          "#e42b17",
-          "#ec5949",
-          "#ec8e84",
-          "#f0c0ba",
-          "#f9edeb"
-        ]
-      },
-      "info-blue": {
-        "role": "tertiary",
-        "displayName": "Info Blue",
-        "canonical": "#2a6fc9",
-        "tonalRamp": [
-          "#162436",
-          "#233f64",
-          "#2b5996",
-          "#3073cc",
-          "#5d93d9",
-          "#91b3df",
-          "#c1d2e9",
-          "#edf2f8"
-        ]
-      },
-      "flash-butter": {
-        "role": "tertiary",
-        "displayName": "Flash Butter",
-        "canonical": "#ffe6a3",
-        "tonalRamp": [
-          "#3f310e",
-          "#755a11",
-          "#b2860f",
-          "#f5b406",
-          "#fac63c",
-          "#f4d37c",
-          "#f4e3b6",
-          "#faf6ea"
-        ]
-      },
-      "alert-red": {
-        "role": "tertiary",
-        "displayName": "Alert Red",
-        "canonical": "#c8321f",
-        "tonalRamp": [
-          "#381814",
-          "#68271f",
-          "#9c3225",
-          "#d53a26",
-          "#e06555",
-          "#e4968c",
-          "#ecc3be",
-          "#f8eeec"
-        ]
-      },
-      "selection-gold": {
+      "crt-blue": {
         "role": "neutral",
-        "displayName": "Selection Gold",
-        "canonical": "#ffd88a",
+        "displayName": "CRT Blue",
+        "canonical": "oklch(60% 0.24 265)",
         "tonalRamp": [
-          "#3f2e0e",
-          "#755411",
-          "#b27c0f",
-          "#f5a506",
-          "#faba3c",
-          "#f4cc7c",
-          "#f4dfb6",
-          "#faf5ea"
+          "oklch(15% 0.109 265)",
+          "oklch(25% 0.170 265)",
+          "oklch(35% 0.214 265)",
+          "oklch(45% 0.237 265)",
+          "oklch(55% 0.237 265)",
+          "oklch(70% 0.194 265)",
+          "oklch(85% 0.109 265)",
+          "oklch(95% 0.038 265)"
         ]
       },
-      "focus-blue": {
+      "crt-cyan": {
         "role": "neutral",
-        "displayName": "Focus Blue",
-        "canonical": "#2a6fc9",
+        "displayName": "CRT Cyan",
+        "canonical": "oklch(70% 0.14 200)",
         "tonalRamp": [
-          "#162436",
-          "#233f64",
-          "#2b5996",
-          "#3073cc",
-          "#5d93d9",
-          "#91b3df",
-          "#c1d2e9",
-          "#edf2f8"
-        ]
-      },
-      "gauge-trough": {
-        "role": "tertiary",
-        "displayName": "Gauge Trough",
-        "canonical": "#3d2a17",
-        "tonalRamp": [
-          "#31261b",
-          "#5a432d",
-          "#85613c",
-          "#b47e48",
-          "#c69b70",
-          "#d3b89d",
-          "#e3d5c7",
-          "#f6f2ef"
-        ]
-      },
-      "gauge-fill-hi": {
-        "role": "tertiary",
-        "displayName": "Gauge Fill Hi",
-        "canonical": "#9bd8ff",
-        "tonalRamp": [
-          "#0e2c3f",
-          "#114e75",
-          "#0f72b2",
-          "#0698f5",
-          "#3cb0fa",
-          "#7cc5f4",
-          "#b6dcf4",
-          "#eaf4fa"
-        ]
-      },
-      "gauge-fill": {
-        "role": "tertiary",
-        "displayName": "Gauge Fill",
-        "canonical": "#3b9cf0",
-        "tonalRamp": [
-          "#11283b",
-          "#18466e",
-          "#1b66a7",
-          "#1785e4",
-          "#49a1ec",
-          "#84bceb",
-          "#bad7f0",
-          "#ebf3f9"
-        ]
-      },
-      "gauge-fill-lo": {
-        "role": "tertiary",
-        "displayName": "Gauge Fill Lo",
-        "canonical": "#1f6cc4",
-        "tonalRamp": [
-          "#142538",
-          "#1f4168",
-          "#255d9c",
-          "#2778d4",
-          "#5696e0",
-          "#8cb5e4",
-          "#bed4ec",
-          "#ecf2f8"
-        ]
-      },
-      "gauge-low-hi": {
-        "role": "tertiary",
-        "displayName": "Gauge Low Hi",
-        "canonical": "#ffb0a3",
-        "tonalRamp": [
-          "#3f150e",
-          "#751f11",
-          "#b2260f",
-          "#f52806",
-          "#fa573c",
-          "#f48d7c",
-          "#f4bfb6",
-          "#faecea"
-        ]
-      },
-      "gauge-low": {
-        "role": "tertiary",
-        "displayName": "Gauge Low",
-        "canonical": "#ea4a33",
-        "tonalRamp": [
-          "#3a1712",
-          "#6c251b",
-          "#a32f1e",
-          "#df351d",
-          "#e8614e",
-          "#e99387",
-          "#eec2bc",
-          "#f9edec"
-        ]
-      },
-      "gauge-low-lo": {
-        "role": "tertiary",
-        "displayName": "Gauge Low Lo",
-        "canonical": "#b3271a",
-        "tonalRamp": [
-          "#391714",
-          "#69241e",
-          "#9d2e24",
-          "#d73425",
-          "#e26054",
-          "#e5938b",
-          "#ecc2be",
-          "#f8edec"
-        ]
-      },
-      "timer-orange": {
-        "role": "tertiary",
-        "displayName": "Timer Orange",
-        "canonical": "#ff9a1f",
-        "tonalRamp": [
-          "#3f290e",
-          "#754811",
-          "#b2690f",
-          "#f58906",
-          "#faa43c",
-          "#f4be7c",
-          "#f4d8b6",
-          "#faf3ea"
-        ]
-      },
-      "timer-outline": {
-        "role": "tertiary",
-        "displayName": "Timer Outline",
-        "canonical": "#5e2d06",
-        "tonalRamp": [
-          "#3c2411",
-          "#6f3e17",
-          "#a85819",
-          "#e77215",
-          "#ee9147",
-          "#edb283",
-          "#f0d2ba",
-          "#f9f1eb"
-        ]
-      },
-      "gem-off": {
-        "role": "tertiary",
-        "displayName": "Gem Off",
-        "canonical": "#a58e74",
-        "tonalRamp": [
-          "#2b2721",
-          "#4e4439",
-          "#72624f",
-          "#977f64",
-          "#af9c86",
-          "#c5b9ab",
-          "#dcd6ce",
-          "#f4f2f1"
-        ]
-      },
-      "stage-black": {
-        "role": "neutral",
-        "displayName": "Stage Black",
-        "canonical": "#05070d",
-        "tonalRamp": [
-          "#1b2131",
-          "#2d385a",
-          "#3c4e85",
-          "#4963b3",
-          "#7186c5",
-          "#9dabd3",
-          "#c7cee3",
-          "#eff0f6"
-        ]
-      },
-      "night-navy": {
-        "role": "neutral",
-        "displayName": "Night Navy",
-        "canonical": "#0c1430",
-        "tonalRamp": [
-          "#181e35",
-          "#253361",
-          "#304592",
-          "#3656c5",
-          "#627bd4",
-          "#94a4dc",
-          "#c2cbe8",
-          "#edf0f7"
-        ]
-      },
-      "night-navy-2": {
-        "role": "neutral",
-        "displayName": "Night Navy 2",
-        "canonical": "#121d40",
-        "tonalRamp": [
-          "#191f34",
-          "#27355f",
-          "#33498e",
-          "#3b5bc1",
-          "#667fd0",
-          "#96a6da",
-          "#c4cce7",
-          "#eef0f7"
-        ]
-      },
-      "night-panel": {
-        "role": "neutral",
-        "displayName": "Night Panel",
-        "canonical": "#1a2547",
-        "tonalRamp": [
-          "#1b2032",
-          "#2c385b",
-          "#3b4d86",
-          "#4661b5",
-          "#6f84c7",
-          "#9caad4",
-          "#c7cee4",
-          "#eef0f6"
-        ]
-      },
-      "night-well": {
-        "role": "neutral",
-        "displayName": "Night Well",
-        "canonical": "#121b38",
-        "tonalRamp": [
-          "#1a2033",
-          "#2a365d",
-          "#374a8a",
-          "#405dbb",
-          "#6a81cc",
-          "#99a8d7",
-          "#c5cde5",
-          "#eef0f6"
-        ]
-      },
-      "night-ink": {
-        "role": "neutral",
-        "displayName": "Night Ink",
-        "canonical": "#e9eefc",
-        "tonalRamp": [
-          "#141d39",
-          "#1d3169",
-          "#22439f",
-          "#2353d8",
-          "#5379e3",
-          "#8aa2e6",
-          "#bdcaed",
-          "#eceff8"
-        ]
-      },
-      "night-muted": {
-        "role": "neutral",
-        "displayName": "Night Muted",
-        "canonical": "#a3b2d6",
-        "tonalRamp": [
-          "#1d2230",
-          "#303b57",
-          "#415480",
-          "#506bab",
-          "#768cbf",
-          "#a1aecf",
-          "#c9d0e1",
-          "#eff1f5"
-        ]
-      },
-      "night-rim": {
-        "role": "secondary",
-        "displayName": "Night Rim",
-        "canonical": "#050916",
-        "tonalRamp": [
-          "#171e36",
-          "#243363",
-          "#2d4594",
-          "#3356c9",
-          "#5f7bd7",
-          "#92a4de",
-          "#c2cbe9",
-          "#edf0f7"
-        ]
-      },
-      "night-frame": {
-        "role": "secondary",
-        "displayName": "Night Frame",
-        "canonical": "#30498a",
-        "tonalRamp": [
-          "#1a2132",
-          "#2b395c",
-          "#394f88",
-          "#4464b7",
-          "#6d86c9",
-          "#9babd5",
-          "#c6cee4",
-          "#eef0f6"
-        ]
-      },
-      "night-frame-hi": {
-        "role": "secondary",
-        "displayName": "Night Frame Hi",
-        "canonical": "#7f9be0",
-        "tonalRamp": [
-          "#172035",
-          "#253662",
-          "#2f4b92",
-          "#355fc6",
-          "#6182d5",
-          "#93a8dd",
-          "#c2cde8",
-          "#edf0f7"
-        ]
-      },
-      "night-bar": {
-        "role": "primary",
-        "displayName": "Night Bar",
-        "canonical": "#2c4385",
-        "tonalRamp": [
-          "#1a2033",
-          "#2a375d",
-          "#374d8a",
-          "#4261ba",
-          "#6b84cb",
-          "#9aa9d6",
-          "#c5cee5",
-          "#eef0f6"
-        ]
-      },
-      "night-bar-hi": {
-        "role": "primary",
-        "displayName": "Night Bar Hi",
-        "canonical": "#3b569c",
-        "tonalRamp": [
-          "#1b2131",
-          "#2d395a",
-          "#3c5085",
-          "#4866b3",
-          "#7088c6",
-          "#9dacd3",
-          "#c7cfe3",
-          "#eff1f6"
-        ]
-      },
-      "night-title-gold": {
-        "role": "primary",
-        "displayName": "Night Title Gold",
-        "canonical": "#ffd666",
-        "tonalRamp": [
-          "#3f320e",
-          "#755b11",
-          "#b2860f",
-          "#f5b506",
-          "#fac73c",
-          "#f4d47c",
-          "#f4e4b6",
-          "#faf6ea"
-        ]
-      },
-      "night-shut": {
-        "role": "secondary",
-        "displayName": "Night Shut",
-        "canonical": "#16203f",
-        "tonalRamp": [
-          "#1a2032",
-          "#2b375c",
-          "#394c88",
-          "#4460b7",
-          "#6d83c9",
-          "#9ba9d5",
-          "#c6cde4",
-          "#eef0f6"
-        ]
-      },
-      "night-shut-hi": {
-        "role": "secondary",
-        "displayName": "Night Shut Hi",
-        "canonical": "#212f5a",
-        "tonalRamp": [
-          "#1b2032",
-          "#2c385b",
-          "#3b4d86",
-          "#4662b5",
-          "#6f84c7",
-          "#9caad4",
-          "#c7cee4",
-          "#eef0f6"
-        ]
-      },
-      "night-shut-sub": {
-        "role": "secondary",
-        "displayName": "Night Shut Sub",
-        "canonical": "#b9c6e6",
-        "tonalRamp": [
-          "#1b2132",
-          "#2c395b",
-          "#3a5087",
-          "#4566b6",
-          "#6e88c8",
-          "#9cacd4",
-          "#c6cfe4",
-          "#eef1f6"
-        ]
-      },
-      "night-button": {
-        "role": "neutral",
-        "displayName": "Night Button",
-        "canonical": "#243360",
-        "tonalRamp": [
-          "#1b2131",
-          "#2d385a",
-          "#3b4e86",
-          "#4763b4",
-          "#7085c6",
-          "#9daad3",
-          "#c7cee3",
-          "#eff0f6"
-        ]
-      },
-      "night-button-edge": {
-        "role": "neutral",
-        "displayName": "Night Button Edge",
-        "canonical": "#405594",
-        "tonalRamp": [
-          "#1d2130",
-          "#303957",
-          "#405081",
-          "#4e66ad",
-          "#7588c0",
-          "#a0acd0",
-          "#c9cfe1",
-          "#eff1f5"
-        ]
-      },
-      "night-accent-gold": {
-        "role": "primary",
-        "displayName": "Night Accent Gold",
-        "canonical": "#ffc23d",
-        "tonalRamp": [
-          "#3f2f0e",
-          "#755611",
-          "#b27f0f",
-          "#f5aa06",
-          "#fabe3c",
-          "#f4ce7c",
-          "#f4e1b6",
-          "#faf5ea"
-        ]
-      },
-      "night-control": {
-        "role": "secondary",
-        "displayName": "Night Control",
-        "canonical": "#ffb02e",
-        "tonalRamp": [
-          "#3f2c0e",
-          "#755011",
-          "#b2740f",
-          "#f59b06",
-          "#fab23c",
-          "#f4c77c",
-          "#f4ddb6",
-          "#faf4ea"
-        ]
-      },
-      "night-link": {
-        "role": "neutral",
-        "displayName": "Night Link",
-        "canonical": "#8fc0ff",
-        "tonalRamp": [
-          "#0e233f",
-          "#113d75",
-          "#0f56b2",
-          "#066ff5",
-          "#3c8ffa",
-          "#7cb0f4",
-          "#b6d1f4",
-          "#eaf1fa"
-        ]
-      },
-      "night-ok": {
-        "role": "tertiary",
-        "displayName": "Night Ok",
-        "canonical": "#5fd37a",
-        "tonalRamp": [
-          "#18341f",
-          "#276034",
-          "#328f48",
-          "#3ac159",
-          "#65d17e",
-          "#96daa6",
-          "#c3e7cc",
-          "#eef7f0"
-        ]
-      },
-      "night-warn-text": {
-        "role": "tertiary",
-        "displayName": "Night Warn Text",
-        "canonical": "#ff8173",
-        "tonalRamp": [
-          "#3f130e",
-          "#751b11",
-          "#b21f0f",
-          "#f51e06",
-          "#fa4f3c",
-          "#f4887c",
-          "#f4bcb6",
-          "#faecea"
-        ]
-      },
-      "night-info": {
-        "role": "tertiary",
-        "displayName": "Night Info",
-        "canonical": "#6aa8ff",
-        "tonalRamp": [
-          "#0e223f",
-          "#113b75",
-          "#0f53b2",
-          "#066af5",
-          "#3c8bfa",
-          "#7caef4",
-          "#b6d0f4",
-          "#eaf1fa"
-        ]
-      },
-      "night-gauge-fill": {
-        "role": "tertiary",
-        "displayName": "Night Gauge Fill",
-        "canonical": "#4aa6ff",
-        "tonalRamp": [
-          "#0e273f",
-          "#114475",
-          "#0f62b2",
-          "#0680f5",
-          "#3c9cfa",
-          "#7cb9f4",
-          "#b6d6f4",
-          "#eaf2fa"
-        ]
-      },
-      "night-timer-gold": {
-        "role": "tertiary",
-        "displayName": "Night Timer Gold",
-        "canonical": "#ffc23d",
-        "tonalRamp": [
-          "#3f2f0e",
-          "#755611",
-          "#b27f0f",
-          "#f5aa06",
-          "#fabe3c",
-          "#f4ce7c",
-          "#f4e1b6",
-          "#faf5ea"
+          "oklch(15% 0.064 200)",
+          "oklch(25% 0.099 200)",
+          "oklch(35% 0.125 200)",
+          "oklch(45% 0.138 200)",
+          "oklch(55% 0.138 200)",
+          "oklch(70% 0.113 200)",
+          "oklch(85% 0.064 200)",
+          "oklch(95% 0.022 200)"
         ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Wordmark only, outlined."
+        "purpose": "The wordmark (with a 1.5px red and cyan split) and the status word."
       },
-      "numeral": {
-        "displayName": "Numeral",
-        "purpose": "Manual-timer remaining time, outlined and drop-stamped."
-      },
-      "status": {
-        "displayName": "Status",
-        "purpose": "Open target card state line; outlined green on, red on alert."
-      },
-      "state": {
-        "displayName": "State",
-        "purpose": "Status window state word; toast."
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The toast and the dialog title."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Window title bars, outlined."
+        "purpose": "Section heads over their 2px rule."
       },
-      "slot-name": {
-        "displayName": "Slot Name",
-        "purpose": "Target name beside its buff slot."
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Manual timer remaining time; digits and colons only, 40px and up."
       },
-      "chip": {
-        "displayName": "Chip",
-        "purpose": "Duration chips, add button, group legends."
+      "status": {
+        "displayName": "Status",
+        "purpose": "An open target's state line, tabular."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Default text."
-      },
-      "prose": {
-        "displayName": "Prose",
-        "purpose": "Setup manual, max 78ch."
+        "purpose": "Default text and the setup guide at a 65ch measure; Hangul wraps by word."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Small buttons, sub-labels, grids, hints."
+        "purpose": "Buttons and chips; hints use the same size at 400 in Muted."
       }
     },
     "shadows": [
       {
-        "name": "window",
-        "value": "inset 0 0 0 1px var(--frame-hi), 0 12px 26px -16px var(--shadow)",
-        "purpose": "Every game window."
+        "name": "press",
+        "value": "4px 4px 0 var(--color-accent-2)",
+        "purpose": "The filled primary and the manual timer start button."
       },
       {
-        "name": "status-window",
-        "value": "inset 0 0 0 4px var(--frame), inset 0 0 0 5px var(--frame-hi), 0 12px 26px -16px var(--shadow)",
-        "purpose": "Status window and (3px) undo bar: frame drawn as inset rings."
+        "name": "press-hover",
+        "value": "5px 5px 0 var(--color-accent-2)",
+        "purpose": "Hover lifts away from the shadow."
       },
       {
-        "name": "button-bevel",
-        "value": "inset 0 -2px 0 var(--btn-shade), inset 0 1px 0 var(--btn-hi)",
-        "purpose": "Default button at rest."
+        "name": "press-active",
+        "value": "1px 1px 0 var(--color-accent-2)",
+        "purpose": "Active slams toward the shadow."
       },
       {
-        "name": "button-pressed",
-        "value": "inset 0 2px 3px var(--btn-shade)",
-        "purpose": "Button :active."
+        "name": "float",
+        "value": "6px 6px 0 var(--color-shade)",
+        "purpose": "The toast, the undo bar and the import dialog."
       },
       {
-        "name": "primary-bevel",
-        "value": "inset 0 -3px 0 color-mix(in srgb, var(--accent-edge) 60%, transparent), inset 0 1px 0 rgba(255,255,255,.6)",
-        "purpose": "Primary button."
-      },
-      {
-        "name": "well",
-        "value": "inset 0 2px 3px -1px var(--well-shade)",
-        "purpose": "Target rows, add menu; fields use inset 0 2px 2px -1px."
-      },
-      {
-        "name": "toast",
-        "value": "inset 0 2px 0 rgba(255,255,255,.25), 0 14px 30px -10px rgba(0,0,0,.5)",
-        "purpose": "Alert toast."
-      },
-      {
-        "name": "dialog",
-        "value": "inset 0 0 0 1px var(--frame-hi), 0 24px 50px -14px rgba(0,0,0,.55)",
-        "purpose": "Import dialog."
+        "name": "alert-flash",
+        "value": "inset 0 0 0 2px var(--color-accent), inset 0 0 0 999px color-mix(in oklab, var(--color-accent) 24%, transparent)",
+        "purpose": "A target row when its alert rings, stepped four times."
       }
     ],
     "motion": [
       {
-        "name": "ease-out-expo",
-        "value": "cubic-bezier(.16,1,.3,1)",
-        "purpose": "Button press (120ms), chevron turn (200ms), gem beat (600ms)."
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Press physics and arrivals."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Chevron turns."
+      },
+      {
+        "name": "dur-micro",
+        "value": "120ms",
+        "purpose": "Press, tick, colour."
+      },
+      {
+        "name": "dur-short",
+        "value": "220ms",
+        "purpose": "Disclosure chevrons."
       },
       {
         "name": "gauge-drain",
-        "value": "transform .5s linear",
-        "purpose": "Gauge fill; off under reduced motion."
+        "value": "transform 0.5s linear",
+        "purpose": "Gauges drain with each tick."
       },
       {
-        "name": "card-flash",
-        "value": "flash 1s ease-in-out 4",
-        "purpose": "Alerting row background pulses to flash color."
-      },
-      {
-        "name": "pip-blink",
-        "value": "1s step-end infinite",
-        "purpose": "Mini window alert row blink; off under reduced motion."
+        "name": "alert-flash",
+        "value": "1s steps(1, end) 4",
+        "purpose": "The ringing row blinks four times, never a fade."
       }
     ],
     "breakpoints": [
       {
-        "name": "single-column",
-        "value": "980px"
+        "name": "narrow",
+        "value": "40rem"
       },
       {
-        "name": "narrow",
-        "value": "560px"
+        "name": "one-column",
+        "value": "60rem"
+      },
+      {
+        "name": "two-columns",
+        "value": "75rem"
+      },
+      {
+        "name": "container",
+        "value": "1440px"
       }
     ]
   },
@@ -1312,142 +388,125 @@
       "name": "Button",
       "kind": "button",
       "refersTo": "button",
-      "description": "Default chunky button with inner bottom bevel.",
-      "html": "<button class=\"ds-btn\">소리 시험</button>",
-      "css": ".ds-btn{font:14px/1.35 'Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--ink,#3b2814);background:var(--btn,#fff6e6);border:1.5px solid var(--btn-edge,#c99d68);border-radius:9px;padding:5px 12px 6px;cursor:pointer;box-shadow:inset 0 -2px 0 var(--btn-shade,rgba(120,75,30,.24)),inset 0 1px 0 var(--btn-hi,#fff);transition:transform .12s cubic-bezier(.16,1,.3,1),filter .15s,border-color .15s}.ds-btn:hover{border-color:var(--rim,#5c3a1a);filter:brightness(1.05)}.ds-btn:active{transform:translateY(1px);box-shadow:inset 0 2px 3px var(--btn-shade,rgba(120,75,30,.24))}.ds-btn:focus-visible{outline:3px solid var(--focus,#2a6fc9);outline-offset:2px}"
+      "description": "The default unfilled control for every secondary action.",
+      "html": "<button class=\"ds-btn\">알림 테스트</button>",
+      "css": ".ds-btn{font:700 0.875rem/1.2 var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);min-height:34px;padding:4px 12px;color:var(--color-ink, oklch(20% 0.045 312));background:var(--color-paper-2, oklch(94% 0.014 315));border:2px solid var(--color-muted, oklch(47% 0.035 312));border-radius:4px;cursor:pointer;transition:transform 120ms cubic-bezier(0.16,1,0.3,1),box-shadow 120ms cubic-bezier(0.16,1,0.3,1),background-color 120ms cubic-bezier(0.16,1,0.3,1);} .ds-btn:hover{background:var(--color-paper-3, oklch(90.5% 0.018 315));border-color:var(--color-ink, oklch(20% 0.045 312));} .ds-btn:active{transform:translate(1px,1px);} .ds-btn:focus-visible{outline:2px solid var(--color-ok, oklch(47% 0.13 128));outline-offset:2px;}"
     },
     {
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Coin Gold call to action; one per screen.",
+      "description": "The one filled action on the screen, on a hard acid offset.",
       "html": "<button class=\"ds-btn-primary\">게임 화면 연결</button>",
-      "css": ".ds-btn-primary{font:700 15px/1.35 'Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--accent-ink,#3b2208);background:var(--accent,#ffc53d) linear-gradient(var(--accent-hi,#ffe390),var(--accent,#ffc53d) 62%);border:1.5px solid var(--accent-edge,#b9780f);border-radius:9px;padding:7px 16px 8px;cursor:pointer;box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--accent-edge,#b9780f) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.6);transition:transform .12s cubic-bezier(.16,1,.3,1),filter .15s}.ds-btn-primary:hover{filter:brightness(1.05)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:3px solid var(--focus,#2a6fc9);outline-offset:2px}"
+      "css": ".ds-btn-primary{font:700 0.875rem/1.2 var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);min-height:34px;padding:4px 12px;color:var(--color-ink, oklch(20% 0.045 312));background:var(--color-paper-2, oklch(94% 0.014 315));border:2px solid var(--color-muted, oklch(47% 0.035 312));border-radius:4px;cursor:pointer;transition:transform 120ms cubic-bezier(0.16,1,0.3,1),box-shadow 120ms cubic-bezier(0.16,1,0.3,1),background-color 120ms cubic-bezier(0.16,1,0.3,1);background:var(--color-accent, oklch(64% 0.22 40));border-color:var(--color-ink, oklch(20% 0.045 312));box-shadow:4px 4px 0 var(--color-accent-2, oklch(87% 0.2 115));} .ds-btn-primary:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--color-accent-2, oklch(87% 0.2 115));} .ds-btn-primary:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--color-accent-2, oklch(87% 0.2 115));} .ds-btn-primary:focus-visible{outline:2px solid var(--color-ok, oklch(47% 0.13 128));outline-offset:2px;}"
     },
     {
-      "name": "Duration Chip",
+      "name": "Preset Chip",
       "kind": "chip",
-      "refersTo": "button-chip",
-      "description": "Pill preset button in Jua.",
-      "html": "<button class=\"ds-chip\">3분</button>",
-      "css": ".ds-chip{font:16px/1.3 'Jua Tabular','Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--ink,#3b2814);background:var(--btn,#fff6e6);border:1.5px solid var(--btn-edge,#c99d68);border-radius:999px;padding:3px 13px 4px;cursor:pointer;box-shadow:inset 0 -2px 0 var(--btn-shade,rgba(120,75,30,.24)),inset 0 1px 0 var(--btn-hi,#fff)}.ds-chip:hover{border-color:var(--rim,#5c3a1a)}.ds-chip:focus-visible{outline:3px solid var(--focus,#2a6fc9);outline-offset:2px}"
+      "refersTo": "chip",
+      "description": "Square manual-timer presets that start a countdown in one press.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\">5분</button><button class=\"ds-chip\">10분</button><button class=\"ds-chip\">30분</button></div>",
+      "css": ".ds-chips{display:flex;gap:8px;} .ds-chip{font:700 0.875rem/1.2 var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);min-height:34px;padding:4px 12px;color:var(--color-ink, oklch(20% 0.045 312));background:var(--color-paper-2, oklch(94% 0.014 315));border:2px solid var(--color-muted, oklch(47% 0.035 312));border-radius:4px;cursor:pointer;transition:transform 120ms cubic-bezier(0.16,1,0.3,1),box-shadow 120ms cubic-bezier(0.16,1,0.3,1),background-color 120ms cubic-bezier(0.16,1,0.3,1);border-radius:0;} .ds-chip:hover{background:var(--color-paper-3, oklch(90.5% 0.018 315));border-color:var(--color-ink, oklch(20% 0.045 312));} .ds-chip:focus-visible{outline:2px solid var(--color-ok, oklch(47% 0.13 128));outline-offset:2px;}"
     },
     {
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Sunk white field with orange caret.",
-      "html": "<input class=\"ds-input\" placeholder=\"이름\">",
-      "css": ".ds-input{font:15px/1.5 'Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--ink,#3b2814);background:var(--field,#fff);border:1.5px solid var(--field-line,#cfb48b);border-radius:7px;padding:4px 8px;box-shadow:inset 0 2px 2px -1px var(--well-shade,rgba(120,80,30,.16));caret-color:var(--control,#d9741a)}.ds-input::placeholder{color:var(--muted,#7a5f45)}.ds-input:focus-visible{outline:3px solid var(--focus,#2a6fc9);outline-offset:1px;border-color:var(--focus,#2a6fc9)}"
+      "description": "Square field with a muted edge; focus draws an olive ring over the border.",
+      "html": "<input class=\"ds-input\" placeholder=\"분:초\">",
+      "css": ".ds-input{font:400 1rem/1.25 var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);min-height:34px;padding:4px 8px;color:var(--color-ink, oklch(20% 0.045 312));background:var(--color-paper, oklch(97% 0.01 315));border:2px solid var(--color-muted, oklch(47% 0.035 312));border-radius:0;caret-color:var(--color-accent, oklch(64% 0.22 40));} .ds-input::placeholder{color:var(--color-muted, oklch(47% 0.035 312));} .ds-input:focus-visible{outline:2px solid var(--color-ok, oklch(47% 0.13 128));outline-offset:-2px;}"
     },
     {
-      "name": "Game Window",
+      "name": "Status Band (watching)",
+      "kind": "custom",
+      "refersTo": "status-band",
+      "description": "The one line checked before hiding the tab; border and word take the state colour.",
+      "html": "<div class=\"ds-band\"><b class=\"ds-band-state\">감시 중</b><span>솔 야누스</span><i class=\"ds-band-sep\" aria-hidden=\"true\"></i><span class=\"ds-band-off\">부스터 아직 못 찾음</span><button class=\"ds-band-stop\">감시 끝내기</button></div>",
+      "css": ".ds-band{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:16px 24px;background:var(--color-paper-2, oklch(94% 0.014 315));border:2px solid var(--color-ok, oklch(47% 0.13 128));border-radius:4px;font:700 1rem/1.4 var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);color:var(--color-ink, oklch(20% 0.045 312));} .ds-band-state{font:400 1.728rem/1.1 var(--font-display, \"Black Han Sans\", \"Malgun Gothic\", sans-serif);color:var(--color-ok, oklch(47% 0.13 128));} .ds-band-sep{align-self:stretch;width:2px;min-height:18px;background:var(--color-rule, oklch(85% 0.025 312));} .ds-band-off{color:var(--color-muted, oklch(47% 0.035 312));font-weight:400;} .ds-band-stop{font:700 0.875rem/1.2 var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);min-height:34px;padding:4px 12px;color:var(--color-ink, oklch(20% 0.045 312));background:var(--color-paper-2, oklch(94% 0.014 315));border:2px solid var(--color-muted, oklch(47% 0.035 312));border-radius:4px;cursor:pointer;transition:transform 120ms cubic-bezier(0.16,1,0.3,1),box-shadow 120ms cubic-bezier(0.16,1,0.3,1),background-color 120ms cubic-bezier(0.16,1,0.3,1);margin-left:auto;} .ds-band-stop:focus-visible{outline:2px solid var(--color-ok, oklch(47% 0.13 128));outline-offset:2px;}"
+    },
+    {
+      "name": "Target Row (normal and lit)",
+      "kind": "custom",
+      "refersTo": "target-row-lit",
+      "description": "Menu rows on hairlines; the row that needs the person lights ember.",
+      "html": "<div class=\"ds-rows\"><div class=\"ds-row\"><span class=\"ds-slot\"></span><span class=\"ds-row-text\"><b>부스터</b><span class=\"ds-row-mini\">대기 중</span></span><button class=\"ds-row-btn\">펼치기 ▾</button></div><div class=\"ds-row ds-row-lit\"><span class=\"ds-slot\"></span><span class=\"ds-row-text\"><b>솔 야누스</b><span class=\"ds-row-mini\">남은 시간 00:08</span></span><button class=\"ds-row-btn\">펼치기 ▾</button><span class=\"ds-gauge\"><i style=\"--f:.5\"></i></span></div></div>",
+      "css": ".ds-rows{border-top:1px solid var(--color-rule, oklch(85% 0.025 312));font-family:var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);color:var(--color-ink, oklch(20% 0.045 312));width:420px;} .ds-row{position:relative;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;padding:8px 0 18px;border-bottom:1px solid var(--color-rule, oklch(85% 0.025 312));} .ds-row-lit{margin-inline:-8px;padding-inline:8px;padding-bottom:8px;background:var(--color-accent, oklch(64% 0.22 40));border-bottom-color:var(--color-accent, oklch(64% 0.22 40));} .ds-slot{width:40px;height:40px;background:var(--color-shade, oklch(10% 0.03 312));border:2px solid var(--color-rule, oklch(85% 0.025 312));} .ds-row-text{display:grid;} .ds-row-text b{font-size:1rem;} .ds-row-mini{font-size:0.875rem;color:var(--color-muted, oklch(47% 0.035 312));} .ds-row-lit .ds-row-mini{color:var(--color-ink, oklch(20% 0.045 312));font-weight:700;} .ds-row-btn{font:700 0.875rem/1.2 var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);min-height:34px;padding:4px 12px;color:var(--color-ink, oklch(20% 0.045 312));background:var(--color-paper-2, oklch(94% 0.014 315));border:2px solid var(--color-muted, oklch(47% 0.035 312));border-radius:4px;cursor:pointer;transition:transform 120ms cubic-bezier(0.16,1,0.3,1),box-shadow 120ms cubic-bezier(0.16,1,0.3,1),background-color 120ms cubic-bezier(0.16,1,0.3,1);} .ds-row-lit .ds-row-btn{background:transparent;border-color:var(--color-ink, oklch(20% 0.045 312));} .ds-row-btn:focus-visible{outline:2px solid var(--color-ok, oklch(47% 0.13 128));outline-offset:2px;} .ds-row-lit .ds-row-btn:focus-visible{outline-color:var(--color-ink, oklch(20% 0.045 312));} .ds-gauge{grid-column:1/-1;position:relative;height:6px;margin-top:4px;background:color-mix(in oklab,var(--color-ink, oklch(20% 0.045 312)) 40%,var(--color-accent, oklch(64% 0.22 40)));border:1px solid var(--color-ink, oklch(20% 0.045 312));overflow:hidden;} .ds-gauge i{position:absolute;inset:0;transform-origin:left;transform:scaleX(var(--f,1));background:var(--color-ink, oklch(20% 0.045 312));}"
+    },
+    {
+      "name": "Manual Timer Tile",
       "kind": "card",
-      "refersTo": "window",
-      "description": "Rim, wood frame with inner bevel, ember title bar, parchment body.",
-      "html": "<section class=\"ds-win\"><h2 class=\"ds-wbar\">수동 타이머</h2><div class=\"ds-wbody\">창 본문</div></section>",
-      "css": ".ds-win{background:var(--frame,#c98d4f);border:2px solid var(--rim,#5c3a1a);border-radius:15px;padding:4px;box-shadow:inset 0 0 0 1px var(--frame-hi,#efc58f),0 12px 26px -16px var(--shadow,rgba(70,40,10,.38))}.ds-wbar{margin:0;padding:6px 14px 7px;border-radius:10px 10px 0 0;background:linear-gradient(var(--bar-hi,#ffad55),var(--bar,#e8791f) 72%);border:1.5px solid var(--bar-edge,#9c4e12);border-bottom-width:2px;color:var(--bar-ink,#fff);font:400 20px/1.25 'Jua Tabular','Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;letter-spacing:.01em;text-shadow:-1.5px 0 var(--bar-o,#6e3207),1.5px 0 var(--bar-o,#6e3207),0 -1.5px var(--bar-o,#6e3207),0 1.5px var(--bar-o,#6e3207),0 2.5px var(--bar-o,#6e3207)}.ds-wbody{background:var(--panel,#fffaf0);color:var(--ink,#3b2814);border-radius:0 0 10px 10px;padding:14px;font:15px/1.5 'Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif}"
+      "refersTo": "well",
+      "description": "A lilac well with the remaining time in Silkscreen Tabular and an acid gauge on CRT black.",
+      "html": "<div class=\"ds-timer\"><b>경험치 쿠폰</b><div class=\"ds-timer-time\">18:43</div><span class=\"ds-timer-gauge\"><i style=\"--f:.62\"></i></span><span class=\"ds-timer-info\">카운트다운 · 10초 전 알림</span></div>",
+      "css": ".ds-timer{width:280px;padding:16px;background:var(--color-paper-2, oklch(94% 0.014 315));border:2px solid var(--color-rule, oklch(85% 0.025 312));border-radius:4px;font-family:var(--font-body, \"Pretendard\", \"Malgun Gothic\", \"Apple SD Gothic Neo\", system-ui, sans-serif);color:var(--color-ink, oklch(20% 0.045 312));} .ds-timer-time{margin-top:8px;font:700 2.75rem/1 var(--font-outlier, \"Silkscreen Tabular\", monospace);color:var(--color-ok, oklch(47% 0.13 128));font-variant-numeric:tabular-nums;} .ds-timer-gauge{display:block;position:relative;height:10px;margin:12px 0 4px;background:var(--color-shade, oklch(10% 0.03 312));border:2px solid var(--color-rule, oklch(85% 0.025 312));overflow:hidden;} .ds-timer-gauge i{position:absolute;inset:0;transform-origin:left;transform:scaleX(var(--f,1));background:var(--color-accent-2, oklch(87% 0.2 115));} .ds-timer-info{font-size:0.875rem;color:var(--color-muted, oklch(47% 0.035 312));}"
     },
     {
-      "name": "Collapsed Window Bar",
+      "name": "Toast",
       "kind": "custom",
-      "refersTo": "window-title-bar-shut",
-      "description": "Closed <details> window: Shut Wood bar with chevron.",
-      "html": "<div class=\"ds-win-shut\"><div class=\"ds-shut\">설정 백업 <span class=\"ds-shut-sub\">파일로 내보내기·불러오기</span><span class=\"ds-chev\"><svg viewBox=\"0 0 14 10\" width=\"15\" height=\"11\"><path d=\"M2 2.5l5 5 5-5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></span></div></div>",
-      "css": ".ds-win-shut{background:var(--frame,#c98d4f);border:2px solid var(--rim,#5c3a1a);border-radius:15px;padding:4px;box-shadow:inset 0 0 0 1px var(--frame-hi,#efc58f)}.ds-shut{display:flex;align-items:center;gap:10px;padding:6px 14px 7px;border-radius:10px;background:linear-gradient(var(--shut-hi,#d09a5c),var(--shut,#a8713c) 72%);border:1.5px solid var(--shut-edge,#6e4419);color:#fff;font:400 20px/1.25 'Jua Tabular','Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;text-shadow:-1.5px 0 var(--bar-o,#6e3207),1.5px 0 var(--bar-o,#6e3207),0 -1.5px var(--bar-o,#6e3207),0 1.5px var(--bar-o,#6e3207),0 2.5px var(--bar-o,#6e3207);cursor:pointer}.ds-shut:hover{filter:brightness(1.06)}.ds-shut-sub{font:13px/1.3 'Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--shut-sub,#1f0e02);text-shadow:none}.ds-chev{margin-left:auto;display:flex;color:var(--bar-chev,#6e3207)}"
-    },
-    {
-      "name": "Buff Slot Row with Gauge",
-      "kind": "custom",
-      "refersTo": "slot-well",
-      "description": "Inset well row: beveled 38px slot, Jua name and mini state, draining pill gauge.",
-      "html": "<div class=\"ds-slotrow\"><div class=\"ds-top\"><span class=\"ds-slot\"></span><div><div class=\"ds-name\">솔 야누스</div><div class=\"ds-mini\">켜져 있어요 · 2:41</div></div></div><div class=\"ds-gauge\"><i style=\"transform:scaleX(.62)\"></i></div></div>",
-      "css": ".ds-slotrow{background:var(--well,#f7ecd9);border:1.5px solid var(--well-line,#e3cfae);border-radius:11px;padding:6px 10px;box-shadow:inset 0 2px 3px -1px var(--well-shade,rgba(120,80,30,.16));max-width:340px}.ds-top{display:flex;gap:10px;align-items:center}.ds-slot{width:38px;height:38px;flex:none;border-radius:8px;background:#05070d;border:2px solid var(--slot-rim,#3d2611);box-shadow:inset 0 0 0 1px var(--slot-hi,rgba(255,255,255,.18))}.ds-name{font:400 18px/1.1 'Jua Tabular','Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--ink,#3b2814)}.ds-mini{font:400 15px/1.1 'Jua Tabular','Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--ok,#23803a)}.ds-gauge{position:relative;height:8px;margin-top:5px;border-radius:999px;background:var(--gauge-bg,#3d2a17);border:1.5px solid var(--rim,#5c3a1a);overflow:hidden}.ds-gauge i{position:absolute;inset:0;border-radius:inherit;transform-origin:left center;background:linear-gradient(var(--fill-hi,#9bd8ff),var(--fill,#3b9cf0) 55%,var(--fill-lo,#1f6cc4));transition:transform .5s linear}.ds-gauge::after{content:'';position:absolute;left:4px;right:4px;top:1px;height:2px;border-radius:2px;background:rgba(255,255,255,.4)}"
-    },
-    {
-      "name": "Status Window",
-      "kind": "custom",
-      "refersTo": "status-window",
-      "description": "Full-width watch window with state gem and tint.",
-      "html": "<div class=\"ds-watch\"><span class=\"ds-gem\"></span><span class=\"ds-state\">감시 중</span><span class=\"ds-targets\">솔 야누스 · 룬</span></div>",
-      "css": ".ds-watch{display:flex;align-items:center;gap:8px 16px;padding:12px 20px;min-height:62px;font:14px/1.5 'Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--ink,#3b2814);background:color-mix(in srgb,var(--ok-fill,#46bd5a) 13%,var(--panel,#fffaf0));border:2px solid var(--rim,#5c3a1a);border-radius:15px;box-shadow:inset 0 0 0 4px var(--frame,#c98d4f),inset 0 0 0 5px var(--frame-hi,#efc58f),0 12px 26px -16px var(--shadow,rgba(70,40,10,.38))}.ds-gem{width:20px;height:20px;border-radius:50%;border:2px solid var(--rim,#5c3a1a);background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.9) 0 16%,rgba(255,255,255,0) 26%),radial-gradient(circle at 50% 75%,rgba(0,0,0,0) 40%,rgba(0,0,0,.28) 100%),var(--ok-fill,#46bd5a)}.ds-state{font:400 23px/1.2 'Jua Tabular','Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;color:var(--ok,#23803a)}"
-    },
-    {
-      "name": "Timer Numerals",
-      "kind": "custom",
-      "refersTo": "numeral",
-      "description": "Outlined, drop-stamped Jua Tabular countdown.",
-      "html": "<div class=\"ds-time\">12:05</div>",
-      "css": ".ds-time{font:400 34px/1.15 'Jua Tabular','Pretendard','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;letter-spacing:.02em;color:var(--num,#ff9a1f);text-shadow:-2px 0 var(--num-o,#5e2d06),2px 0 var(--num-o,#5e2d06),0 -2px var(--num-o,#5e2d06),0 2px var(--num-o,#5e2d06),-1.5px -1.5px var(--num-o,#5e2d06),1.5px -1.5px var(--num-o,#5e2d06),-1.5px 1.5px var(--num-o,#5e2d06),1.5px 1.5px var(--num-o,#5e2d06),0 3.5px var(--num-drop,#5e2d06)}"
+      "refersTo": "toast",
+      "description": "The alert that rings while the tab is visible; ember with a hard shade offset.",
+      "html": "<div class=\"ds-toast\" role=\"alert\">솔 야누스 10초 전</div>",
+      "css": ".ds-toast{display:inline-block;padding:12px 24px;font:400 1.44rem/1.3 var(--font-display, \"Black Han Sans\", \"Malgun Gothic\", sans-serif);color:var(--color-ink, oklch(20% 0.045 312));background:var(--color-accent, oklch(64% 0.22 40));border:2px solid var(--color-ink, oklch(20% 0.045 312));border-radius:4px;box-shadow:6px 6px 0 var(--color-shade, oklch(10% 0.03 312));}"
     }
   ],
   "narrative": {
-    "northStar": "The Buff Bar",
-    "overview": "**Creative North Star: \"The Buff Bar\"**\n\nThe app is a set of game windows floating over a sky. Each section is a framed window: a dark outer rim, a wooden (by day) or navy (by night) frame with a bright inner bevel, a glossy title bar, and a warm body. The one signature device is the buff slot plus gauge: a target's icon sits in a beveled slot, and when its full length is known, a pill gauge drains under it and turns red near the end. Titles, status words and every number use one chunky rounded face with outlined, drop-stamped numerals, the way game UIs print damage and timers.\n\nThe world arrives only through type, color, density and that one device; the controls themselves stay standard (native buttons, checkboxes, range sliders, `<details>`, `<dialog>`). The screen is an Operate surface: people set things up, confirm \"감시 중\" in the status window, then hide the tab and listen. Nothing animates for decoration; the only motion is state (gem beat, card flash, gauge drain, chevron turn), and all of it honors reduced motion.\n\nLight and dark are two full worlds, not an inverted palette: light is the older-game look (sky, wood, ember title bars, brown ink), dark is the newer-game look (deep navy, navy frames with a pale blue inner line, gold title lettering). Both follow `prefers-color-scheme`; there is no manual toggle. This is an original design that evokes the genre. It uses no real game assets, logos, characters, UI sprites, or the official game typeface.",
+    "northStar": "The Cabinet Menu",
+    "overview": "The screen is set up, checked, then hidden. What it shows is what is about to ring. Targets sit one per line on hairlines like the menu of an arcade cabinet; the line that needs the person now (a buff about to end, a rune on the minimap, a target to register again) lights ember with dark ink, the way a selected menu line lights. Everything else stays bright, clear and quiet: lilac-white paper, aubergine ink, sections without boxes, a status band that says in one word whether the tool is watching.\n\nThe arcade arrives through material, never props: a heavy Hangul signage face for heads, pixel figures for timers, square inputs, 2px rules, and hard zero-blur offsets on the things you press. The only dark surface is the game screen itself, a CRT inset with a faint RGB grille that shows until the capture covers it. There is one light world; the tool does not follow the OS dark setting.\n\nThe page is an Operate surface. Density is moderate, controls are 34px, and motion only reports state. This is an original design that evokes the genre; it uses no game assets, logos, characters or the game's typeface.",
     "keyCharacteristics": [
-      "Framed game windows: rim, frame with inner bevel, title bar, body.",
-      "Buff slot plus draining gauge as the single signature device.",
-      "Jua Tabular for titles, states, numerals and chips; system Korean sans for body.",
-      "Outlined, drop-stamped numerals and title lettering.",
-      "Two complete tonal worlds (sky/wood, navy/gold) chosen by the OS.",
-      "Standard controls, chunky inner-bevel buttons."
+      "Target rows on hairlines; the row that needs you lights ember.",
+      "Ember means \"act now\", acid means \"live\"; nothing else is coloured.",
+      "Black Han Sans for heads and the status word, Silkscreen Tabular for timer figures, the system Korean sans for everything else.",
+      "Sections are a head over a 2px rule, never a box.",
+      "Flat surfaces; only pressables and floating layers lift, on hard offsets.",
+      "The game screen is a dark CRT inset, small until you register a target."
     ],
     "rules": [
       {
+        "name": "The Two Inks Rule",
+        "body": "Ember means act now and acid means live. Neither is used for decoration, and a third accent is never added.",
+        "section": "colors"
+      },
+      {
+        "name": "The Acid Split Rule",
+        "body": "On light paper, acid is two tones: the lime fills, the olive speaks. Lime is never text.",
+        "section": "colors"
+      },
+      {
         "name": "The Hex Contract Rule",
-        "body": "warn-text, alert-bg, muted and accent stay plain hex custom properties (`--warn-text`, `--alert-bg`, `--muted`, `--accent`); a regression test reads them as strings starting with `#`.",
+        "body": "`--warn-text`, `--alert-bg`, `--muted` and `--accent` stay plain hex aliases of these colours in `css/tokens.css`; a regression test reads them as strings starting with `#`.",
         "section": "colors"
       },
       {
-        "name": "The Two Worlds Rule",
-        "body": "Every color token has a light and a dark value in the same `:root`/`@media (prefers-color-scheme: dark)` pair. Never add a color that exists in one tone only.",
-        "section": "colors"
-      },
-      {
-        "name": "The State Color Rule",
-        "body": "Green, red and blue mean ok, alert and test. Do not use them for decoration.",
-        "section": "colors"
-      },
-      {
-        "name": "The One Weight Rule",
-        "body": "Jua is set at 400 everywhere; emphasis comes from size, color and outline, never a faux bold.",
+        "name": "The Figure Rule",
+        "body": "Silkscreen Tabular is only for digits and colons at 40px and up. Never a word, never small.",
         "section": "typography"
       },
       {
-        "name": "The Tabular Digits Rule",
-        "body": "Every changing number is set in Jua Tabular so its width does not jitter as it counts down.",
+        "name": "The Two Weights Rule",
+        "body": "Body text uses 400 and 700 only; the display face has one weight.",
         "section": "typography"
       },
       {
-        "name": "The Outline Stamp Rule",
-        "body": "Outlined lettering (eight 1-2px text-shadows plus a 2.5-4px drop below) is for title bars, the wordmark, on/alert status numbers and timer numerals only. Body text is never outlined.",
-        "section": "typography"
-      },
-      {
-        "name": "The Sunk Rows Rule",
-        "body": "Target rows are inset wells inside a window, never raised cards. Only windows, buttons and floating layers rise.",
+        "name": "The Flat Until Pressed Rule",
+        "body": "Nothing lifts unless it can be pressed or floats over the page. Never a blur, a glow or a gradient on a control.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** build every new section as a window: rim, frame with inner highlight, title bar, parchment body (15px outer radius, 4px frame).",
-      "**Do** give every new color both a light and a dark value, and keep warn-text, alert-bg, muted and accent as plain hex.",
-      "**Do** set titles, states, chips and every counting number in Jua Tabular at 400.",
-      "**Do** draw a gauge only when the full length is known (a buff with a known duration, a manual timer).",
-      "**Do** put rows inside windows as inset wells with the well shadow.",
-      "**Do** keep the collapsed target row at one line and no more than 70px.",
-      "**Do** keep motion tied to state and switch it off under `prefers-reduced-motion`.",
-      "**Do** use the `--chev` mask for every disclosure chevron."
+      "Do keep sections as a Title head over a 2px Lilac Rule; put rows on 1px hairlines.",
+      "Do light a target row ember only for a state that needs the person now.",
+      "Do use Acid Lime as a fill and Acid Olive for any acid text or line.",
+      "Do keep every collapsed target row at 67px, reserving the gauge's space.",
+      "Do keep motion to state: press physics at 120ms, the stepped alert flash, the linear gauge drain, all ended at once under reduced motion.",
+      "Do keep `[hidden]` as `display: none !important`."
     ],
     "donts": [
-      "**Don't** use real game assets: logos, characters, UI sprites, item or skill art, or the official game typeface. Evoke the genre with original drawing only.",
-      "**Don't** draw a gauge for a countdown whose total is unknown (the booster countdown).",
-      "**Don't** give collapsed windows the title-bar color; they use Shut Wood.",
-      "**Don't** raise target rows into floating cards.",
-      "**Don't** add classes to the status window beyond its state class; JS overwrites them.",
-      "**Don't** outline body text or set Jua bold.",
-      "**Don't** use green, red or blue outside their state meanings.",
-      "**Don't** let a `display` rule override the `hidden` attribute; `[hidden]` stays `display:none !important`."
+      "Don't add a dark theme or a second accent unless the owner asks.",
+      "Don't use a blur, a glow or a gradient on any control.",
+      "Don't put a box inside a box, a coloured stripe on one side of a well, or a decorative status dot.",
+      "Don't set a word in Silkscreen Tabular or use it under 40px.",
+      "Don't draw sprites, controllers or game art, or use real game assets, logos or the game's typeface.",
+      "Don't make the game screen big by default; it widens only while a target is being registered."
     ]
   }
 }
