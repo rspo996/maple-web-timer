@@ -1,28 +1,42 @@
-const states={}; const tplCache={};
-const stateOf=id=>states[id]||(states[id]=newState());
+import {Alerts,fireSystem} from './alerts.js';
+import {LOST_REMIND_MAX,LOST_REMIND_MS,STALL_MS,dims,frame,grab,health,setFrameFresh,src,viewCtx} from './capture.js';
+import {pipUpdate} from './pip.js';
+import {drawPreview,reg} from './register.js';
+import {store,targetById} from './store.js';
+import {renderCard} from './ui-cards.js';
+import {pulse,renderWatch,setNote} from './ui-watch.js';
+import {planGroup} from '../core/alerts-core.js';
+import {newState,ocrSevenSeg} from '../core/detect-core.js';
+import {KINDS,isPresetMode} from '../core/kinds.js';
+import {matchTemplate,prepTemplate,toGray} from '../core/match.js';
+import {scratch} from '../core/scratch.js';
+import {createSlowWatch} from '../core/slow-watch.js';
+import {PRESETS} from '../core/targets.js';
+export const states={}; export const tplCache={};
+export const stateOf=id=>states[id]||(states[id]=newState());
 // 모든 대상의 감지 상태를 새로 시작. armed=true는 스크린샷 테스트(처음부터 켜짐 시각을 믿음)
-function resetAllStates(armed){ for(const t of store.targets){ states[t.id]=newState(); if(armed) states[t.id].armed=true; } }
+export function resetAllStates(armed){ for(const t of store.targets){ states[t.id]=newState(); if(armed) states[t.id].armed=true; } }
 
 /* ----- 감지 ----- */
-function scaleFor(tw,th){ return Math.min(1,Math.max(0.25,14/Math.min(tw,th))); }
-function loadTpl(t){
+export function scaleFor(tw,th){ return Math.min(1,Math.max(0.25,14/Math.min(tw,th))); }
+export function loadTpl(t){
   const s=t.s||1, key=t.url+"@"+s; const ca=tplCache[key]; if(ca) return ca.ready?ca:null;
   const ent={ready:false}; tplCache[key]=ent;
   const img=new Image(); img.onload=()=>{
     const m=t.crop||0, iw=img.width-2*m, ih=img.height-2*m;
     const k=scaleFor(iw*s,ih*s), w=Math.max(4,Math.round(iw*s*k)), h=Math.max(4,Math.round(ih*s*k));
-    work.width=w; work.height=h; wctx.fillStyle="#000"; wctx.fillRect(0,0,w,h); wctx.drawImage(img,m,m,iw,ih,0,0,w,h);
+    const {work,wctx}=scratch(); work.width=w; work.height=h; wctx.fillStyle="#000"; wctx.fillRect(0,0,w,h); wctx.drawImage(img,m,m,iw,ih,0,0,w,h);
     const gray=toGray(wctx.getImageData(0,0,w,h).data,w*h);   // 원본 회색값도 보관(설치기의 밝기 비, 묶음 4 스펙 15-1)
     Object.assign(ent,{k,m:m*s,ready:true,gray},prepTemplate(gray,w,h));
   }; img.src=t.url; return null;
 }
-function areaOf(t){
+export function areaOf(t){
   if(t.area&&(t.tpl||(KINDS[t.kind]&&KINDS[t.kind].needsTemplate===false))) return t.area;   // 사냥 멈춤처럼 템플릿 없이 영역만 쓰는 종류
   if(isPresetMode(t)&&frame.w) return PRESETS[t.preset].area(frame);   // 내장 아이콘: 솔 야누스는 오른쪽 위, 부스터는 위쪽 가운데
   return null;
 }
 // 템플릿 매칭으로 대상을 찾는다. buff·countdown·rune이 공용(KINDS.detect의 기본값). 돌려주는 값은 {score, pos} 또는 null
-function detectTemplate(t, source){
+export function detectTemplate(t, source){
   const a=areaOf(t); if(!a) return null;
   if(t.tpl && t.frameW && (t.frameW!==frame.w||t.frameH!==frame.h)) return null;
   // 기본 아이콘은 UI 배율이 달라도 찾도록 여러 크기로 검색. 한 번 찾으면 그 크기부터 먼저 확인
@@ -35,7 +49,7 @@ function detectTemplate(t, source){
     const tp=loadTpl(c); if(!tp) continue;
     if(best&&best.score>=t.threshold&&c!==order[0]) break;
     const W=Math.round(a.w*tp.k), H=Math.round(a.h*tp.k);
-    work.width=W; work.height=H; wctx.drawImage(source,a.x,a.y,a.w,a.h,0,0,W,H);
+    const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,a.x,a.y,a.w,a.h,0,0,W,H);
     const r=matchTemplate(toGray(wctx.getImageData(0,0,W,H).data,W*H),W,H,tp);
     if(!best||r.score>best.score) best={score:r.score,t:c,pos:{x:a.x+r.x/tp.k-tp.m,y:a.y+r.y/tp.k-tp.m,w:c.w*(c.s||1),h:c.h*(c.s||1)}};
   }
@@ -43,22 +57,22 @@ function detectTemplate(t, source){
   return best;
 }
 // “남은시간” 글자 오른쪽의 숫자 영역을 원본 해상도로 잘라 읽기
-function readTimer(source, p){
+export function readTimer(source, p){
   const x0=Math.round(p.x+p.w*1.05), x1=Math.round(p.x+p.w*2.75), y0=Math.round(p.y), y1=Math.round(p.y+p.h*2.0);
   const W=Math.min(x1,frame.w)-x0, H=Math.min(y1,frame.h)-y0; if(W<10||H<8||x0<0||y0<0) return null;
-  work.width=W; work.height=H; wctx.drawImage(source,x0,y0,W,H,0,0,W,H);
+  const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,x0,y0,W,H,0,0,W,H);
   return {rect:{x:x0,y:y0,w:W,h:H}, read:ocrSevenSeg(wctx.getImageData(0,0,W,H).data,W,H)};
 }
 // 거의 검은 프레임(맵 이동 중 암전, 창 최소화 등)인지. 이때 감지하면 버프가 꺼진 것으로 오판하므로 건너뜀
-function isBlank(s){
+export function isBlank(s){
   const [w,h]=dims(s); if(!w||!h) return true;
-  work.width=64; work.height=36; wctx.drawImage(s,0,0,w,h,0,0,64,36);
+  const {work,wctx}=scratch(); work.width=64; work.height=36; wctx.drawImage(s,0,0,w,h,0,0,64,36);
   const p=wctx.getImageData(0,0,64,36).data;
   for(let i=0;i<p.length;i+=4) if(0.299*p[i]+0.587*p[i+1]+0.114*p[i+2]>=8) return false;
   return true;
 }
 // 종류의 step이 돌려준 이벤트를 알림 후보로 모은다. events에 선언된 키만 알림이 되고(appear-unknown 같은 내부 이벤트는 버림), effect는 종류가 처리한다
-function collectEvents(t,evs,out){
+export function collectEvents(t,evs,out){
   const k=KINDS[t.kind];
   for(const ev of evs){
     const e=typeof ev==='string'?{key:ev}:ev;
@@ -66,12 +80,12 @@ function collectEvents(t,evs,out){
     const def=k.events.find(x=>x.key===e.key); if(def) out.push({t,def,info:e.info||{}});
   }
 }
-function reqFor(t,def,info,rank){
+export function reqFor(t,def,info,rank){
   return {src:'target',id:t.id,event:def.key,text:def.msg(t,info||{}),beep:def.beep,slot:def.noSlot?null:`${t.id}.${def.key}`,mode:'full',flash:'card-'+t.id,
     group:def.group?{cls:def.group,label:t.name,rank:rank==null?(t.p.leadSec||0):rank,order:store.targets.indexOf(t)}:null};
 }
 // 이번 틱의 이벤트를 알림으로 보낸다. 묶기가 켜져 있으면 미리 알림이 난 틱에 곧 끝나는 다른 대상을 같이 묶는다(당겨 알림)
-function dispatchEvents(list,now){
+export function dispatchEvents(list,now){
   const reqs=list.map(x=>reqFor(x.t,x.def,x.info));
   if(store.group.on){
     const fired=list.filter(x=>x.def.group==='pre').map(x=>x.t.id);
@@ -84,23 +98,13 @@ function dispatchEvents(list,now){
   for(const r of reqs) Alerts.fire(r);
 }
 // 카드의 "알림 테스트": 묶지 않고 첫 이벤트를 개별 알림으로 재생
-function testAlert(t){ const def=KINDS[t.kind].events[0]; Alerts.fire({...reqFor(t,def,{}),src:'test',group:null}); }
-// 틱이 느려졌는지 지켜본다(스펙 9.3 ①): 지수 이동 평균이 limitMs를 needTicks번 연속 넘으면 그때의 평균(ms)을 한 번 돌려주고, 회복하면 다시 알릴 수 있다
-function createSlowWatch(limitMs,needTicks){
-  let ema=null, over=0, warned=false;
-  return { push(ms){
-    ema=ema==null?ms:ema*0.8+ms*0.2;
-    if(ema>limitMs) over++; else { over=0; warned=false; }
-    if(over>=needTicks&&!warned){ warned=true; return Math.round(ema); }
-    return null;
-  } };
-}
-const slowWatch=createSlowWatch(450,20);
-let busy=false;
-async function tick(){
+export function testAlert(t){ const def=KINDS[t.kind].events[0]; Alerts.fire({...reqFor(t,def,{}),src:'test',group:null}); }
+export const slowWatch=createSlowWatch(450,20);
+export let busy=false;
+export async function tick(){
   if(busy) return; busy=true;
   try{
-    const t0=performance.now(), now=Date.now(), g=await grab(), source=g.frame; frameFresh=g.fresh;
+    const t0=performance.now(), now=Date.now(), g=await grab(), source=g.frame; setFrameFresh(g.fresh);
     if(source){ [frame.w,frame.h]=dims(source); }
     const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
     if(live){
@@ -125,8 +129,7 @@ async function tick(){
     const slow=ok&&live?slowWatch.push(performance.now()-t0):null;
     if(slow) setNote(`감지가 느려요 (평균 ${slow} ms) · 사용 안 하는 대상은 꺼 주세요`);
     renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
-    if(typeof pipUpdate==='function') pipUpdate(Date.now());   // 작은 창도 숨겨진 동안이 주 사용 조건이라 매 틱 갱신(묶음 5)
+    pipUpdate(Date.now());   // 작은 창도 숨겨진 동안이 주 사용 조건이라 매 틱 갱신(묶음 5)
     if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
   } finally { busy=false; Alerts.flush(Date.now()); }
 }
-if(typeof module==='object') module.exports={createSlowWatch};

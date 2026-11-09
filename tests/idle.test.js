@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const I = require('../js/idle.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as I from '../src/core/idle.js';
 const { lumaDiffCount, idleNewState, stepIdle, idleStartSnooze, idleEndSnooze, idleText, idleStats, IDLE_DELTA } = I;
 
 const T0 = 1_000_000;
@@ -134,8 +134,8 @@ test('idleStats: 최근 60초의 변화량 최대·중앙값, 변화 확정 횟�
 });
 
 // ---- Task 2: KINDS.idle 종류 정의 ----
-const { load } = require('./load.js');
-const L = load(['js/util.js', 'js/match.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/idle.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+import { load } from './load.js';
+const L = await load(['util', 'match', 'detect-core', 'targets', 'kinds', 'idle']);
 const KINDS = L.get('KINDS'), K = KINDS.idle, plain = L.plain;
 const idleT = (o = {}) => ({ id: 'u4', kind: 'idle', name: '사냥 멈춤', preset: null, enabled: true, threshold: 0.75, area: { x: 100, y: 690, w: 300, h: 20 }, tpl: null, frameW: 1280, frameH: 720, p: K.defaults(), ...o });
 const LIVE = { src: true, live: true, frame: { w: 1280, h: 720 } };

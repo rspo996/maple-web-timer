@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { stepDetector, stepCountdown, newState, UNREAD_MS } = require('../js/detect-core.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { stepDetector, stepCountdown, newState, UNREAD_MS } from '../src/core/detect-core.js';
 
 // 0.5초 간격 틱을 흉내 낸다. seq: 'x'=일치, '.'=불일치. 틱마다 나온 이벤트를 [{t, ev}]로 모은다.
 function run(st, cfg, seq, start = 1_000_000) {

@@ -2,7 +2,7 @@
 version: 1
 slug: "index-html"
 primary_target: "index.html"
-related_targets: ["css/app.css"]
+related_targets: ["src/styles/app.css"]
 ---
 
 # 메이플 재획 알리미 · 메인 화면 (index.html)
@@ -39,4 +39,4 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 ## 미정
 
-- 호스팅할 곳(PRODUCT.md). 서체 파일은 프로젝트 안에 두어 `file://`와 호스팅 모두에서 동작하게 한다.
+- 호스팅할 곳(PRODUCT.md). 서체 파일은 프로젝트 안(`src/fonts/`)에 두고 빌드에 포함한다.

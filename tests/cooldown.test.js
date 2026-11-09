@@ -1,7 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { prepTemplate, matchTemplate } = require('../js/match.js');
-const C = require('../js/cooldown.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { prepTemplate, matchTemplate } from '../src/core/match.js';
+import * as C from '../src/core/cooldown.js';
 const { iconGain, classifyIcon, cdNewState, stepCooldown, calibrateCooldown, TPL_MIN_LUMA } = C;
 
 // 질감 있는 32×32 합성 아이콘(회색조 60~240)
@@ -179,8 +179,8 @@ test('calibrateCooldown: 보정 공식과 거절·경고', () => {
 });
 
 // ---- Task 2: KINDS.cooldown ----
-const { load } = require('./load.js');
-const L = load(['js/util.js', 'js/match.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/idle.js', 'js/cooldown.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+import { load } from './load.js';
+const L = await load(['util', 'match', 'detect-core', 'targets', 'kinds', 'idle', 'cooldown']);
 const KINDS = L.get('KINDS'), K = KINDS.cooldown, plain = L.plain;
 const cdT = (o = {}) => ({ id: 'u5', kind: 'cooldown', name: '설치기 1', preset: null, enabled: true, threshold: 0.7, area: { x: 592, y: 642, w: 48, h: 48 }, tpl: { url: 'data:x', w: 32, h: 32 }, frameW: 1280, frameH: 720,
   p: { ...K.defaults(), durationSec: 60, leadSec: 10, ...(o.p || {}) }, ...o, ...(o.p ? { p: { ...K.defaults(), durationSec: 60, leadSec: 10, ...o.p } } : {}) });

@@ -1,5 +1,5 @@
 // 켜짐/꺼짐 판정과 타이머 상태기계 (화면 없이도 테스트 가능하도록 순수 함수)
-function stepDetector(st, cfg, matched, now){
+export function stepDetector(st, cfg, matched, now){
   const ev=[]; const need = cfg.kind==='buff' ? {on:2,off:4} : {on:2,off:4};
   if(matched){ st.onStreak++; st.offStreak=0; } else { st.offStreak++; st.onStreak=0; }
   if(!st.present && st.onStreak>=need.on){
@@ -29,13 +29,13 @@ function stepDetector(st, cfg, matched, now){
   }
   return ev;
 }
-function newState(){ return {present:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,preMarkRemain:0,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
+export function newState(){ return {present:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,preMarkRemain:0,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
 
 /* ===== 부스터 타이머 숫자 읽기 (7세그먼트) ===== */
 // 노란/흰 7세그먼트 숫자(검은 배경)를 읽어 {value, text} 반환. 못 읽으면 null
-const SEG_DIGITS={'1111110':'0','0110000':'1','1101101':'2','1111001':'3','0110011':'4','1011011':'5','1011111':'6','0011111':'6',
+export const SEG_DIGITS={'1111110':'0','0110000':'1','1101101':'2','1111001':'3','0110011':'4','1011011':'5','1011111':'6','0011111':'6',
   '1110000':'7','1110010':'7','1111111':'8','1111011':'9','1110011':'9'};
-function ocrSevenSeg(rgba, W, H, litMin=110){
+export function ocrSevenSeg(rgba, W, H, litMin=110){
   const lit=new Uint8Array(W*H);
   for(let i=0,j=0;i<W*H;i++,j+=4) lit[i]=(0.299*rgba[j]+0.587*rgba[j+1]+0.114*rgba[j+2])>litMin?1:0;
   const runs=[]; let cur=null;
@@ -65,8 +65,8 @@ function ocrSevenSeg(rgba, W, H, litMin=110){
   return {value:parseFloat(text), text};
 }
 // 읽은 숫자로 남은 시간 갱신. 잘못 읽은 값 하나로 알림이 울리지 않도록, 예상값과 맞거나 두 번 연속 일치할 때만 받아들임
-const UNREAD_MS=20000;   // 켜져 있는데 이만큼 숫자를 못 읽으면 미리 알림을 못 하므로 한 번 알림
-function stepCountdown(st, cfg, value, now){
+export const UNREAD_MS=20000;   // 켜져 있는데 이만큼 숫자를 못 읽으면 미리 알림을 못 하므로 한 번 알림
+export function stepCountdown(st, cfg, value, now){
   const ev=[];
   if(!st.present){ st.remain=null; st.cand=null; st.lastReadAt=null; st.ocrWarned=false; return ev; }
   if(st.lastReadAt==null) st.lastReadAt=st.presentAt ?? now;
@@ -85,4 +85,3 @@ function stepCountdown(st, cfg, value, now){
   if(value<=cfg.leadSec && value>0 && !st.alertedPre){ st.alertedPre=true; st.preMarkRemain=value; ev.push('pre'); }
   return ev;
 }
-if(typeof module==='object') module.exports={stepDetector,newState,SEG_DIGITS,ocrSevenSeg,UNREAD_MS,stepCountdown};

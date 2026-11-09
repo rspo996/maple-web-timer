@@ -1,15 +1,25 @@
-const EMPTY_DEFAULT='“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.';
-const EMPTY_LOST='화면 연결이 끊겼어요. “게임 화면 연결”을 다시 눌러 주세요.';
-const STALL_MS=10000, LOST_REMIND_MS=120000, LOST_REMIND_MAX=2;
-const health={lostAt:null,reminders:0,remindAt:0,badSince:null,badWarned:false,okAt:0};
+import {Alerts,fireSystem,speak,unlockAudio} from './alerts.js';
+import {resetAllStates} from './detect-run.js';
+import {$} from './dom.js';
+import {saveUi,ui} from './prefs.js';
+import {pctx,pv} from './register.js';
+import {store} from './store.js';
+import {renderCard} from './ui-cards.js';
+import {renderWatch,setNote} from './ui-watch.js';
+import {KINDS} from '../core/kinds.js';
+import {eunNeun} from '../core/util.js';
+export const EMPTY_DEFAULT='“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.';
+export const EMPTY_LOST='화면 연결이 끊겼어요. “게임 화면 연결”을 다시 눌러 주세요.';
+export const STALL_MS=10000, LOST_REMIND_MS=120000, LOST_REMIND_MAX=2;
+export const health={lostAt:null,reminders:0,remindAt:0,badSince:null,badWarned:false,okAt:0};
 /* ----- 화면 소스 ----- */
-let src=null;            // {type:'stream', video, track, cap} | {type:'image', img}
-const frame={w:0,h:0};
-const work=document.createElement('canvas'); const wctx=work.getContext('2d',{willReadFrequently:true});
-let lastBitmap=null;
-let frameFresh=true;     // 마지막 grab()이 새 프레임이었는지. 숨은 탭에서 grabFrame 실패 뒤 video로 대체했으면 false(묶음 3이 화면 변화 판단에서 제외)
+export let src=null;            // {type:'stream', video, track, cap} | {type:'image', img}
+export const frame={w:0,h:0};
+export let lastBitmap=null;
+export let frameFresh=true;
+export function setFrameFresh(v){ frameFresh=v; }     // 마지막 grab()이 새 프레임이었는지. 숨은 탭에서 grabFrame 실패 뒤 video로 대체했으면 false(묶음 3이 화면 변화 판단에서 제외)
 // grabFrame()은 새 프레임이 올 때까지 기다리므로, 화면이 멈추면 감지 루프 전체가 멈추지 않게 시간 제한을 둠
-function grabFrameWithin(cap, ms){
+export function grabFrameWithin(cap, ms){
   return new Promise((resolve,reject)=>{ let late=false;
     const timer=setTimeout(()=>{ late=true; reject(new Error('timeout')); },ms);
     cap.grabFrame().then(b=>{ if(late){ if(b.close) b.close(); return; } clearTimeout(timer); resolve(b); },
@@ -17,9 +27,9 @@ function grabFrameWithin(cap, ms){
   });
 }
 // 카드·상태줄·감지가 함께 쓰는 화면 상황. live=실제 화면 공유(스크린샷 테스트가 아님), fresh=마지막 프레임이 새 것
-function viewCtx(){ return {src:!!src,frame,live:!!src&&src.type==='stream',fresh:frameFresh}; }
+export function viewCtx(){ return {src:!!src,frame,live:!!src&&src.type==='stream',fresh:frameFresh}; }
 // {frame, fresh}를 돌려준다. frame이 null이면 프레임이 없는 것(화면 안 들어옴으로 집계)
-async function grab(){
+export async function grab(){
   if(!src) return {frame:null,fresh:false};
   if(src.type==='image') return {frame:src.img,fresh:true};
   let fresh=true;
@@ -29,15 +39,15 @@ async function grab(){
   }
   return {frame:src.video.readyState>=2 ? src.video : null, fresh};
 }
-function dims(s){ return s instanceof HTMLVideoElement ? [s.videoWidth,s.videoHeight] : [s.naturalWidth||s.width, s.naturalHeight||s.height]; }
+export function dims(s){ return s instanceof HTMLVideoElement ? [s.videoWidth,s.videoHeight] : [s.naturalWidth||s.width, s.naturalHeight||s.height]; }
 
-function teardown(emptyText){
+export function teardown(emptyText){
   Alerts.clear();   // 묶음 대기 중이던 알림은 연결 알림이 우선이라 버린다
   src=null; pctx.clearRect(0,0,pv.width,pv.height);   // 멈춘 마지막 화면 대신 빈 화면 위에 안내문을 보여줌
   $('#empty').textContent=emptyText; $('#empty').style.display=''; $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
   store.targets.forEach(renderCard); renderWatch();
 }
-function initCapture(){
+export function initCapture(){
 $('#btnConnect').onclick=async()=>{
   unlockAudio(); setNote('');
   try{

@@ -1,7 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { toGray, prepTemplate, matchTemplate } = require('../js/match.js');
-const { ocrSevenSeg, SEG_DIGITS } = require('../js/detect-core.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { toGray, prepTemplate, matchTemplate } from '../src/core/match.js';
+import { ocrSevenSeg, SEG_DIGITS } from '../src/core/detect-core.js';
 
 // 결정적인 가짜 난수(시험 데이터 고정용)
 function rng(seed) { let s = seed; return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; }; }
@@ -66,7 +66,7 @@ test('ocrSevenSeg: 글씨가 없거나 너무 작으면 null', () => {
 });
 
 // ---- 버퍼 재사용 (스펙 9.3 ④): 결과는 그대로, 크기가 같거나 작으면 적분 배열을 새로 만들지 않는다 ----
-const { matchStats } = require('../js/match.js');
+import { matchStats } from '../src/core/match.js';
 function matchRef(img, W, H, tpl) {          // 분리 전 원본 알고리즘(호출마다 새 배열)
   const { t, w, h, norm } = tpl; if (W < w || H < h || norm < 1e-3) return { score: 0, x: 0, y: 0 };
   const W1 = W + 1, S = new Float64Array(W1 * (H + 1)), Q = new Float64Array(W1 * (H + 1));

@@ -1,9 +1,9 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { load } = require('./load.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { load } from './load.js';
 
 // 전역 순서는 index.html과 같게. targets.js는 아직 예전 DEFS를 만들므로 아이콘 데이터는 빈 배열로 대신한다.
-const L = load(['js/util.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+const L = await load(['util', 'detect-core', 'targets', 'kinds']);
 const KINDS = L.get('KINDS'), BUILTIN = L.get('BUILTIN');
 const { newState, cardStatus, unionRect, registerKind } = L;
 const mk = (kind, over = {}) => ({ id: 'u1', kind, name: '유니온의 힘', preset: null, enabled: true, threshold: 0.75, area: null, tpl: null, frameW: 0, frameH: 0, p: KINDS[kind].defaults(), ...over });

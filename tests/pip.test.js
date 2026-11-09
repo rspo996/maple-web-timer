@@ -1,7 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { load } = require('./load.js');
-const L = load(['js/util.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/manual-core.js', 'js/pip.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { load } from './load.js';
+const L = await load(['util', 'detect-core', 'targets', 'kinds', 'manual-core', 'pip-core']);
 const { buildPipRows, pipFlashKind, pipLevel, plain } = L;
 const NOW = 5_000_000;
 const row = (o) => ({ id: 'sol', name: '솔 야누스', kind: 'buff', enabled: true, stripState: 'ok', stripText: null, statusText: '켜짐 · 학습 중', statusCls: 'on', remainSec: null, ...o });

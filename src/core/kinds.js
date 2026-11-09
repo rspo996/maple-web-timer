@@ -1,32 +1,35 @@
 /* ===== 종류 등록부 KINDS (묶음 1 스펙 3.4, 16절). 종류별 동작은 여기 한 곳에 둔다.
-   묶음 3(idle)·4(cooldown)는 registerKind(이름, 정의)로 종류를 더한다. 이 파일은 정의만 하고 DOM은 호출 시점에만 건드린다. ===== */
-const KINDS={};
-const isPresetMode=t=>!t.tpl&&!!t.preset;                    // 직접 등록한 아이콘이 없고 내장 아이콘을 쓰는 중
-const cfgView=t=>({kind:t.kind,...t.p});                      // 기존 순수 상태기계(stepDetector 등)에 넘기는 설정 모양
-function unionRect(a,i){ const x0=Math.min(a.x,i.x),y0=Math.min(a.y,i.y),x1=Math.max(a.x+a.w,i.x+i.w),y1=Math.max(a.y+a.h,i.y+i.h); return {x:x0,y:y0,w:x1-x0,h:y1-y0}; }
+   묶음 3(idle)·4(cooldown)는 registerKind(이름, 정의)로 종류를 더한다. 이 파일은 정의만 하고 DOM은 호출 시점에만 건드린다. 화면·캡처 쪽 기능은 hooks로 부른다. ===== */
+import {UNREAD_MS,stepCountdown,stepDetector} from './detect-core.js';
+import {hooks} from './hooks.js';
+import {checkDurLead,clampInt,fmt,parseDur} from './util.js';
+export const KINDS={};
+export const isPresetMode=t=>!t.tpl&&!!t.preset;                    // 직접 등록한 아이콘이 없고 내장 아이콘을 쓰는 중
+export const cfgView=t=>({kind:t.kind,...t.p});                      // 기존 순수 상태기계(stepDetector 등)에 넘기는 설정 모양
+export function unionRect(a,i){ const x0=Math.min(a.x,i.x),y0=Math.min(a.y,i.y),x1=Math.max(a.x+a.w,i.x+i.w),y1=Math.max(a.y+a.h,i.y+i.h); return {x:x0,y:y0,w:x1-x0,h:y1-y0}; }
 // 영역 → 아이콘으로 드래그한 결과를 저장. 아이콘이 영역 밖으로 나가면 영역을 넓힌다
-function templateRegisterSave(t,rects,snap){
+export function templateRegisterSave(t,rects,snap){
   const r=rects.icon, cv=document.createElement('canvas'); cv.width=r.w; cv.height=r.h;
   cv.getContext('2d').drawImage(snap,r.x,r.y,r.w,r.h,0,0,r.w,r.h);
   Object.assign(t,{area:unionRect(rects.area,r),tpl:{url:cv.toDataURL('image/png'),w:r.w,h:r.h},frameW:snap.width,frameH:snap.height});
 }
-function labelsOf(t){ return KINDS[t.kind].labels(t); }
+export function labelsOf(t){ return KINDS[t.kind].labels(t); }
 // 등록·연결·해상도 같은 공통 분기. 해당하지 않으면 null
-function commonStatus(k,t,ctx){
+export function commonStatus(k,t,ctx){
   if(!k.isRegistered(t)){ const l=k.labels(t); return {text:'등록 필요',cls:'off',sub:`${l.area} → ${l.icon} 순서로 드래그`}; }
   if(!ctx.src) return {text:'대기 중',cls:'off',sub:'게임 화면을 연결하세요'};
   if(k.needsReregister(t,ctx.frame)) return {text:'다시 등록 필요',cls:'alert',sub:`등록 당시 화면 ${t.frameW}×${t.frameH}, 지금 ${ctx.frame.w}×${ctx.frame.h}`};
   return null;
 }
-const NOT_SEEN={text:'아직 못 찾음',cls:'off',sub:'이번 연결에서 아직 한 번도 못 봤어요 · 켜져 있는데도 이러면 “등록”으로 직접 지정'};
-const KIND_DEFAULTS={
+export const NOT_SEEN={text:'아직 못 찾음',cls:'off',sub:'이번 연결에서 아직 한 번도 못 봤어요 · 켜져 있는데도 이러면 “등록”으로 직접 지정'};
+export const KIND_DEFAULTS={
   label:'', needsTemplate:true, usesThreshold:true, trackSeen:false, maxInstances:12, onSkip:false, events:[], actions:[],
   defaults:()=>({}), normalizeP:p=>p,
   isRegistered:t=>!!(t.tpl||t.preset),
   needsReregister:(t,frame)=>!!(t.tpl&&t.frameW&&frame&&frame.w&&(t.frameW!==frame.w||t.frameH!==frame.h)),
   register:{steps:['area','icon'],validate:()=>null,save:templateRegisterSave},   // validate가 문자열을 돌려주면 저장하지 않고 그 이유를 배너에 보인다
   labels:t=>({area:'영역',icon:`${t.name} 아이콘`}),
-  detect:(t,source,ctx)=>detectTemplate(t,source),
+  detect:(t,source,ctx)=>hooks.detectTemplate(t,source),
   step:()=>[],
   markPre:st=>{ st.alertedPre=true; },                        // 묶기로 미리 당겨 알렸거나 자체 pre를 울린 주기를 표시
   remainSec:()=>null, applyEffect:()=>{}, cardFields:()=>[], cost:t=>t.tpl?5:80,
@@ -38,17 +41,17 @@ const KIND_DEFAULTS={
     return k.trackSeen&&!st.seen?'unseen':'ok';
   },
 };
-function registerKind(name,def){
+export function registerKind(name,def){
   KINDS[name]=Object.assign({},KIND_DEFAULTS,def,{key:name,register:Object.assign({},KIND_DEFAULTS.register,def.register||{})});
 }
 // 카드 상태 문구. 내장 아이콘을 쓰는 중이고 안내가 없으면 자동 검색 중이라는 안내를 붙인다
-function cardStatus(t,st,now,ctx){
+export function cardStatus(t,st,now,ctx){
   const r=Object.assign({sub:''},KINDS[t.kind].status(t,st,now,ctx));
   if(!r.sub&&isPresetMode(t)&&ctx.src) r.sub=t.kind==='countdown'?'화면 위쪽 가운데의 “남은시간” 타이머를 자동 검색 중':'기본 아이콘으로 화면 오른쪽 위를 자동 검색 중 · 잘 안 잡히면 “등록”으로 직접 지정';
   return r;
 }
-const mapLearn=evs=>evs.map(e=>e&&e.learn!=null?{effect:'learn',durationSec:e.learn}:e);
-const leadField={key:'leadSec',label:'미리 알림',type:'number',min:1,max:120,suffix:'초 전',
+export const mapLearn=evs=>evs.map(e=>e&&e.learn!=null?{effect:'learn',durationSec:e.learn}:e);
+export const leadField={key:'leadSec',label:'미리 알림',type:'number',min:1,max:120,suffix:'초 전',
   get:t=>t.p.leadSec,
   set:(t,raw)=>{ const v=clampInt(raw,1,120,10); const m=checkDurLead(t.p.durationSec,v,'lead'); if(m) return {revert:true,msg:m}; t.p.leadSec=v; return {}; }};
 
@@ -73,8 +76,8 @@ registerKind('buff',{
   applyEffect(t,ev){
     if(ev.effect!=='learn'||ev.durationSec<=t.p.leadSec) return;      // 미리 알림 이하로 학습하면 켜지자마자 알림이 울리므로 버린다
     t.p.durationSec=ev.durationSec;
-    if(typeof onTargetChanged==='function') onTargetChanged(t,'durationSec');
-    if(typeof setNote==='function') setNote(`학습한 시간 ${fmt(ev.durationSec)} · 맞지 않으면 직접 고치세요`,'info');
+    hooks.onTargetChanged(t,'durationSec');
+    hooks.setNote(`학습한 시간 ${fmt(ev.durationSec)} · 맞지 않으면 직접 고치세요`,'info');
   },
   status(t,st,now,ctx){
     const c=commonStatus(KINDS.buff,t,ctx); if(c) return c;
@@ -106,7 +109,7 @@ registerKind('countdown',{
   ],
   step(t,st,det,source,now){
     const hit=det.score>=t.threshold, evs=stepDetector(st,cfgView(t),hit,now); if(st.present) st.seen=true;
-    const o=st.present&&hit?readTimer(source,det.pos):null; st.ocrRect=o&&o.rect; if(o&&o.read) st.lastText=o.read.text;
+    const o=st.present&&hit?hooks.readTimer(source,det.pos):null; st.ocrRect=o&&o.rect; if(o&&o.read) st.lastText=o.read.text;
     evs.push(...stepCountdown(st,cfgView(t),o&&o.read?o.read.value:null,now));
     return evs;
   },
@@ -145,5 +148,3 @@ registerKind('rune',{
   cardFields:()=>[{key:'repeatSec',label:'반복 알림',type:'number',min:0,max:600,suffix:'초마다',hint:'(0=끔)',
     get:t=>t.p.repeatSec, set:(t,raw)=>{ t.p.repeatSec=clampInt(raw,0,600,0); return {}; }}],
 });
-
-if(typeof module==='object') module.exports={KINDS,registerKind,cardStatus,cfgView,unionRect,labelsOf};

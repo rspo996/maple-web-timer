@@ -1,8 +1,8 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { load } = require('./load.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { load } from './load.js';
 
-const L = load(['js/util.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+const L = await load(['util', 'detect-core', 'targets', 'kinds']);
 const { migrateV1, normalizeTarget, normalizeStore, makeId, defaultStore, loadStore, saveStore, checkName, targetSnapshot, newState } = L;
 const plain = L.plain;
 const fakeStorage = (init = {}, opt = {}) => { const m = new Map(Object.entries(init)); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (opt.failSet) throw new Error('quota'); m.set(k, String(v)); }, m }; };
@@ -269,8 +269,8 @@ test('summarizeStrip: 꺼둔 대상은 켜진 대상 수에 세지 않는다', (
 });
 
 // ---- 묶음 3: 종류별 대상 추가·슬롯 없는 이벤트·상태줄 글자 ----
-test('addKindTarget: 종류 기본 이름, u 번호, 종류별 인스턴스 상한', () => {
-  const LI = load(['js/util.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/idle.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+test('addKindTarget: 종류 기본 이름, u 번호, 종류별 인스턴스 상한', async () => {
+  const LI = await load(['util', 'detect-core', 'targets', 'kinds', 'idle']);
   const s = LI.defaultStore(), r = LI.addKindTarget(s, 'idle');
   assert.deepEqual([r.ok, r.target.id, r.target.kind, r.target.name, r.target.area], [true, 'u1', 'idle', '사냥 멈춤', null]);
   assert.deepEqual(LI.plain(LI.addKindTarget(s, 'idle')), { ok: false, msg: '사냥 멈춤은 1개까지 둘 수 있어요' });

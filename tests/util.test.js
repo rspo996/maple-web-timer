@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { fmt, parseDur, clampInt, batchim, eunNeun, eulReul } = require('../js/util.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { fmt, parseDur, clampInt, batchim, eunNeun, eulReul } from '../src/core/util.js';
 
 test('parseDur: 숫자만 쓰면 분, 분:초, 빈 값은 null, 형식 오류는 undefined', () => {
   assert.equal(parseDur('30'), 1800);
@@ -40,8 +40,8 @@ test('받침 조사: 은/는, 을/를', () => {
   assert.equal(eulReul('솔 야누스 미리 알림'), '솔 야누스 미리 알림을');
 });
 
-test('checkDurLead: 지속시간이 미리 알림 이하이면 거절 문구, 아니면 null', () => {
-  const { checkDurLead } = require('../js/util.js');
+test('checkDurLead: 지속시간이 미리 알림 이하이면 거절 문구, 아니면 null', async () => {
+  const { checkDurLead } = await import('../src/core/util.js');
   assert.equal(checkDurLead(null, 10, 'duration'), null);
   assert.equal(checkDurLead(60, 10, 'duration'), null);
   assert.equal(checkDurLead(10, 10, 'duration'), '미리 알림(10초)보다 길게 입력해 주세요');
@@ -51,8 +51,8 @@ test('checkDurLead: 지속시간이 미리 알림 이하이면 거절 문구, �
 });
 
 // ---- 묶음 5: 볼륨 ----
-test('clampVolumePct·volumeToGain·ttsVolume', () => {
-  const { clampVolumePct, volumeToGain, ttsVolume } = require('../js/util.js');
+test('clampVolumePct·volumeToGain·ttsVolume', async () => {
+  const { clampVolumePct, volumeToGain, ttsVolume } = await import('../src/core/util.js');
   assert.deepEqual([-1, 250, 'abc', 80.4, null, undefined, '120'].map(clampVolumePct), [0, 200, 80, 80, 80, 80, 120]);
   assert.deepEqual([0, 80, 100, 200].map(volumeToGain), [0, 0.8, 1, 2]);
   assert.deepEqual([0, 80, 100, 200].map(ttsVolume), [0, 0.8, 1, 1]);

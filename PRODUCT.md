@@ -2,7 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> 표기: **[확인]** = 사용자가 2026-11-09 init 인터뷰에서 답한 것. **[코드]** = 코드(`index.html`, `css/`, `js/`)에서 읽은 현재 동작. 둘 다 아닌 것은 "미정"으로 둔다.
+> 표기: **[확인]** = 사용자가 2026-11-09 init 인터뷰에서 답한 것. **[코드]** = 코드(`index.html`, `src/`)에서 읽은 현재 동작. 둘 다 아닌 것은 "미정"으로 둔다.
 
 ## Platform
 
@@ -80,7 +80,7 @@ web
 
 인터뷰에서 바꾸면 안 되는 제약으로 고르지 않았다. 지금은 이렇게 되어 있지만, 이유가 있으면 바꿀 수 있다.
 
-- 빌드 없음, 외부 라이브러리·CDN 없음. 2026-11-09부터 `index.html` + `css/app.css` + `js/*.js`(클래식 `<script src>`, `file://`로 열어도 동작)로 나뉘었다.
+- 2026-11-09부터 Vite로 빌드한다(사용자 결정: Vite + React, JavaScript 유지, 단계별 전환, `file://`로 여는 것은 포기). 정적 파일(`dist/`)로 빌드되어 어디든 올릴 수 있다. 런타임 외부 라이브러리는 React뿐이고, 표시 글꼴만 Google Fonts에서 받는다.
 - 서버나 외부 API 없이 브라우저 안에서만 처리하고, 게임 화면은 밖으로 나가지 않는다.
 
 ### 용어
@@ -104,14 +104,14 @@ web
 
 ## Evidence on Hand
 
-- `index.html`·`css/app.css`·`js/*.js`: 앱 전체. 순수 계산(`js/detect-core.js`, `match.js`, `targets.js`, `kinds.js`, `manual-core.js`, `idle.js`·`cooldown.js`·`pip.js`·`backup.js`의 위쪽)과 화면·알림(`alerts.js`, `ui-*.js`, `register.js`, `capture.js`, `detect-run.js`, `sounds.js`, `manual-ui.js`, `audio.js`).
-- 자동 테스트(2026-11-09 추가): `node --test`(순수 함수), `tests/browser/*.mjs`(가짜 화면 공유로 브라우저 시나리오, `ego-browser`). 모두 합성 화면이라 실제 게임 화면에서의 정확도는 확인하지 못했다.
-- 내장 템플릿 이미지: 솔 야누스 아이콘 32×32 세 장, 부스터 "◷ 남은시간" 글자 65×19 한 장(`js/preset-data.js`). 게임 화면에서 잘라낸 매칭용 이미지다.
+- `index.html`·`src/`: 앱 전체. 순수 계산은 `src/core/`(`detect-core.js`, `match.js`, `targets.js`, `kinds.js`, `manual-core.js`, `idle.js`, `cooldown.js`, `pip-core.js`, `backup-core.js`, `alerts-core.js`)이고 화면·알림은 `src/app/`(`alerts.js`, `ui-*.js`, `register.js`, `capture.js`, `detect-run.js`, `sounds.js`, `manual-ui.js`, `audio.js`).
+- 자동 테스트(2026-11-09 추가): `npm test`(`node --test`, 순수 함수), `tests/browser/*.mjs`(가짜 화면 공유로 브라우저 시나리오, `ego-browser`). 모두 합성 화면이라 실제 게임 화면에서의 정확도는 확인하지 못했다.
+- 내장 템플릿 이미지: 솔 야누스 아이콘 32×32 세 장, 부스터 "◷ 남은시간" 글자 65×19 한 장(`src/core/preset-data.js`). 게임 화면에서 잘라낸 매칭용 이미지다.
 - 없는 것: 테스트용 게임 스크린샷 샘플, README, 사용 기록·정확도 데이터. 그래서 사냥 멈춤의 변화 기준(24·8픽셀, 높이 8%·너비 40%)과 설치기의 밝기 기준(0.85·0.65, 숫자 획을 뺀 일치도 0.85)은 실제 화면으로 확인하지 않은 값이다. 이후 작업에서 이런 것을 있는 것처럼 지어내지 않는다.
 
 ## Product Principles
 
 1. **귀로 쓰는 도구다.** 사냥 중에는 탭이 숨겨져 있고 소리·음성이 실제 인터페이스다. 알림이 제때 울리고, 종류별로 구분되고, 한 번만 울리는 것이 화면을 다듬는 것보다 먼저다.
 2. **화면만 본다.** 게임 클라이언트를 건드리지 않는다는 약속은 정확도나 편의보다 우선한다.
-3. **틀린 알림보다 확인이 먼저다.** 잘못 읽은 값 하나로 울리지 않도록 연속으로 확인한 뒤에 반응한다. 지금 코드의 설계 의도다(켜짐 2회·꺼짐 4회 연속 판정 `js/detect-core.js:3`, 부스터 숫자는 예상값과 맞거나 두 번 연속 일치할 때만 수용 `js/detect-core.js:67`).
+3. **틀린 알림보다 확인이 먼저다.** 잘못 읽은 값 하나로 울리지 않도록 연속으로 확인한 뒤에 반응한다. 지금 코드의 설계 의도다(켜짐 2회·꺼짐 4회 연속 판정 `src/core/detect-core.js:3`, 부스터 숫자는 예상값과 맞거나 두 번 연속 일치할 때만 수용 `src/core/detect-core.js:67`).
 4. **내 환경에 맞춘다.** 혼자 쓰는 도구이므로 범용 온보딩·다국어·다른 환경 대응보다 본인 설정에서의 정확도와 빠른 재등록이 우선이다.

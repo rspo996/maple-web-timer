@@ -1,7 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { load } = require('./load.js');
-const L = load(['js/util.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/detect-run.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { load } from './load.js';
+const L = await load(['util', 'detect-core', 'targets', 'kinds', 'slow-watch']);
 const { createSlowWatch } = L;
 
 test('createSlowWatch: 평균이 한계를 20틱 연속 넘으면 한 번 알리고, 회복해야 다시 알린다', () => {

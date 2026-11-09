@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createAlerts } = require('../js/alerts.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createAlerts } from '../src/core/alerts-core.js';
 
 // 소리·화면 쪽은 가짜로 바꿔 끼워 Alerts.fire의 경로만 시험한다
 function setup() {

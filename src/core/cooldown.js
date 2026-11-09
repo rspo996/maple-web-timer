@@ -1,16 +1,21 @@
 /* ===== 설치기 쿨타임 알림 (묶음 4): 퀵슬롯 아이콘이 어두워지면 쓴 것, 다시 밝아지면 쿨타임 끝.
    NCC(matchTemplate)는 밝기가 고르게 바뀌어도 점수가 그대로라 어두움은 밝기 비로 따로 잰다(스펙 4절).
    위쪽은 순수 함수(node 시험), 아래쪽은 KINDS.cooldown 종류 정의 ===== */
-const TPL_MIN_LUMA=40;        // 템플릿에서 이보다 어두운 픽셀은 밝기 비 계산에서 뺀다 [추정]
-const CD_GAP_MS=10000;        // 안 보이던 구간이 이보다 길었으면 밝아져도 "지금 막 쓸 수 있다"고 말하지 않는다 [추정]
-const CD_UNREAD_MS=90000;     // 아이콘이 이만큼 안 보이면 한 번 알린다(퀵슬롯 페이지 전환 고려) [추정]
-const CD_MIN_SEC=3;           // 이보다 짧은 어두움은 쿨타임으로 치지 않는다(MP 부족 등) [추정]
-const CD_MASKED_MIN=0.85;     // 숫자 획을 뺀 구조 일치도가 이 이상이면 어두워진 같은 아이콘으로 본다 [추정]
+import {hooks} from './hooks.js';
+import {KINDS,commonStatus,leadField,registerKind} from './kinds.js';
+import {matchTemplate,toGray} from './match.js';
+import {scratch} from './scratch.js';
+import {checkDurLead,clampInt,fmt,parseDur} from './util.js';
+export const TPL_MIN_LUMA=40;        // 템플릿에서 이보다 어두운 픽셀은 밝기 비 계산에서 뺀다 [추정]
+export const CD_GAP_MS=10000;        // 안 보이던 구간이 이보다 길었으면 밝아져도 "지금 막 쓸 수 있다"고 말하지 않는다 [추정]
+export const CD_UNREAD_MS=90000;     // 아이콘이 이만큼 안 보이면 한 번 알린다(퀵슬롯 페이지 전환 고려) [추정]
+export const CD_MIN_SEC=3;           // 이보다 짧은 어두움은 쿨타임으로 치지 않는다(MP 부족 등) [추정]
+export const CD_MASKED_MIN=0.85;     // 숫자 획을 뺀 구조 일치도가 이 이상이면 어두워진 같은 아이콘으로 본다 [추정]
 
 /* 템플릿 대비 현재 밝기 비의 하위 20%(p20)와 중앙값(p50). 템플릿이 어두운 픽셀은 뺀다.
    nccMasked: 템플릿보다 밝아진 픽셀(어두운 아이콘 위에 얹힌 쿨타임 숫자 획)을 빼고 잰 상관계수.
    어두운 아이콘은 명암 차이가 작아 흰 숫자 몇 획만 얹혀도 일반 NCC가 0.3대로 떨어진다(합성 측정) */
-function iconGain(tpl,cur,minLuma){
+export function iconGain(tpl,cur,minLuma){
   const r=[]; let n=0,sx=0,sy=0,sxx=0,syy=0,sxy=0;
   for(let i=0;i<tpl.length&&i<cur.length;i++){
     const a=tpl[i], b=cur[i]; if(a<minLuma) continue;
@@ -23,18 +28,18 @@ function iconGain(tpl,cur,minLuma){
   return {p20:r[Math.floor((r.length-1)*0.2)],p50:r[Math.floor((r.length-1)*0.5)],n:r.length,nccMasked};
 }
 // ready: 구조가 맞고 아이콘 전체가 밝음(p20). dim: 구조가 맞고(일반 NCC 또는 숫자를 뺀 NCC) 절반 넘게 어두움(p50). 그 밖(가려짐·다른 아이콘)은 unknown
-function classifyIcon(ncc,g,cfg){
+export function classifyIcon(ncc,g,cfg){
   if(ncc>=cfg.threshold&&g.p20>=cfg.gainHi) return 'ready';
   if(g.p50<=cfg.gainLo&&(ncc>=cfg.nccDim||(g.nccMasked||0)>=CD_MASKED_MIN)) return 'dim';
   return 'unknown';
 }
-function cdNewState(){
+export function cdNewState(){
   return {cur:'init',pending:null,pendCount:0,pendAt:0,usedAt:null,alertedPre:false,preSkipped:false,seen:false,
     unknownSince:null,unreadWarned:false,gapBefore:0,lastCdSec:null};
 }
 /* 한 틱. obs='ready'|'dim'|'unknown'|null. cfg={durationSec, leadSec}.
    돌려주는 것: 'pre' | {ready:{silent}} | 'unread'. silent: 그 주기에 미리 알림을 울렸음(정책: 미리 알림 뒤 꺼짐류 알림 없음) */
-function stepCooldown(S,cfg,obs,now){
+export function stepCooldown(S,cfg,obs,now){
   const ev=[];
   if(obs==='unknown'){
     if(S.unknownSince==null) S.unknownSince=now;
@@ -64,9 +69,9 @@ function stepCooldown(S,cfg,obs,now){
   }
   return ev;
 }
-const round3=x=>Math.round(x*1000)/1000;
+export const round3=x=>Math.round(x*1000)/1000;
 // "쿨타임 중 찍기": 연속 3프레임의 {ncc, p50}로 어둠 기준을 정한다(스펙 15-4, 3.3)
-function calibrateCooldown(samples,threshold){
+export function calibrateCooldown(samples,threshold){
   const minNcc=Math.min(...samples.map(s=>s.ncc)), maxG=Math.max(...samples.map(s=>s.p50));
   if(minNcc<0.4) return {ok:false,msg:'아이콘을 못 찾았어요'};
   const g=maxG.toFixed(2);
@@ -76,27 +81,27 @@ function calibrateCooldown(samples,threshold){
   return {ok:true,gainLo,nccDim,msg};
 }
 
-/* ----- 종류 정의: KINDS.cooldown (kinds.js 뒤에 올라온다. node 시험에서 registerKind가 없으면 건너뜀) ----- */
-const cdS=st=>st.cd||(st.cd=cdNewState());
-const cdCfg=t=>({threshold:t.threshold,gainHi:t.p.gainHi,gainLo:t.p.gainLo,nccDim:t.p.nccDim});
-const cdClamp=(v,lo,hi,d)=>{ const n=+v; return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):d; };
+/* ----- 종류 정의: KINDS.cooldown (이 모듈을 import하면 KINDS에 등록된다) ----- */
+export const cdS=st=>st.cd||(st.cd=cdNewState());
+export const cdCfg=t=>({threshold:t.threshold,gainHi:t.p.gainHi,gainLo:t.p.gainLo,nccDim:t.p.nccDim});
+export const cdClamp=(v,lo,hi,d)=>{ const n=+v; return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):d; };
 // 검색 영역: 아이콘 사각형을 사방 8px 넓히고 프레임 안으로 자른다(스펙 15-7)
-function cdArea(r,W,H){ const x0=Math.max(0,r.x-8), y0=Math.max(0,r.y-8), x1=Math.min(W,r.x+r.w+8), y1=Math.min(H,r.y+r.h+8); return {x:x0,y:y0,w:x1-x0,h:y1-y0}; }
+export function cdArea(r,W,H){ const x0=Math.max(0,r.x-8), y0=Math.max(0,r.y-8), x1=Math.min(W,r.x+r.w+8), y1=Math.min(H,r.y+r.h+8); return {x:x0,y:y0,w:x1-x0,h:y1-y0}; }
 // 아이콘 자리를 소영역에서 찾고(NCC) 그 자리의 밝기 비를 잰다. 템플릿이 아직 안 읽혔으면 null
-function cdMeasure(t,source){
-  const tp=loadTpl(t.tpl); if(!tp||!tp.gray) return null;
+export function cdMeasure(t,source){
+  const tp=hooks.loadTpl(t.tpl); if(!tp||!tp.gray) return null;
   const a=t.area, W=Math.max(tp.w,Math.round(a.w*tp.k)), H=Math.max(tp.h,Math.round(a.h*tp.k));
-  work.width=W; work.height=H; wctx.drawImage(source,a.x,a.y,a.w,a.h,0,0,W,H);
+  const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,a.x,a.y,a.w,a.h,0,0,W,H);
   const g=toGray(wctx.getImageData(0,0,W,H).data,W*H), r=matchTemplate(g,W,H,tp);
   const win=new Float32Array(tp.w*tp.h);
   for(let y=0;y<tp.h;y++) for(let x=0;x<tp.w;x++) win[y*tp.w+x]=g[(r.y+y)*W+r.x+x];
   const gain=iconGain(tp.gray,win,TPL_MIN_LUMA);
   return {ncc:r.score,score:r.score,gain,state:classifyIcon(r.score,gain,cdCfg(t)),pos:{x:a.x+r.x/tp.k,y:a.y+r.y/tp.k,w:t.tpl.w,h:t.tpl.h}};
 }
-const cdDurationField={key:'durationSec',label:'지속시간',type:'text',placeholder:'비우면 사라짐 알림 없음',suffix:'분:초',
+export const cdDurationField={key:'durationSec',label:'지속시간',type:'text',placeholder:'비우면 사라짐 알림 없음',suffix:'분:초',
   get:t=>t.p.durationSec?fmt(t.p.durationSec):'',
   set:(t,raw)=>{ const v=parseDur(raw); if(v===undefined) return {revert:true}; const m=checkDurLead(v,t.p.leadSec,'duration'); if(m) return {revert:true,msg:m}; t.p.durationSec=v||null; return {}; }};
-if(typeof registerKind==='function') registerKind('cooldown',{
+registerKind('cooldown',{
   label:'설치기', menuLabel:'설치기 쿨타임', defaultName:'설치기', numbered:true, defaultThreshold:0.7, trackSeen:true,
   defaults:()=>({gainHi:0.85,gainLo:0.65,nccDim:0.45,calibrated:false,durationSec:null,leadSec:10}),
   normalizeP:p=>{
@@ -140,8 +145,8 @@ if(typeof registerKind==='function') registerKind('cooldown',{
       S.calib.samples.push({ncc:Math.max(det.ncc,det.gain.nccMasked||0),p50:det.gain.p50});   // 숫자 획 때문에 일반 NCC가 낮을 수 있다
       if(S.calib.samples.length>=3){
         const r=calibrateCooldown(S.calib.samples,t.threshold); S.calib=null;
-        if(r.ok){ t.p.gainLo=r.gainLo; t.p.nccDim=r.nccDim; t.p.calibrated=true; if(typeof onTargetChanged==='function') onTargetChanged(t,'gainLo'); }
-        if(typeof setNote==='function') setNote(`${t.name} · ${r.msg}`,r.ok&&!r.msg.includes('어려워요')?'info':'warn');
+        if(r.ok){ t.p.gainLo=r.gainLo; t.p.nccDim=r.nccDim; t.p.calibrated=true; hooks.onTargetChanged(t,'gainLo'); }
+        hooks.setNote(`${t.name} · ${r.msg}`,r.ok&&!r.msg.includes('어려워요')?'info':'warn');
       }
     }
     if(det.gain.p50>1.3) S.brightSince=S.brightSince||now; else S.brightSince=null;   // 어두운 상태로 등록한 듯
@@ -179,9 +184,8 @@ if(typeof registerKind==='function') registerKind('cooldown',{
   cardFields:()=>[cdDurationField,leadField],
   actions:[
     {key:'calib',label:'쿨타임 중 찍기',run(t,st){
-      if(typeof src!=='undefined'&&!src){ if(typeof setNote==='function') setNote('게임 화면을 연결한 뒤 쿨타임 중에 눌러 주세요'); return; }
-      cdS(st).calib={samples:[]}; if(typeof setNote==='function') setNote(`${t.name} 쿨타임 중인 아이콘을 재는 중이에요`,'info'); }},
+      if(!hooks.hasSource()){ hooks.setNote('게임 화면을 연결한 뒤 쿨타임 중에 눌러 주세요'); return; }
+      cdS(st).calib={samples:[]}; hooks.setNote(`${t.name} 쿨타임 중인 아이콘을 재는 중이에요`,'info'); }},
     {key:'used',label:'방금 썼어요',run(t,st,now){ Object.assign(cdS(st),{cur:'dim',usedAt:now,alertedPre:false,preSkipped:false,pending:null,pendCount:0,seen:true,unknownSince:null}); st.seen=true; }},
   ],
 });
-if(typeof module==='object') module.exports={CD_MASKED_MIN,TPL_MIN_LUMA,CD_GAP_MS,CD_UNREAD_MS,CD_MIN_SEC,iconGain,classifyIcon,cdNewState,stepCooldown,calibrateCooldown};

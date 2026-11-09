@@ -3,11 +3,11 @@
 //   const { page, ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-v1": {...} }, sounds: ["sol.pre"], connect: true });
 import fs from "node:fs/promises";
 const ROOT = new URL("../../", import.meta.url);
-export const BASE = "http://127.0.0.1:8766/index.html";      // 검증 전용 포트. 평소 쓰는 8765 origin의 설정·내 소리를 지우지 않으려고 분리
+export const BASE = "http://127.0.0.1:8766/index.html";      // npm run dev:test. 검증 전용 포트. 평소 쓰는 8765 origin의 설정·내 소리를 지우지 않으려고 분리
 export async function open(taskSpace, opt = {}) {
   const task = await taskSpace("target-list-verify");
   const page = task.page("p1");
-  await page.goto(new URL("/__seed__", BASE).href);            // 앱이 열려 있으면 IndexedDB 삭제가 막히므로, 앱이 없는 같은 origin 페이지(404)에서 비우고 시험 데이터를 넣는다
+  await page.goto(new URL("/tests/browser/seed.html", BASE).href);   // 앱이 열려 있으면 IndexedDB 삭제가 막히므로, 앱이 없는 같은 origin 빈 페이지에서 비우고 시험 데이터를 넣는다
   await page.evaluate(async ({ seed, sounds }) => {                  localStorage.clear();
     await new Promise(r => { const q = indexedDB.deleteDatabase("maple-web-timer"); q.onsuccess = q.onerror = q.onblocked = r; });
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v));

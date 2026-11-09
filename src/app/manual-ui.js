@@ -1,16 +1,23 @@
 /* ===== 수동 타이머 화면과 틱 (묶음 2). 순수 계산은 manual-core.js.
    manualInit()은 main.js가 부팅 때, manualTick(now)은 Worker 메시지마다 감지 tick()보다 먼저 동기로 부른다 ===== */
-let manual=manualEmptyStore();
-const manualDelArm={};                                       // 실행 중 삭제: 두 번 눌러야 지운다(id → 타이머)
-const manualAudible=()=>!!actx&&actx.state==='running';     // 지금 소리가 실제로 나는지(미리 알림을 '들었는지' 판정)
-function manualSave(){ if(importing) return; try{ localStorage.setItem(MANUAL_STORE,JSON.stringify(manual)); }catch(e){} }   // 실패하면 이 탭에서만 유지
-const manualCurName=t=>t.kind==='routine'?t.phases[t.idx].name:t.label;
-const durLabel=sec=>sec%3600===0?`${sec/3600}시간`:sec%60===0?`${sec/60}분`:manualFmt(sec*1000);
-const manualById=id=>manual.timers.find(t=>t.id===id);
-function manualSet(t){ manual.timers=manual.timers.map(x=>x.id===t.id?t:x); }
-function manualNote(text){ setText($('#manualNote'),text); }
+import {Alerts,actx,titleTimer,unlockAudio} from './alerts.js';
+import {$} from './dom.js';
+import {importing} from './prefs.js';
+import {setGauge,setText} from './ui-cards.js';
+import {baseTitle,setNote,setTitlePrefix,titlePrefix} from './ui-watch.js';
+import {MANUAL_LABEL_MAX,MANUAL_MAX,MANUAL_MIN_SEC,MANUAL_PRE_MAX,MANUAL_STORE,manualAdjust,manualEmptyStore,manualFmt,manualLoad,manualNew,manualPause,manualRemainMs,manualReset,manualStart,manualStep,manualText} from '../core/manual-core.js';
+import {clampInt,parseDur} from '../core/util.js';
+export let manual=manualEmptyStore();
+export const manualDelArm={};                                       // 실행 중 삭제: 두 번 눌러야 지운다(id → 타이머)
+export const manualAudible=()=>!!actx&&actx.state==='running';     // 지금 소리가 실제로 나는지(미리 알림을 '들었는지' 판정)
+export function manualSave(){ if(importing) return; try{ localStorage.setItem(MANUAL_STORE,JSON.stringify(manual)); }catch(e){} }   // 실패하면 이 탭에서만 유지
+export const manualCurName=t=>t.kind==='routine'?t.phases[t.idx].name:t.label;
+export const durLabel=sec=>sec%3600===0?`${sec/3600}시간`:sec%60===0?`${sec/60}분`:manualFmt(sec*1000);
+export const manualById=id=>manual.timers.find(t=>t.id===id);
+export function manualSet(t){ manual.timers=manual.timers.map(x=>x.id===t.id?t:x); }
+export function manualNote(text){ setText($('#manualNote'),text); }
 
-function manualInit(){
+export function manualInit(){
   let raw=null; try{ raw=localStorage.getItem(MANUAL_STORE); }catch(e){}
   const r=manualLoad(raw); manual=r.store;
   if(!r.ok) setNote('수동 타이머 저장값을 읽지 못했어요');
@@ -29,29 +36,29 @@ function manualInit(){
 }
 
 /* ----- 만들기 ----- */
-function manualCanAdd(){
+export function manualCanAdd(){
   if(manual.timers.length<MANUAL_MAX) return true;
   manualNote(`타이머는 ${MANUAL_MAX}개까지 만들 수 있어요`); return false;
 }
-function manualAddAndStart(kind,label,phases){
+export function manualAddAndStart(kind,label,phases){
   unlockAudio();                                             // 오디오는 사용자 조작으로만 켜진다
   if(!manualCanAdd()) return;
   const t=manualStart(manualNew(manual,kind,label,phases,manual.prefs.preSec),Date.now());
   manual.timers.push(t); manualSave(); manualNote(''); renderManualList(); manualTick(Date.now());
 }
 // 분:초 입력을 초로. 숫자만 쓰면 분(기존 지속시간 칸과 같은 규칙). 잘못되면 null과 이유
-function manualReadDur(raw){
+export function manualReadDur(raw){
   const v=parseDur(raw);
   if(!v) return {sec:null,msg:'시간을 분:초로 입력해 주세요 (예: 30:00)'};
   if(v<MANUAL_MIN_SEC) return {sec:null,msg:`${MANUAL_MIN_SEC}초 이상으로 입력해 주세요`};
   return {sec:v,msg:''};
 }
-function manualCreateFromForm(){
+export function manualCreateFromForm(){
   const d=manualReadDur($('#manualDur').value); if(!d.sec){ manualNote(d.msg); return; }
   const name=$('#manualName').value.trim().slice(0,MANUAL_LABEL_MAX)||`${durLabel(d.sec)} 타이머`;
   manualAddAndStart('countdown',name,[{name,sec:d.sec}]);
 }
-function manualCreateRoutine(){
+export function manualCreateRoutine(){
   const f=$('#manualRoutine'), ph=[];
   for(const i of [1,2]){
     const d=manualReadDur(f.elements['d'+i].value); if(!d.sec){ manualNote(`구간 ${i}: ${d.msg}`); return; }
@@ -59,7 +66,7 @@ function manualCreateRoutine(){
   }
   manualAddAndStart('routine',`${ph[0].name}·${ph[1].name}`,ph);
 }
-function manualSavePreset(){
+export function manualSavePreset(){
   const d=manualReadDur($('#manualDur').value); if(!d.sec){ manualNote(d.msg); return; }
   const label=$('#manualName').value.trim().slice(0,MANUAL_LABEL_MAX)||durLabel(d.sec);
   if(manual.presets.some(p=>p.label===label)){ manualNote(`“${label}” 프리셋이 이미 있어요`); return; }
@@ -68,7 +75,7 @@ function manualSavePreset(){
   manual.presets.push({id:'p'+n,label,sec:d.sec}); manualSave(); renderManualPresets(); manualNote(`“${label}” 프리셋을 저장했어요`);
 }
 // 프리셋 칩: 한 번 누르면 바로 시작. 시간만 있는 프리셋은 "5분 타이머", 이름 붙인 프리셋은 그 이름
-function renderManualPresets(){
+export function renderManualPresets(){
   const box=$('#manualPresets'); box.textContent='';
   for(const p of manual.presets){
     const b=document.createElement('button'); b.type='button'; b.textContent=p.label; b.title=`${p.label} 타이머 바로 시작`;
@@ -89,7 +96,7 @@ function renderManualPresets(){
 }
 
 /* ----- 카드 ----- */
-function renderManualList(){
+export function renderManualList(){
   const box=$('#manualList'); box.textContent='';
   for(const t of manual.timers) box.append(buildManualCard(t));
   const full=manual.timers.length>=MANUAL_MAX;
@@ -98,9 +105,9 @@ function renderManualList(){
   $('#manualClearDone').hidden=!manual.timers.some(t=>t.status==='done');
   renderManualTimes(Date.now());
 }
-function mkBtn(text,fn,label){ const b=document.createElement('button'); b.type='button'; b.textContent=text; b.onclick=fn; if(label) b.setAttribute('aria-label',label); return b; }
-function manualAct(t,fn){ manualSet(fn(manualById(t.id)||t)); manualSave(); renderManualList(); manualTick(Date.now()); }
-function buildManualCard(t){
+export function mkBtn(text,fn,label){ const b=document.createElement('button'); b.type='button'; b.textContent=text; b.onclick=fn; if(label) b.setAttribute('aria-label',label); return b; }
+export function manualAct(t,fn){ manualSet(fn(manualById(t.id)||t)); manualSave(); renderManualList(); manualTick(Date.now()); }
+export function buildManualCard(t){
   const el=document.createElement('div'); el.className='card mt'; el.id='manual-'+t.id;
   const head=document.createElement('div'); head.className='mt-head';
   const name=document.createElement('b'); name.textContent=t.label; head.append(name);
@@ -124,7 +131,7 @@ function buildManualCard(t){
   el.append(head,time,gauge,info,btns,form);
   return el;
 }
-function manualDelete(id){
+export function manualDelete(id){
   const t=manualById(id); if(!t) return;
   const btn=()=>document.querySelector(`#manual-${id} .mt-del`);   // 그 사이 카드가 다시 그려질 수 있어 매번 찾는다
   if(t.status==='running'&&!manualDelArm[id]){                 // 실행 중이면 3초 안에 한 번 더 눌러야 지운다
@@ -134,7 +141,7 @@ function manualDelete(id){
   manual.timers=manual.timers.filter(x=>x.id!==id); manualSave(); renderManualList(); manualTick(Date.now());
 }
 // 고치기: 이름·미리 알림은 언제든, 길이는 실행 중이 아닐 때만. 길이를 바꾸면 처음부터(대기)로 돌아간다
-function buildManualEdit(t){
+export function buildManualEdit(t){
   const f=document.createElement('form'); f.className='grid mt-edit'; f.hidden=true;
   const field=(label,input)=>{ const l=document.createElement('label'); l.textContent=label; const s=document.createElement('span'); s.append(input); f.append(l,s); return input; };
   const inp=(v,attrs)=>{ const i=document.createElement('input'); i.value=v; Object.assign(i,attrs||{}); return i; };
@@ -166,7 +173,7 @@ function buildManualEdit(t){
   return f;
 }
 // 남은 시간 표시(매 틱, 바뀔 때만 DOM을 건드린다)
-function renderManualTimes(now){
+export function renderManualTimes(now){
   for(const t of manual.timers){
     const el=document.getElementById('manual-'+t.id); if(!el) continue;
     const q=s=>el.querySelector(`[data-s=${s}]`);
@@ -186,8 +193,8 @@ function renderManualTimes(now){
 }
 
 /* ----- 틱: 판정 → 알림 → 저장 → 상태줄·탭 제목 ----- */
-const MANUAL_BEEP={pre:'timer',end:'gone',next1:'gone',next2:'gone'};
-function manualTick(now){
+export const MANUAL_BEEP={pre:'timer',end:'gone',next1:'gone',next2:'gone'};
+export function manualTick(now){
   const audible=manualAudible(), late=[]; let changed=false, rebuild=false;
   manual.timers=manual.timers.map(t=>{
     if(t.status!=='running') return t;
@@ -207,17 +214,17 @@ function manualTick(now){
   renderManualStrip(now);
 }
 // 상태줄(#watchManual)과 탭 제목 접두. 문자열이 바뀔 때만 쓴다. role=timer라 화면 낭독기가 매번 읽지 않는다
-function renderManualStrip(now){
+export function renderManualStrip(now){
   const run=manual.timers.filter(t=>t.status==='running').sort((a,b)=>manualRemainMs(a,now)-manualRemainMs(b,now));
   const items=[...run.map(t=>`${manualCurName(t)} ${manualFmt(manualRemainMs(t,now))}`),
                ...manual.timers.filter(t=>t.status==='paused').map(t=>`${manualCurName(t)} ${manualFmt(t.remainMs)} (멈춤)`)];
   setText($('#watchManual'),items.length?'⏱ '+items.slice(0,2).join(' · ')+(items.length>2?` +${items.length-2}`:''):'');
   const prefix=run.length?`⏱ ${manualFmt(manualRemainMs(run[0],now))}`:'';
-  if(prefix!==titlePrefix){ titlePrefix=prefix; if(titleTimer===null) document.title=baseTitle(); }   // 알림 깜빡임 중이면 끝난 뒤 baseTitle()이 반영
+  if(prefix!==titlePrefix){ setTitlePrefix(prefix); if(titleTimer===null) document.title=baseTitle(); }   // 알림 깜빡임 중이면 끝난 뒤 baseTitle()이 반영
   const lockHidden=!(run.length&&!manualAudible()); if($('#soundLock').hidden!==lockHidden) $('#soundLock').hidden=lockHidden;
 }
 // 소리 설정의 "듣기": 실제 타이머가 있으면 그 이름으로, 없으면 예시 문구
-function manualPreviewText(ev){
+export function manualPreviewText(ev){
   const c=manual.timers.find(t=>t.kind==='countdown'), r=manual.timers.find(t=>t.kind==='routine');
   if(ev==='pre') return c?manualText(c,{type:'pre',idx:0},manual.timers):'10분 타이머 10초 전';
   if(ev==='end') return c?manualText(c,{type:'end',idx:0},manual.timers):'10분 타이머 끝났어요';

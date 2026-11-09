@@ -1,30 +1,42 @@
 /* ----- 카드 UI: 대상 목록(store.targets)에서 만들고, 입력 칸은 KINDS[kind].cardFields로 만든다 ----- */
-const setText=(el,txt)=>{ if(el.textContent!==txt) el.textContent=txt; };   // 같은 값이면 DOM을 건드리지 않는다
+import {Alerts,unlockAudio} from './alerts.js';
+import {frame,src,viewCtx} from './capture.js';
+import {stateOf,states,testAlert} from './detect-run.js';
+import {$} from './dom.js';
+import {saveUi,ui} from './prefs.js';
+import {clearRegister,reg,startRegister} from './register.js';
+import {customSounds,deleteSoundKeys,rebuildSounds,renderSounds} from './sounds.js';
+import {saveTargets,store} from './store.js';
+import {renderWatch,setNote} from './ui-watch.js';
+import {newState} from '../core/detect-core.js';
+import {KINDS,cardStatus} from '../core/kinds.js';
+import {BUILTIN,FULL_MSG,PRESETS,TARGET_MAX,addBuff,addBuiltin,addKindTarget,deleteConfirmText,insertTargetAt,missingBuiltins,moveTarget,ownedSlotKeys,renameTarget} from '../core/targets.js';
+export const setText=(el,txt)=>{ if(el.textContent!==txt) el.textContent=txt; };   // 같은 값이면 DOM을 건드리지 않는다
 // 남은 시간 게이지(카드·수동 타이머 공통). g={frac,low} 또는 null(숨김). 바뀔 때만 쓴다
-function setGauge(el,g){
+export function setGauge(el,g){
   if(!el) return; if(el.hidden!==!g) el.hidden=!g; if(!g) return;
   const f=g.frac.toFixed(3); if(el.style.getPropertyValue('--f')!==f) el.style.setProperty('--f',f);
   el.classList.toggle('low',!!g.low);
 }
-function fieldHtml(f,id){
+export function fieldHtml(f,id){
   const num=f.type==='number', fid=`${id}-${f.key}`;
   return `<label for="${fid}">${f.label}</label><span><input id="${fid}" type="${num?'number':'text'}" data-f="${f.key}"${num?` min="${f.min}" max="${f.max}"`:''}${f.placeholder?` placeholder="${f.placeholder}"`:''}${f.suffix?` aria-describedby="${fid}-sfx"`:''}>`
     +`${f.suffix?` <span class="sub" id="${fid}-sfx">${f.suffix}</span>`:''}${f.hint?` <span class="sub">${f.hint}</span>`:''}</span>`;
 }
-function initCards(){
+export function initCards(){
   buildCards();
   $('#btnAdd').onclick=()=>{ if($('#addMenu').hidden){ renderAddMenu(); $('#addMenu').hidden=false; $('#btnAdd').setAttribute('aria-expanded','true'); const b=$('#addMenu button:not(:disabled)'); if(b) b.focus(); } else closeAddMenu(); };
   document.addEventListener('click',e=>{ if(!$('#addMenu').hidden&&!e.target.closest('#addBar')) closeAddMenu(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#addMenu').hidden){ closeAddMenu(); $('#btnAdd').focus(); } });
 }
-function buildCards(){
+export function buildCards(){
   const box=$('#cardList'); box.innerHTML='';
   for(const t of store.targets) box.appendChild(buildCard(t));
   for(const t of store.targets) renderCard(t);
   $('#subtitle').textContent=`감지 대상 ${store.targets.length}개`;
   updateAddBar();
 }
-function buildCard(t){
+export function buildCard(t){
   const k=KINDS[t.kind], el=document.createElement('div'), id='t-'+t.id; el.className='card'; el.id='card-'+t.id;
   if(!k){   // 이 버전이 모르는 종류(미래 버전 데이터)는 지우지 않고 안내만
     el.innerHTML='<div class="top"><h2><span data-s="name"></span></h2></div><div class="sub">이 버전에서 지원하지 않는 종류예요</div><div class="row manage" style="margin-top:10px"><button data-a="delete">삭제</button></div>';
@@ -79,15 +91,15 @@ function buildCard(t){
   return el;
 }
 // 종류가 학습 같은 효과로 값을 바꿨을 때(applyEffect) 저장하고 입력 칸을 맞춘다
-function onTargetChanged(t,key){
+export function onTargetChanged(t,key){
   saveTargets();
   const f=KINDS[t.kind].cardFields(t).find(x=>x.key===key), inp=document.querySelector(`#card-${t.id} [data-f=${key}]`);
   if(f&&inp) inp.value=f.get(t);
 }
 // 펼침 상태: 사용자가 정한 값(ui.open)이 우선. 정한 적 없으면 등록 필요·다시 등록 필요 대상만 펼친다(알림으로 카드가 움직이지 않게 접은 것은 자동으로 펼치지 않음)
-function needsAttention(t){ const k=KINDS[t.kind]; return !!k&&(!k.isRegistered(t)||(!!src&&k.needsReregister(t,frame))); }
-function isOpen(t){ return ui.open&&t.id in ui.open ? !!ui.open[t.id] : needsAttention(t); }
-function renderCard(t){
+export function needsAttention(t){ const k=KINDS[t.kind]; return !!k&&(!k.isRegistered(t)||(!!src&&k.needsReregister(t,frame))); }
+export function isOpen(t){ return ui.open&&t.id in ui.open ? !!ui.open[t.id] : needsAttention(t); }
+export function renderCard(t){
   const el=document.getElementById('card-'+t.id), k=KINDS[t.kind]; if(!el||!k) return;
   const st=stateOf(t.id), q=s=>el.querySelector(s);
   const tu=k.thumb?k.thumb(t):t.tpl?t.tpl.url:(t.preset?PRESETS[t.preset].icons[0].url:''), th=q('.thumb'); th.hidden=!tu; if(tu&&th.getAttribute('src')!==tu) th.src=tu;
@@ -107,11 +119,11 @@ function renderCard(t){
 }
 
 /* ----- 대상 추가·제거 (순수 부분은 targets.js의 addBuiltin·addBuff) ----- */
-const BUFF_NAMES=['유니온의 힘','유니온의 부','재물 획득의 비약','경험치 쿠폰'];   // 이름만 채워 주는 후보. 지속시간 등은 채우지 않는다
-function updateAddBar(){ const full=store.targets.length>=TARGET_MAX; $('#btnAdd').disabled=full; setText($('#addNote'),full?FULL_MSG:''); if(full) closeAddMenu(); }
-function closeAddMenu(){ $('#addMenu').hidden=true; $('#btnAdd').setAttribute('aria-expanded','false'); }
-function menuBtn(text,fn){ const b=document.createElement('button'); b.type='button'; b.textContent=text; b.onclick=fn; return b; }
-function renderAddMenu(){
+export const BUFF_NAMES=['유니온의 힘','유니온의 부','재물 획득의 비약','경험치 쿠폰'];   // 이름만 채워 주는 후보. 지속시간 등은 채우지 않는다
+export function updateAddBar(){ const full=store.targets.length>=TARGET_MAX; $('#btnAdd').disabled=full; setText($('#addNote'),full?FULL_MSG:''); if(full) closeAddMenu(); }
+export function closeAddMenu(){ $('#addMenu').hidden=true; $('#btnAdd').setAttribute('aria-expanded','false'); }
+export function menuBtn(text,fn){ const b=document.createElement('button'); b.type='button'; b.textContent=text; b.onclick=fn; return b; }
+export function renderAddMenu(){
   const m=$('#addMenu'); m.textContent='';
   const group=title=>{ const d=document.createElement('div'), b=document.createElement('b'), o=document.createElement('div'); b.textContent=title; o.className='opts'; d.append(b,o); m.append(d); return o; };
   const base=group('기본 제공'), miss=missingBuiltins(store.targets);
@@ -129,8 +141,8 @@ function renderAddMenu(){
   m.append(f);
 }
 // 목록이 바뀐 뒤 화면을 다시 맞춘다: 카드, 소리 설정 목록, 상태줄
-function onTargetsChanged(){ buildCards(); rebuildSounds(); renderWatch(); }
-function addFromMenu(make){
+export function onTargetsChanged(){ buildCards(); rebuildSounds(); renderWatch(); }
+export function addFromMenu(make){
   const r=make(); if(!r.ok){ setNote(r.msg); return; }
   const t=r.target; ui.open=ui.open||{}; ui.open[t.id]=true; saveUi();   // 새 대상은 펼쳐 둔다(펼침 상태는 Task F3에서 쓴다)
   closeAddMenu(); saveTargets(); onTargetsChanged();
@@ -140,17 +152,17 @@ function addFromMenu(make){
   }
 }
 // 확인·되돌리기 없이 바로 뺀다(첫 등록 취소용). 사용자가 누르는 삭제는 Task F2의 deleteTarget
-function removeTargetNow(t){
+export function removeTargetNow(t){
   const i=store.targets.indexOf(t); if(i<0) return -1;
-  if(reg&&reg.t===t){ reg=null; updateBanner(); }
+  if(reg&&reg.t===t) clearRegister();
   store.targets.splice(i,1); delete states[t.id]; Alerts.drop(t.id);
   saveTargets(); onTargetsChanged(); return i;
 }
 
-function moveCard(t,delta){ if(moveTarget(store,t.id,delta)>=0){ saveTargets(); onTargetsChanged(); } }
+export function moveCard(t,delta){ if(moveTarget(store,t.id,delta)>=0){ saveTargets(); onTargetsChanged(); } }
 /* ----- 삭제: 확인 → 바로 뺌 → 10초 되돌리기. 내 소리 파일은 10초 뒤에 지운다(그 사이 탭이 닫히면 다음 로드의 고아 정리가 지움) ----- */
-const UNDO_MS=10000, trash=new Map();   // id → {t, index, sounds:Map(slot→소리), timer}
-function deleteTarget(t){
+export const UNDO_MS=10000, trash=new Map();   // id → {t, index, sounds:Map(slot→소리), timer}
+export function deleteTarget(t){
   const keys=ownedSlotKeys([...customSounds.keys()],t.id);
   if(!confirm(deleteConfirmText(t.name,keys.length))) return;
   const sounds=new Map(keys.map(k=>[k,customSounds.get(k)])); keys.forEach(k=>customSounds.delete(k));
@@ -158,11 +170,11 @@ function deleteTarget(t){
   const e={t,index,sounds,timer:setTimeout(()=>finalizeDelete(t.id),UNDO_MS)}; trash.set(t.id,e);
   $('#undoText').textContent=`"${t.name}" 지웠어요 ·`; $('#undoBar').hidden=false; $('#undoBtn').onclick=()=>undoDelete(t.id); $('#undoBtn').focus();
 }
-function finalizeDelete(id){
+export function finalizeDelete(id){
   const e=trash.get(id); if(!e) return; trash.delete(id); deleteSoundKeys([...e.sounds.keys()]);
   if(!trash.size) $('#undoBar').hidden=true;
 }
-function undoDelete(id){
+export function undoDelete(id){
   const e=trash.get(id); if(!e) return;
   if(store.targets.length>=TARGET_MAX){ setNote(FULL_MSG+' · 다른 대상을 지우고 되돌려 주세요'); return; }
   clearTimeout(e.timer); trash.delete(id);

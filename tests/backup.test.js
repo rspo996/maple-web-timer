@@ -1,8 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { load } = require('./load.js');
-const L = load(['js/util.js', 'js/match.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/idle.js', 'js/cooldown.js', 'js/manual-core.js', 'js/backup.js'],
-  { PRESET_ICONS: { sol: [], booster: [] }, btoa, atob });
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { load } from './load.js';
+const L = await load(['util', 'match', 'detect-core', 'targets', 'kinds', 'idle', 'cooldown', 'manual-core', 'backup-core']);
 const { bytesToBase64, base64ToBytes, base64Size, backupFileName, buildBackup, migrateBackup, validateBackup, plain } = L;
 const PNG = 'data:image/png;base64,' + 'A'.repeat(40);
 const WAV64 = Buffer.from('RIFF....WAVEfmt ').toString('base64');

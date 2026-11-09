@@ -1,37 +1,16 @@
-/* ===== 작은 창(Document Picture-in-Picture, 묶음 5): 상태를 항상 위 창에 보이고, 알림이 울리면 그 행을 깜빡인다.
-   읽기 전용이고 새 알림을 만들지 않는다. 깜빡임은 Alerts.listen으로 받은 알림에서만 시작한다(스펙 검토 6) ===== */
-const PIP_FLASH_MS=5000;      // 깜빡임은 5초까지(접근성), 그 뒤에는 고정 색
-const PIP_HOLD_MS=30000;      // 알림 뒤 30초 동안 그 행을 강조
-const PIP_KIND={pre:'pre',gone:'gone',end:'gone',next1:'gone',next2:'gone',appear:'info',remind:'info',ready:'info',lost:'bad',stall:'bad',unread:'bad',alarm:'bad',busy:'bad'};
-const PIP_MARK={pre:'!',gone:'✕',info:'◆',bad:'⚠'};   // 색만으로 구분하지 않게 행 앞 기호
-function pipFlashKind(ev){ return PIP_KIND[ev]||null; }
-// 대상 행(targetSnapshot)과 수동 타이머로 PIP 행을 만든다
-function buildPipRows(snapRows,timers,now){
-  const rows=snapRows.map(r=>({id:r.id,label:r.name,
-    stateText:!r.enabled?'꺼둠':r.remainSec!=null?(r.statusCls==='alert'?'곧 끝나요':'켜짐'):r.statusText,
-    remainText:r.enabled&&r.remainSec!=null?fmt(r.remainSec):'',
-    level:!r.enabled?'idle':['reg','rereg','unseen'].includes(r.stripState)?'warn':r.statusCls==='alert'?'alert':r.statusCls==='on'?'ok':'idle'}));
-  for(const t of timers||[]){
-    const rem=manualRemainMs(t,now);
-    rows.push({id:t.id,label:t.kind==='routine'?`${t.label} · ${t.phases[t.idx].name}`:t.label,
-      stateText:{running:'실행 중',paused:'멈춤',idle:'대기',done:'끝났어요'}[t.status],remainText:t.status==='done'?'':manualFmt(rem),
-      level:t.status==='running'&&t.preSec&&rem<=t.preSec*1000?'warn':t.status==='running'?'ok':'idle'});
-  }
-  return rows;
-}
-// 알림 뒤 5초는 깜빡임, 30초까지는 같은 색 고정, 그 뒤에는 행의 원래 수준. 움직임 줄이기면 처음부터 고정
-function pipLevel(row,flash,now,reduce){
-  if(flash){ const dt=now-flash.at;
-    if(dt<PIP_FLASH_MS&&!reduce) return {cls:'flash-'+flash.kind,mark:PIP_MARK[flash.kind]};
-    if(dt<PIP_HOLD_MS) return {cls:'hold-'+flash.kind,mark:PIP_MARK[flash.kind]}; }
-  return {cls:'lv-'+row.level,mark:''};
-}
-
 /* ----- 창 ----- */
-let pipWin=null, pipResizeTimer=null;
-const pipFlash={};            // 행 id(또는 맨 위 줄 'sys') → {kind, at}
-const pipSupported=()=>!!(window.documentPictureInPicture&&typeof window.documentPictureInPicture.requestWindow==='function');
-const PIP_CSS=`
+import {Alerts} from './alerts.js';
+import {$} from './dom.js';
+import {manual} from './manual-ui.js';
+import {saveUi,ui} from './prefs.js';
+import {store} from './store.js';
+import {setText} from './ui-cards.js';
+import {setNote,snapshotNow,watchStatus} from './ui-watch.js';
+import {PIP_HOLD_MS,buildPipRows,pipFlashKind,pipLevel} from '../core/pip-core.js';
+export let pipWin=null, pipResizeTimer=null;
+export const pipFlash={};            // 행 id(또는 맨 위 줄 'sys') → {kind, at}
+export const pipSupported=()=>!!(window.documentPictureInPicture&&typeof window.documentPictureInPicture.requestWindow==='function');
+export const PIP_CSS=`
 :root{color-scheme:light;--paper:#f8f3fa;--paper-2:#efe8f2;--paper-3:#e4dce8;--rule:#d3c9da;--ink:#1d0f25;--ink-2:#3d2f46;--muted:#615569;
   --ok:#456700;--warn:#c12100;--ember:#f24700;--info:#00b7c1;--accent-ink:#1d0f25;
   --display:"Black Han Sans","Malgun Gothic","Apple SD Gothic Neo",sans-serif;--body:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
@@ -50,8 +29,8 @@ const PIP_CSS=`
 @keyframes pipblink{0%{opacity:0}50%{opacity:1}}
 @media (prefers-reduced-motion:reduce){[class*=flash-]::after{animation:none;opacity:0}}`;
 // 작은 창 문서는 about:blank라 상대 경로가 안 풀린다. 표시 글꼴은 절대 주소(Google Fonts)로 건다(못 읽으면 시스템 고딕)
-const pipFontCss=()=>'@import url("https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap");';
-function pipInit(){
+export const pipFontCss=()=>'@import url("https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap");';
+export function pipInit(){
   const b=$('#btnPip');
   if(!pipSupported()){ b.disabled=true; $('#pipNote').hidden=false; return; }
   b.disabled=false; $('#pipNote').hidden=true;
@@ -64,8 +43,8 @@ function pipInit(){
       pipUpdate(Date.now());
     }); }
 }
-async function pipOpen(){
-  const n=store.targets.length+(typeof manual!=='undefined'?manual.timers.length:0);
+export async function pipOpen(){
+  const n=store.targets.length+manual.timers.length;
   const size=ui.pip&&ui.pip.w?ui.pip:{w:260,h:44+34*Math.min(8,Math.max(1,n))};
   let w;
   try{ w=await window.documentPictureInPicture.requestWindow({width:size.w,height:size.h}); }
@@ -79,17 +58,17 @@ async function pipOpen(){
   setText($('#btnPip'),'작은 창 닫기');
   pipUpdate(Date.now());
 }
-function pipRemember(){ if(pipWin&&pipWin.innerWidth){ ui.pip={w:Math.round(pipWin.innerWidth),h:Math.round(pipWin.innerHeight)}; saveUi(); } }
-function pipClose(){ pipRemember(); const w=pipWin; pipWin=null; try{ w&&w.close(); }catch(e){} setText($('#btnPip'),'작은 창 열기'); }
+export function pipRemember(){ if(pipWin&&pipWin.innerWidth){ ui.pip={w:Math.round(pipWin.innerWidth),h:Math.round(pipWin.innerHeight)}; saveUi(); } }
+export function pipClose(){ pipRemember(); const w=pipWin; pipWin=null; try{ w&&w.close(); }catch(e){} setText($('#btnPip'),'작은 창 열기'); }
 // tick마다(탭이 숨겨져 있어도) 부른다. 바뀐 글자·클래스만 쓴다. 화면 낭독기가 매번 읽지 않게 aria-live는 두지 않는다
-function pipUpdate(now){
+export function pipUpdate(now){
   if(!pipWin) return;
   const d=pipWin.document, reduce=!!(pipWin.matchMedia&&pipWin.matchMedia('(prefers-reduced-motion: reduce)').matches);
   for(const k of Object.keys(pipFlash)) if(now-pipFlash[k].at>=PIP_HOLD_MS) delete pipFlash[k];
   const ws=watchStatus(), top=d.getElementById('pipStatus'); if(!top) return;
   const tl=pipLevel({level:ws.cls==='bad'?'alert':'ok'},pipFlash.sys,now,reduce);
   setText(top,(tl.mark?tl.mark+' ':'')+ws.state); const tc=(ws.cls==='bad'?'bad ':'')+tl.cls; if(top.className!==tc) top.className=tc;
-  const rows=buildPipRows(snapshotNow(),typeof manual!=='undefined'?manual.timers:[],now), box=d.getElementById('pipRows'), keep=new Set();
+  const rows=buildPipRows(snapshotNow(),manual.timers,now), box=d.getElementById('pipRows'), keep=new Set();
   for(const r of rows){
     keep.add(r.id);
     let el=box.querySelector(`[data-id="${r.id}"]`);
@@ -101,4 +80,3 @@ function pipUpdate(now){
   }
   for(const el of [...box.children]) if(!keep.has(el.dataset.id)) el.remove();
 }
-if(typeof module==='object') module.exports={buildPipRows,pipFlashKind,pipLevel};

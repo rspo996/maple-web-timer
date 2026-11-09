@@ -1,9 +1,9 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { load } = require('./load.js');
-const { planGroup, groupText } = require('../js/alerts.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { load } from './load.js';
+import { planGroup, groupText } from '../src/core/alerts-core.js';
 
-const L = load(['js/util.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+const L = await load(['util', 'detect-core', 'targets', 'kinds']);
 const KINDS = L.get('KINDS'), newState = L.newState, plain = L.plain;
 const NOW = 1_000_000;
 const buff = (id, over = {}) => ({ id, kind: 'buff', name: id, enabled: true, p: { durationSec: 600, leadSec: 10 }, ...over });

@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const M = require('../js/manual-core.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as M from '../src/core/manual-core.js';
 const { manualEmptyStore, manualNew, manualStart, manualPause, manualReset, manualAdjust, manualRemainMs, manualFmt } = M;
 
 const T0 = 1_000_000;

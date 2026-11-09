@@ -473,7 +473,7 @@
       },
       {
         "name": "The Hex Contract Rule",
-        "body": "`--warn-text`, `--alert-bg`, `--muted` and `--accent` stay plain hex aliases of these colours in `css/tokens.css`; a regression test reads them as strings starting with `#`.",
+        "body": "`--warn-text`, `--alert-bg`, `--muted` and `--accent` stay plain hex aliases of these colours in `src/styles/tokens.css`; a regression test reads them as strings starting with `#`.",
         "section": "colors"
       },
       {

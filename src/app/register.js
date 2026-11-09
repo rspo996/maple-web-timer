@@ -1,7 +1,16 @@
 /* ----- 미리보기 & 드래그 등록 ----- */
-const pv=$('#preview'), pctx=pv.getContext('2d');
-let reg=null; // {t, steps, i, snap, rects:{area?,icon?}, drag, msg, fresh, queue}  fresh: 방금 만든 대상의 첫 등록(취소하면 대상도 지운다), queue: 이어서 다시 등록할 대상 id
-function drawPreview(source){
+import {dims,grab,src} from './capture.js';
+import {areaOf,stateOf,states} from './detect-run.js';
+import {$} from './dom.js';
+import {saveTargets,store,targetById} from './store.js';
+import {isOpen,removeTargetNow,renderCard} from './ui-cards.js';
+import {renderWatch,setNote} from './ui-watch.js';
+import {newState} from '../core/detect-core.js';
+import {KINDS,labelsOf} from '../core/kinds.js';
+import {eulReul} from '../core/util.js';
+export let pv=null, pctx=null;   // initRegister()가 채운다
+export let reg=null; // {t, steps, i, snap, rects:{area?,icon?}, drag, msg, fresh, queue}  fresh: 방금 만든 대상의 첫 등록(취소하면 대상도 지운다), queue: 이어서 다시 등록할 대상 id
+export function drawPreview(source){
   const s = reg ? reg.snap : source; if(!s) return;
   const [w,h]=dims(s); if(!w) return;
   if(pv.width!==w||pv.height!==h){ pv.width=w; pv.height=h; }
@@ -36,12 +45,12 @@ function drawPreview(source){
     if(reg.drag){ const r=norm(reg.drag); pctx.strokeStyle='#f08a45'; pctx.strokeRect(r.x,r.y,r.w,r.h); }
   }
 }
-function norm(g){ return {x:Math.round(Math.min(g.x0,g.x1)),y:Math.round(Math.min(g.y0,g.y1)),w:Math.round(Math.abs(g.x1-g.x0)),h:Math.round(Math.abs(g.y1-g.y0))}; }
-async function snapshot(){
+export function norm(g){ return {x:Math.round(Math.min(g.x0,g.x1)),y:Math.round(Math.min(g.y0,g.y1)),w:Math.round(Math.abs(g.x1-g.x0)),h:Math.round(Math.abs(g.y1-g.y0))}; }
+export async function snapshot(){
   const s=(await grab()).frame; if(!s) return null; const [w,h]=dims(s);
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(s,0,0); return cv;
 }
-async function startRegister(t,opts={}){
+export async function startRegister(t,opts={}){
   if(!src){ setNote(`${t.name} 등록은 게임 화면을 연결하거나 스크린샷을 불러온 뒤에 할 수 있어요`); return; }
   setNote('');
   const snap=opts.snap||await snapshot(); if(!snap) return;   // 차례로 등록할 때는 앞 단계에서 찍은 화면을 재사용
@@ -49,19 +58,21 @@ async function startRegister(t,opts={}){
   reg={t,steps:KINDS[t.kind].register.steps,i:0,snap,rects:{},drag:null,msg:'',fresh:!!opts.fresh,queue:opts.queue||[]}; updateBanner(); drawPreview(null);
   $('#stage').scrollIntoView({behavior:'smooth',block:'center'});
 }
-const STEP_TEXT={ area:l=>`${eulReul(l.area)} 넉넉하게 드래그하세요`, icon:l=>`${l.icon} 하나만 꼭 맞게 드래그하세요` };
-const stepTextOf=(t,step)=>{ const o=KINDS[t.kind].register.stepText; return (o&&o[step]?o[step]:STEP_TEXT[step])(labelsOf(t)); };   // 종류가 문구를 덮어쓸 수 있다
-function updateBanner(){
+export const STEP_TEXT={ area:l=>`${eulReul(l.area)} 넉넉하게 드래그하세요`, icon:l=>`${l.icon} 하나만 꼭 맞게 드래그하세요` };
+export const stepTextOf=(t,step)=>{ const o=KINDS[t.kind].register.stepText; return (o&&o[step]?o[step]:STEP_TEXT[step])(labelsOf(t)); };   // 종류가 문구를 덮어쓸 수 있다
+export function updateBanner(){
   const b=$('#banner'); if(!reg){ b.classList.remove('on'); return; }
   b.classList.add('on');
   $('#bannerText').textContent=(reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${stepTextOf(reg.t,reg.steps[reg.i])}`+(reg.queue.length?` · 이어서 ${reg.queue.length}개 더`:'');
 }
-function cancelRegister(){
+// 등록 상태만 비운다(대상을 지우는 쪽에서 부름). 첫 등록 취소 처리는 cancelRegister
+export function clearRegister(){ reg=null; updateBanner(); }
+export function cancelRegister(){
   const r=reg; reg=null; updateBanner();
   if(r&&r.fresh){ removeTargetNow(r.t); setNote(`${r.t.name} 등록을 취소해서 목록에서 뺐어요`,'info'); }   // 빈 "등록 필요" 카드가 쌓이지 않게
 }
 // 모든 단계를 마치면 종류의 검사(validate)를 거쳐 저장(save). 검사에 걸리면 이유를 배너에 보이고 처음 단계부터 다시 드래그
-function finishRegister(){
+export function finishRegister(){
   const t=reg.t, k=KINDS[t.kind], why=k.register.validate(t,reg.rects,reg.snap);
   if(why){ reg.msg=why; reg.rects={}; reg.i=0; updateBanner(); drawPreview(null); return; }
   k.register.save(t,reg.rects,reg.snap); saveTargets();
@@ -71,9 +82,10 @@ function finishRegister(){
   if(next) startRegister(next,{queue:queue.slice(queue.indexOf(next.id)+1),snap});
 }
 // 차례로 등록: 첫 대상부터 등록하고 끝나면 다음 대상으로 이어 간다. Esc·취소로 중단
-function startRegisterQueue(ids){ const first=ids.map(targetById).find(Boolean); if(first) return startRegister(first,{queue:ids.slice(ids.indexOf(first.id)+1)}); }
-function toImg(e){ const r=pv.getBoundingClientRect(); return {x:(e.clientX-r.left)*pv.width/r.width, y:(e.clientY-r.top)*pv.height/r.height}; }
-function initRegister(){
+export function startRegisterQueue(ids){ const first=ids.map(targetById).find(Boolean); if(first) return startRegister(first,{queue:ids.slice(ids.indexOf(first.id)+1)}); }
+export function toImg(e){ const r=pv.getBoundingClientRect(); return {x:(e.clientX-r.left)*pv.width/r.width, y:(e.clientY-r.top)*pv.height/r.height}; }
+export function initRegister(){
+pv=$('#preview'); pctx=pv.getContext('2d');
 $('#btnCancel').onclick=cancelRegister;
 $('#btnRetake').onclick=async()=>{ if(!reg) return; const s=await snapshot(); if(s){ reg.snap=s; drawPreview(null); } };
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&reg) cancelRegister(); });

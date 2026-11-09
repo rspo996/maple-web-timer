@@ -169,7 +169,7 @@ A quiet lilac daylight with two loud inks that take turns: ember for what needs 
 
 **The Acid Split Rule.** On light paper, acid is two tones: the lime fills, the olive speaks. Lime is never text.
 
-**The Hex Contract Rule.** `--warn-text`, `--alert-bg`, `--muted` and `--accent` stay plain hex aliases of these colours in `css/tokens.css`; a regression test reads them as strings starting with `#`.
+**The Hex Contract Rule.** `--warn-text`, `--alert-bg`, `--muted` and `--accent` stay plain hex aliases of these colours in `src/styles/tokens.css`; a regression test reads them as strings starting with `#`.
 
 ## Typography
 
@@ -257,7 +257,7 @@ Pressable and solid: 2px borders, hard offsets, and a press that moves toward it
 - A Lilac Well tile: the name in 700, the remaining time in Silkscreen Tabular, the gauge, and small unfilled buttons.
 
 ### Small Window (Picture-in-Picture)
-- A hex copy of the palette in `js/pip.js`: a Lilac Well status strip in Black Han Sans, rows on hairlines with tabular times, idle rows in Soft ink (not opacity), and full-row fills that blink for five seconds on an alert: ember for "soon", soft ink for "ended", cyan for "info", striped well for connection problems, each with a mark so colour is never the only signal.
+- A hex copy of the palette in `src/app/pip.js`: a Lilac Well status strip in Black Han Sans, rows on hairlines with tabular times, idle rows in Soft ink (not opacity), and full-row fills that blink for five seconds on an alert: ember for "soon", soft ink for "ended", cyan for "info", striped well for connection problems, each with a mark so colour is never the only signal.
 
 ## Do's and Don'ts
 
@@ -279,6 +279,6 @@ Pressable and solid: 2px borders, hard offsets, and a press that moves toward it
 
 ## System
 
-Read by Hallmark runs as the locked system (`css/tokens.css` is the source of truth for every value).
+Read by Hallmark runs as the locked system (`src/styles/tokens.css` is the source of truth for every value).
 - Genre: playful · Shape: app screen · Theme: Arcade, colourway ember, screen grille, re-derived on light paper at the owner's request (2026-11-09) · Axes: light/pixel/chromatic-ember · posture: full-palette
-- Exports: `css/tokens.css` and `css/base.css`; `js/pip.js` (`PIP_CSS`) carries a hex copy for the small window.
+- Exports: `src/styles/tokens.css` and `src/styles/base.css`; `src/app/pip.js` (`PIP_CSS`) carries a hex copy for the small window.
