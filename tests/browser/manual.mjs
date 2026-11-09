@@ -84,4 +84,6 @@ check("소리 설정: 수동 타이머 슬롯 라벨", J(rows) === J(["미리 �
 await ev(() => { __fake.reset(); document.querySelector("#soundsDetails").open = true; [...document.querySelectorAll("#soundRows [data-a=play]")].find(b => b.getAttribute("aria-label") === "수동 타이머 구간 1 → 구간 2 소리 듣기").click(); });
 await wait(1500);
 check("소리 설정: 구간 1 → 구간 2 듣기", J(await spoken()) === J(["회수 시간이에요"]), await spoken());
+const shownHidden = await ev(() => [...document.querySelectorAll("[hidden]")].filter(e => getComputedStyle(e).display !== "none").map(e => e.id || e.className || e.tagName));
+check("hidden 속성인 요소는 화면에 보이지 않는다", shownHidden.length === 0, shownHidden);
 done();

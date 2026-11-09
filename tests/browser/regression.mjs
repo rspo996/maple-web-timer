@@ -92,4 +92,6 @@ await ev(() => __fake.reset()); await page.click("#btnConnect"); await wait(3000
 check("다시 연결: 감시 중 · 시작 음성", (await txt("#watchState")) === "감시 중" && (await ev(() => __fake.spoken[0])) === "감시 시작할게요. 룬은 등록이 필요해요");
 await ev(() => location.reload()); await wait(1500);
 check("연결한 적이 있으면 새로고침 뒤 설명서가 접혀 있음", (await ev(() => document.querySelector("#helpDetails").open)) === false);
+const shownHidden = await ev(() => [...document.querySelectorAll("[hidden]")].filter(e => getComputedStyle(e).display !== "none").map(e => e.id || e.className || e.tagName));
+check("hidden 속성인 요소는 화면에 보이지 않는다", shownHidden.length === 0, shownHidden);
 done();
