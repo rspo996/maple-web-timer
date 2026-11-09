@@ -36,6 +36,7 @@ function normalizeTarget(t){
   o.tpl=o.tpl&&typeof o.tpl.url==='string'&&o.tpl.w>0&&o.tpl.h>0?{url:o.tpl.url,w:o.tpl.w,h:o.tpl.h}:null;
   const k=KINDS[o.kind]; if(!k){ o.enabled=false; return o; }
   o.p=k.normalizeP(Object.assign(k.defaults(),o.p&&typeof o.p==='object'?o.p:{}));
+  if(k.fixTarget) k.fixTarget(o);   // 종류가 필드 사이의 관계를 맞춘다(설치기: gainHi>gainLo, nccDim<threshold)
   return o;
 }
 function normalizeStore(raw){
@@ -127,10 +128,12 @@ function addBuff(store,rawName){
 function addKindTarget(store,kind){
   const k=KINDS[kind]; if(!k) return {ok:false,msg:'이 버전에서 지원하지 않는 종류예요'};
   if(store.targets.length>=TARGET_MAX) return {ok:false,msg:FULL_MSG};
-  const base=k.defaultName||k.label;
-  if(store.targets.filter(t=>t.kind===kind).length>=k.maxInstances) return {ok:false,msg:`${eunNeun(base)} ${k.maxInstances}개까지 둘 수 있어요`};
-  let name=base, n=2; while(store.targets.some(t=>t.name===name)) name=`${base} ${n++}`;
-  const t=newTarget(makeId(store),kind,name); store.targets.push(t); return {ok:true,target:t};
+  const base=k.defaultName||k.label, taken=nm=>store.targets.some(t=>t.name===nm);
+  if(store.targets.filter(t=>t.kind===kind).length>=k.maxInstances) return {ok:false,msg:`${eunNeun(k.menuLabel||base)} ${k.maxInstances}개까지 둘 수 있어요`};
+  let name;
+  if(k.numbered){ let n=1; while(taken(`${base} ${n}`)) n++; name=`${base} ${n}`; }   // 설치기 1, 설치기 2 …
+  else { name=base; let n=2; while(taken(name)) name=`${base} ${n++}`; }
+  const t=newTarget(makeId(store),kind,name,k.defaultThreshold!=null?{threshold:k.defaultThreshold}:undefined); store.targets.push(t); return {ok:true,target:t};
 }
 
 /* ----- 이름 바꾸기·순서·삭제 (순수. 화면 처리는 ui-cards.js) ----- */

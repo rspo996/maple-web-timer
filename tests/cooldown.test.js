@@ -177,3 +177,84 @@ test('calibrateCooldown: 보정 공식과 거절·경고', () => {
   const lost = calibrateCooldown([{ ncc: 0.3, p50: 0.4 }, { ncc: 0.9, p50: 0.4 }, { ncc: 0.9, p50: 0.4 }], 0.7);
   assert.deepEqual([lost.ok, lost.msg], [false, '아이콘을 못 찾았어요']);
 });
+
+// ---- Task 2: KINDS.cooldown ----
+const { load } = require('./load.js');
+const L = load(['js/util.js', 'js/match.js', 'js/detect-core.js', 'js/targets.js', 'js/kinds.js', 'js/idle.js', 'js/cooldown.js'], { PRESET_ICONS: { sol: [], booster: [] } });
+const KINDS = L.get('KINDS'), K = KINDS.cooldown, plain = L.plain;
+const cdT = (o = {}) => ({ id: 'u5', kind: 'cooldown', name: '설치기 1', preset: null, enabled: true, threshold: 0.7, area: { x: 592, y: 642, w: 48, h: 48 }, tpl: { url: 'data:x', w: 32, h: 32 }, frameW: 1280, frameH: 720,
+  p: { ...K.defaults(), durationSec: 60, leadSec: 10, ...(o.p || {}) }, ...o, ...(o.p ? { p: { ...K.defaults(), durationSec: 60, leadSec: 10, ...o.p } } : {}) });
+const LIVE = { src: true, live: true, frame: { w: 1280, h: 720 } };
+const det = (state, ncc = 0.95, p50 = 1, nccMasked = 0.99) => ({ state, ncc, score: ncc, gain: { p20: p50, p50, n: 900, nccMasked }, pos: { x: 600, y: 650, w: 32, h: 32 } });
+
+test('KINDS.cooldown: 아이콘 한 번 등록, 알림 3종(pre는 묶기·buff 소리, ready 즉시·ready 소리, unread 시스템)', () => {
+  assert.deepEqual(plain(K.register.steps), ['icon']);
+  assert.deepEqual(plain(K.events.map(e => [e.key, e.beep, e.group])), [['pre', 'buff', 'pre'], ['ready', 'ready', null], ['unread', 'system', null]]);
+  assert.deepEqual([K.menuLabel, K.trackSeen, K.onSkip, K.usesThreshold], ['설치기 쿨타임', true, false, true]);
+  const t = cdT();
+  assert.deepEqual(plain(K.events.map(e => e.msg(t, {}))), ['설치기 1 10초 뒤 사라져요', '설치기 1 다시 쓸 수 있어요', '설치기 1 아이콘이 안 보여요']);
+});
+
+test('addKindTarget: 설치기 1, 설치기 2 … 기본 기준값 0.7, 슬롯 3개', () => {
+  const s = L.defaultStore();
+  const a = L.addKindTarget(s, 'cooldown').target, b = L.addKindTarget(s, 'cooldown').target;
+  assert.deepEqual([a.name, a.threshold, b.name, b.id], ['설치기 1', 0.7, '설치기 2', 'u2']);
+  const keys = plain(L.slotsOf(s.targets, { manual: false })).map(x => x.key);
+  assert.ok(['u1.pre', 'u1.ready', 'u1.unread'].every(k => keys.includes(k)), keys);
+});
+
+test('normalizeTarget: gainHi > gainLo, nccDim < threshold, 지속시간 > 미리 알림을 지킨다', () => {
+  const o = L.normalizeTarget({ ...cdT(), threshold: 0.5, p: { gainHi: 0.5, gainLo: 0.6, nccDim: 0.7, calibrated: 'yes', durationSec: 8, leadSec: 10 } });
+  assert.deepEqual(plain(o.p), { gainHi: 0.85, gainLo: 0.65, nccDim: 0.4, calibrated: false, durationSec: null, leadSec: 10 });
+});
+
+test('step: 측정 상태로 상태기계를 돌리고, 무음 ready는 내지 않는다. 스크린샷 모드는 알리지 않음', () => {
+  const t = cdT(), st = L.newState();
+  const run = (s, at, ctx = LIVE) => plain(K.step(t, st, det(s, 0.95, s === 'dim' ? 0.4 : 1), null, 1_000_000 + at, ctx));
+  run('ready', 0); run('ready', 500);
+  assert.equal(st.seen, true);
+  run('dim', 1000); run('dim', 1500);
+  assert.equal(st.cd.usedAt, 1_001_000);
+  assert.deepEqual(run('dim', 51_000), ['pre']);
+  run('ready', 60_000); assert.deepEqual(run('ready', 60_500), []);      // pre를 울린 주기 → ready 무음
+  run('dim', 70_000); run('dim', 70_500);
+  run('ready', 80_000); assert.deepEqual(run('ready', 80_500), ['ready']);
+  const s2 = L.newState(), shot = { ...LIVE, live: false };
+  for (const [i, s] of ['ready', 'ready', 'dim', 'dim', 'ready', 'ready'].entries()) assert.deepEqual(plain(K.step(t, s2, det(s, 0.95, s === 'dim' ? 0.4 : 1), null, i * 5000, shot)), []);
+});
+
+test('markPre·remainSec: 어두운 동안만 남은 시간, 당겨 알림으로 묶이면 null', () => {
+  const t = cdT(), st = L.newState();
+  for (const [i, s] of ['ready', 'ready', 'dim', 'dim'].entries()) K.step(t, st, det(s, 0.95, s === 'dim' ? 0.4 : 1), null, 1_000_000 + i * 500, LIVE);
+  assert.equal(K.remainSec(t, st, 1_001_000 + 45_000), 15);
+  K.markPre(st, 1_046_000);
+  assert.equal(st.cd.alertedPre, true); assert.equal(K.remainSec(t, st, 1_046_000), null);
+});
+
+test('쿨타임 중 찍기: 3프레임을 모아 보정(숫자 획 때문에 일반 NCC가 낮아도 숫자를 뺀 NCC로)', () => {
+  const t = cdT(), st = L.newState();
+  K.actions.find(a => a.key === 'calib').run(t, st, 0);
+  for (let i = 0; i < 3; i++) K.step(t, st, det('dim', 0.35, 0.38 + i * 0.01, 0.98), null, i * 500, LIVE);
+  assert.deepEqual([t.p.calibrated, t.p.gainLo, t.p.nccDim, st.cd.calib], [true, 0.52, 0.6, null]);
+});
+
+test('KINDS.cooldown.status: 스펙 3.1 표', () => {
+  const now = 2_000_000, S = (t, cd, ctx = LIVE, last) => plain(K.status(t, { cd: Object.assign(L.get('cdNewState')(), cd), cdLast: last, seen: true }, now, ctx));
+  assert.deepEqual(S(cdT({ tpl: null }), {}), { text: '등록 필요', cls: 'off', sub: '퀵슬롯의 스킬 아이콘을 드래그' });
+  assert.equal(S(cdT(), {}, { ...LIVE, frame: { w: 1920, h: 1080 } }).text, '다시 등록 필요');
+  assert.equal(S(cdT(), { seen: false }).text, '아직 못 찾음');
+  assert.deepEqual(S(cdT(), { seen: true, cur: 'ready', unknownSince: now - 5000 }), { text: '아이콘 확인 중', cls: 'off', sub: '퀵슬롯 페이지가 바뀌었는지 보세요' });
+  assert.deepEqual(S(cdT(), { seen: true, cur: 'ready' }), { text: '쓸 수 있음', cls: 'on', sub: '쿨타임 기준 미확인 · 스킬을 쓰고 “쿨타임 중 찍기”' });
+  assert.deepEqual(S(cdT(), { seen: true, cur: 'dim', usedAt: now - 42_000 }), { text: '쿨타임 중 · 00:42 경과', cls: 'on', sub: '사라지기까지 00:18' });
+  assert.equal(S(cdT(), { seen: true, cur: 'dim', usedAt: now - 52_000 }).cls, 'alert');
+  assert.equal(S(cdT(), { seen: true, cur: 'dim', usedAt: now - 55_000, alertedPre: true }).sub, '곧 사라져요 알림을 울렸어요');
+  assert.equal(S(cdT({ p: { durationSec: null } }), { seen: true, cur: 'dim', usedAt: now - 5000 }).sub, '지속시간을 적으면 사라지기 전에 알려요');
+  assert.deepEqual(S(cdT(), { seen: true, cur: 'dim', usedAt: null }), { text: '쿨타임 중', cls: 'on', sub: '시작을 몰라서 사라짐 알림은 다음 사용부터 · “방금 썼어요”로 직접 지정' });
+  assert.equal(S(cdT(), { seen: true, cur: 'ready' }, { ...LIVE, live: false }).sub, '스크린샷 테스트에서는 알리지 않아요');
+});
+
+test('방금 썼어요: 지금을 쓴 시각으로', () => {
+  const t = cdT(), st = L.newState();
+  K.actions.find(a => a.key === 'used').run(t, st, 5000);
+  assert.deepEqual([st.cd.cur, st.cd.usedAt, st.cd.alertedPre, st.cd.seen], ['dim', 5000, false, true]);
+});

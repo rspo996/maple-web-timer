@@ -12,7 +12,8 @@ function loadTpl(t){
     const m=t.crop||0, iw=img.width-2*m, ih=img.height-2*m;
     const k=scaleFor(iw*s,ih*s), w=Math.max(4,Math.round(iw*s*k)), h=Math.max(4,Math.round(ih*s*k));
     work.width=w; work.height=h; wctx.fillStyle="#000"; wctx.fillRect(0,0,w,h); wctx.drawImage(img,m,m,iw,ih,0,0,w,h);
-    Object.assign(ent,{k,m:m*s,ready:true},prepTemplate(toGray(wctx.getImageData(0,0,w,h).data,w*h),w,h));
+    const gray=toGray(wctx.getImageData(0,0,w,h).data,w*h);   // 원본 회색값도 보관(설치기의 밝기 비, 묶음 4 스펙 15-1)
+    Object.assign(ent,{k,m:m*s,ready:true,gray},prepTemplate(gray,w,h));
   }; img.src=t.url; return null;
 }
 function areaOf(t){
