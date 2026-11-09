@@ -69,6 +69,14 @@ check("이름 바꾸기: 중복 거절 문구", (await ev(() => document.querySe
 await page.fill("#card-u3 [data-s=renameForm] input", "  유니온의 부  "); await page.keyboard.press("Enter"); await wait(300);
 const rn = await ev(() => ({ name: document.querySelector("#card-u3 [data-s=name]").textContent, groups: [...document.querySelectorAll("#soundRows .snd-group > b")].map(b => b.textContent), saved: JSON.parse(localStorage.getItem("maple-web-timer-v2")).targets[1].name, id: store.targets[1].id }));
 check("이름 바꾸기: 카드·소리 그룹·저장 반영, id 유지", rn.name === "유니온의 부" && rn.groups.includes("유니온의 부") && rn.saved === "유니온의 부" && rn.id === "u3", rn);
+// 따옴표·꺾쇠가 든 이름도 글자 그대로 쓰인다(HTML로 해석되지 않음). 확인 뒤 원래 이름으로 되돌린다
+await page.click("#card-u3 [data-a=rename]");
+await page.fill("#card-u3 [data-s=renameForm] input", '"버프" <b>x'); await page.keyboard.press("Enter"); await wait(300);
+const q1 = await ev(() => ({ name: document.querySelector("#card-u3 [data-s=name]").textContent, up: document.querySelector("#card-u3 [data-a=up]").getAttribute("aria-label"), down: document.querySelector("#card-u3 [data-a=down]").getAttribute("aria-label"), injected: document.querySelectorAll("#card-u3 b:not([data-s])").length,
+  manage: document.querySelector("#card-u3 .manage").textContent.replace(/\s+/g, "") }));
+check("이름 바꾸기: 따옴표·꺾쇠가 든 이름도 글자 그대로(위로·아래로 버튼 설명 포함)", q1.name === '"버프" <b>x' && q1.up === '"버프" <b>x 위로 옮기기' && q1.down === '"버프" <b>x 아래로 옮기기' && q1.injected === 0 && q1.manage === "이름바꾸기위로아래로삭제", q1);
+await page.click("#card-u3 [data-a=rename]");
+await page.fill("#card-u3 [data-s=renameForm] input", "유니온의 부"); await page.keyboard.press("Enter"); await wait(300);
 
 // 순서: 룬을 위로 → sol, rune, u3. 맨 위 카드의 위로 버튼은 비활성
 await page.click("#card-rune [data-a=up]"); await wait(300);

@@ -43,7 +43,7 @@ function buildCard(t){
       ${t.preset?'<button data-a="reset">기본 아이콘으로 되돌리기</button>':''}
     </div>
     <div class="row manage" style="margin-top:10px">
-      <button data-a="rename">이름 바꾸기</button><button data-a="up" aria-label="${t.name} 위로 옮기기">위로</button><button data-a="down" aria-label="${t.name} 아래로 옮기기">아래로</button><button data-a="delete">삭제</button>
+      <button data-a="rename">이름 바꾸기</button><button data-a="up">위로</button><button data-a="down">아래로</button><button data-a="delete">삭제</button>
     </div>
     <form class="row" data-s="renameForm" hidden><input maxlength="12" aria-label="새 이름"><button>저장</button><button type="button" data-a="renameCancel">취소</button><span class="sub" role="alert" data-s="renameErr"></span></form>
     </div>`;
@@ -63,6 +63,7 @@ function buildCard(t){
   q('[data-a=toggle]').onclick=()=>{ ui.open=ui.open||{}; ui.open[t.id]=!isOpen(t); saveUi(); renderCard(t); };
   const idx=store.targets.indexOf(t), form=q('[data-s=renameForm]'), nameInp=form.querySelector('input');
   q('[data-a=up]').disabled=idx===0; q('[data-a=down]').disabled=idx===store.targets.length-1;
+  q('[data-a=up]').setAttribute('aria-label',`${t.name} 위로 옮기기`); q('[data-a=down]').setAttribute('aria-label',`${t.name} 아래로 옮기기`);   // 이름은 HTML 문자열에 넣지 않는다
   q('[data-a=up]').onclick=()=>moveCard(t,-1); q('[data-a=down]').onclick=()=>moveCard(t,1);
   q('[data-a=delete]').onclick=()=>deleteTarget(t);
   q('[data-a=rename]').onclick=()=>{ form.hidden=false; nameInp.value=t.name; nameInp.select(); };
