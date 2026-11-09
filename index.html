@@ -36,7 +36,13 @@
     <div id="banner"><span id="bannerText"></span><span class="row"><button id="btnRetake">화면 다시 찍기</button><button id="btnCancel">취소</button></span></div>
     <div id="stage"><canvas id="preview" width="960" height="540"></canvas><div id="empty">“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.</div></div>
   </section>
-  <aside id="cards" aria-label="감지 대상"></aside>
+  <aside id="cards" aria-label="감지 대상">
+    <div id="addBar">
+      <button id="btnAdd" aria-expanded="false" aria-controls="addMenu">+ 대상 추가</button> <span id="addNote" class="sub" role="status"></span>
+      <div id="addMenu" hidden></div>
+    </div>
+    <div id="cardList"></div>
+  </aside>
   <section class="panel" id="help">
     <details id="helpDetails">
       <summary><b>처음 설정하는 법</b></summary>

@@ -163,3 +163,35 @@ test('orphanSlots: 예약 접두어와 현재 대상은 보존, 대상 없는 id
 test('orphanSlots: 저장소가 비었거나 깨져서 기본 목록으로 시작한 경우(fresh·broken)에는 아무것도 지우지 않는다', () => {
   for (const status of ['fresh', 'broken']) assert.deepEqual(plain(orphanSlots(['u9.pre'], [{ id: 'sol' }], status)), []);
 });
+
+// ---- 대상 추가 (묶음 1 스펙 3.3·5.1) ----
+const { missingBuiltins, addBuiltin, addBuff } = L;
+const storeWith = ids => { const s = plain(defaultStore()); s.targets = s.targets.filter(t => ids.includes(t.id)); return s; };
+
+test('missingBuiltins: 목록에 없는 내장 대상만, sol·booster·rune 순서', () => {
+  assert.deepEqual(plain(missingBuiltins(storeWith(['sol', 'booster', 'rune']).targets)), []);
+  assert.deepEqual(plain(missingBuiltins(storeWith(['booster']).targets)), ['sol', 'rune']);
+});
+
+test('addBuiltin: 원래 id·기본값으로 복원, 이미 있으면 거절, 이름이 겹치면 (기본)을 붙인다', () => {
+  const s = storeWith(['booster', 'rune']);
+  const r = addBuiltin(s, 'sol');
+  assert.equal(r.ok, true); assert.deepEqual(plain([r.target.id, r.target.name, r.target.preset, r.target.p]), ['sol', '솔 야누스', 'sol', { durationSec: null, leadSec: 10 }]);
+  assert.equal(s.targets.length, 3); assert.equal(addBuiltin(s, 'sol').ok, false);
+  const s2 = storeWith(['booster']); s2.targets.push({ id: 'u1', kind: 'buff', name: '솔 야누스', p: {} });
+  assert.equal(addBuiltin(s2, 'sol').target.name, '솔 야누스 (기본)');
+  assert.equal(addBuiltin(storeWith([]), 'nope').ok, false);
+});
+
+test('addBuff: 이름 검사를 거쳐 u번호 id로 추가, 12개 상한, seq는 계속 증가', () => {
+  const s = plain(defaultStore());
+  const a = addBuff(s, ' 유니온의 힘 ');
+  assert.deepEqual(plain([a.ok, a.target.id, a.target.name, a.target.kind, a.target.preset, a.target.threshold, a.target.enabled, a.target.p]),
+    [true, 'u1', '유니온의 힘', 'buff', null, 0.75, true, { durationSec: null, leadSec: 10 }]);
+  assert.equal(addBuff(s, '유니온의 힘').ok, false);                  // 같은 이름
+  assert.equal(addBuff(s, '').msg, '이름을 1~12자로, 다른 대상과 다르게 입력해 주세요');
+  s.targets = s.targets.filter(t => t.id !== 'u1');
+  assert.equal(addBuff(s, '유니온의 부').target.id, 'u2');
+  while (s.targets.length < 12) addBuff(s, '버프' + s.seq);
+  const full = addBuff(s, '하나 더'); assert.deepEqual(plain([full.ok, full.msg]), [false, '대상은 12개까지 둘 수 있어요']);
+});

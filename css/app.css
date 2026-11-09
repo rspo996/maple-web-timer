@@ -40,11 +40,12 @@ button:disabled{opacity:.45;cursor:default}
 main{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"stage cards" "help cards" "sounds cards";grid-template-rows:auto auto 1fr;gap:16px;padding:16px 20px;max-width:1500px;margin:0 auto}
 #stagePanel{grid-area:stage}
 #cards{grid-area:cards;display:grid;gap:12px;align-content:start}
+#cardList{display:grid;gap:12px}
 #help{grid-area:help;align-self:start}
 #sounds{grid-area:sounds;align-self:start}
 @media (max-width:980px){
   main{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "cards" "help" "sounds";grid-template-rows:auto}
-  #cards{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  #cardList{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
 }
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
 #stage{position:relative;background:#000;border-radius:8px;overflow:hidden;min-height:200px;display:flex;align-items:center;justify-content:center}
@@ -79,3 +80,9 @@ summary{cursor:pointer}
 #soundNote{min-height:1.5em;margin:8px 0 0}
 #soundNote.warn{color:var(--warn-text)}
 .score{font-variant-numeric:tabular-nums}
+/* 대상 추가 메뉴 */
+#addMenu{margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:grid;gap:10px}
+#addMenu b{font-size:13px;color:var(--muted)}
+#addMenu .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+#addMenu form{display:flex;gap:8px;align-items:center}
+#addMenu input{font:inherit;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:10em}

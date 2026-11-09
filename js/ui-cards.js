@@ -5,12 +5,18 @@ function fieldHtml(f,id){
   return `<label for="${fid}">${f.label}</label><span><input id="${fid}" type="${num?'number':'text'}" data-f="${f.key}"${num?` min="${f.min}" max="${f.max}"`:''}${f.placeholder?` placeholder="${f.placeholder}"`:''}${f.suffix?` aria-describedby="${fid}-sfx"`:''}>`
     +`${f.suffix?` <span class="sub" id="${fid}-sfx">${f.suffix}</span>`:''}${f.hint?` <span class="sub">${f.hint}</span>`:''}</span>`;
 }
-function initCards(){ buildCards(); }
+function initCards(){
+  buildCards();
+  $('#btnAdd').onclick=()=>{ if($('#addMenu').hidden){ renderAddMenu(); $('#addMenu').hidden=false; $('#btnAdd').setAttribute('aria-expanded','true'); const b=$('#addMenu button:not(:disabled)'); if(b) b.focus(); } else closeAddMenu(); };
+  document.addEventListener('click',e=>{ if(!$('#addMenu').hidden&&!e.target.closest('#addBar')) closeAddMenu(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#addMenu').hidden){ closeAddMenu(); $('#btnAdd').focus(); } });
+}
 function buildCards(){
-  const box=$('#cards'); box.innerHTML='';
+  const box=$('#cardList'); box.innerHTML='';
   for(const t of store.targets) box.appendChild(buildCard(t));
   for(const t of store.targets) renderCard(t);
   $('#subtitle').textContent=`감지 대상 ${store.targets.length}개`;
+  updateAddBar();
 }
 function buildCard(t){
   const k=KINDS[t.kind], el=document.createElement('div'), id='t-'+t.id; el.className='card'; el.id='card-'+t.id;
@@ -64,4 +70,42 @@ function renderCard(t){
   setText(q('[data-s=score]'),src&&(t.tpl||t.preset)?st.score.toFixed(2)+(st.score>=t.threshold?' ✔':''):'–');
   const s=cardStatus(t,st,Date.now(),{src:!!src,frame}), sEl=q('[data-s=status]');
   setText(sEl,s.text); const cls='status '+s.cls; if(sEl.className!==cls) sEl.className=cls; setText(q('[data-s=sub]'),s.sub);
+}
+
+/* ----- 대상 추가·제거 (순수 부분은 targets.js의 addBuiltin·addBuff) ----- */
+const BUFF_NAMES=['유니온의 힘','유니온의 부','재물 획득의 비약','경험치 쿠폰'];   // 이름만 채워 주는 후보. 지속시간 등은 채우지 않는다
+function updateAddBar(){ const full=store.targets.length>=TARGET_MAX; $('#btnAdd').disabled=full; setText($('#addNote'),full?FULL_MSG:''); if(full) closeAddMenu(); }
+function closeAddMenu(){ $('#addMenu').hidden=true; $('#btnAdd').setAttribute('aria-expanded','false'); }
+function menuBtn(text,fn){ const b=document.createElement('button'); b.type='button'; b.textContent=text; b.onclick=fn; return b; }
+function renderAddMenu(){
+  const m=$('#addMenu'); m.textContent='';
+  const group=title=>{ const d=document.createElement('div'), b=document.createElement('b'), o=document.createElement('div'); b.textContent=title; o.className='opts'; d.append(b,o); m.append(d); return o; };
+  const base=group('기본 제공'), miss=missingBuiltins(store.targets);
+  if(!miss.length){ const s=document.createElement('span'); s.className='sub'; s.textContent='모두 추가돼 있어요'; base.append(s); }
+  for(const id of miss) base.append(menuBtn(BUILTIN[id].name,()=>addFromMenu(()=>addBuiltin(store,id))));
+  const buffs=group('버프 직접 등록');
+  for(const n of BUFF_NAMES){ const b=menuBtn(n,()=>addFromMenu(()=>addBuff(store,n))); b.disabled=store.targets.some(t=>t.name===n); buffs.append(b); }
+  buffs.append(menuBtn('이름 직접 입력…',()=>{ $('#addName').hidden=false; $('#addName input').focus(); }));
+  const f=document.createElement('form'); f.id='addName'; f.hidden=true;
+  f.innerHTML='<label class="sw">이름 <input maxlength="12" aria-label="새 버프 이름"></label><button>추가</button>';
+  f.onsubmit=e=>{ e.preventDefault(); addFromMenu(()=>addBuff(store,f.querySelector('input').value)); };
+  m.append(f);
+}
+// 목록이 바뀐 뒤 화면을 다시 맞춘다: 카드, 소리 설정 목록, 상태줄
+function onTargetsChanged(){ buildCards(); rebuildSounds(); renderWatch(); }
+function addFromMenu(make){
+  const r=make(); if(!r.ok){ setNote(r.msg); return; }
+  const t=r.target; ui.open=ui.open||{}; ui.open[t.id]=true; saveUi();   // 새 대상은 펼쳐 둔다(펼침 상태는 Task F3에서 쓴다)
+  closeAddMenu(); saveTargets(); onTargetsChanged();
+  if(!KINDS[t.kind].isRegistered(t)){
+    if(src) startRegister(t,{fresh:true});     // 첫 등록을 취소하면 이 대상은 자동으로 지워진다
+    else setNote(`${t.name} 등록 필요 · 게임 화면을 연결한 뒤 등록할 수 있어요`);
+  }
+}
+// 확인·되돌리기 없이 바로 뺀다(첫 등록 취소용). 사용자가 누르는 삭제는 Task F2의 deleteTarget
+function removeTargetNow(t){
+  const i=store.targets.indexOf(t); if(i<0) return -1;
+  if(reg&&reg.t===t){ reg=null; updateBanner(); }
+  store.targets.splice(i,1); delete states[t.id]; Alerts.drop(t.id);
+  saveTargets(); onTargetsChanged(); return i;
 }

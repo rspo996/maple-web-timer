@@ -104,6 +104,24 @@ function targetSnapshot(targets,states,ctx,now){
   });
 }
 
+/* ----- 대상 추가 (순수: 저장소 객체를 바꾸고 결과를 돌려준다. 화면 처리는 ui-cards.js) ----- */
+const FULL_MSG=`대상은 ${TARGET_MAX}개까지 둘 수 있어요`;
+function missingBuiltins(targets){ return Object.keys(BUILTIN).filter(id=>!targets.some(t=>t.id===id)); }
+// 지웠던 내장 대상을 기본값으로 다시 만든다(원래 id). 같은 이름이 이미 있으면 (기본)을 붙인다
+function addBuiltin(store,id){
+  if(!BUILTIN[id]||store.targets.some(t=>t.id===id)) return {ok:false,msg:'이미 목록에 있어요'};
+  if(store.targets.length>=TARGET_MAX) return {ok:false,msg:FULL_MSG};
+  const t=builtinTarget(id); let name=t.name, n=1;
+  while(store.targets.some(x=>x.name===name)){ name=`${t.name} (기본${n>1?' '+n:''})`; n++; }
+  t.name=name; store.targets.push(t); return {ok:true,target:t};
+}
+// 이름만 채운 새 버프. 지속시간·아이콘은 비워 둔다(게임 안 값을 모르므로 미리 채우지 않음)
+function addBuff(store,rawName){
+  if(store.targets.length>=TARGET_MAX) return {ok:false,msg:FULL_MSG};
+  const c=checkName(rawName,store.targets,null); if(!c.ok) return {ok:false,msg:c.msg};
+  const t=newTarget(makeId(store),'buff',c.name,{threshold:0.75}); store.targets.push(t); return {ok:true,target:t};
+}
+
 /* ----- 내 소리 슬롯 키 = 대상id.이벤트 (묶음 1 스펙 4.4·4.5) ----- */
 const MANUAL_SLOTS=[['manual.pre','미리 알림'],['manual.end','끝'],['manual.next1','구간 전환 1'],['manual.next2','구간 전환 2']];
 // 소리 설정 화면의 행 목록. 대상이 추가·삭제·개명될 때마다 다시 계산한다. opts.manual=false면 수동 타이머(묶음 2) 슬롯을 뺀다
@@ -136,4 +154,4 @@ function initTargets(){
   if(r.status==='broken') setNote('설정을 읽지 못해 처음 상태로 시작했어요. 백업 파일이 있으면 불러오세요');
   else if(r.saveFailed){ saveWarned=true; setNote('설정을 저장하지 못했어요 (이 탭에서만 유지)'); }
 }
-if(typeof module==='object') module.exports={slotsOf,orphanSlots,BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};
+if(typeof module==='object') module.exports={missingBuiltins,addBuiltin,addBuff,slotsOf,orphanSlots,BUILTIN,PRESETS,defaultStore,newTarget,builtinTarget,normalizeTarget,normalizeStore,makeId,migrateV1,loadStore,saveStore,checkName,targetSnapshot};

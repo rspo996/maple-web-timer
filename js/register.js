@@ -1,6 +1,6 @@
 /* ----- 미리보기 & 드래그 등록 ----- */
 const pv=$('#preview'), pctx=pv.getContext('2d');
-let reg=null; // {t, steps, i, snap, rects:{area?,icon?}, drag, msg}
+let reg=null; // {t, steps, i, snap, rects:{area?,icon?}, drag, msg, fresh}  fresh: 방금 만든 대상의 첫 등록(취소하면 대상도 지운다)
 function drawPreview(source){
   const s = reg ? reg.snap : source; if(!s) return;
   const [w,h]=dims(s); if(!w) return;
@@ -36,11 +36,12 @@ async function snapshot(){
   const s=(await grab()).frame; if(!s) return null; const [w,h]=dims(s);
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(s,0,0); return cv;
 }
-async function startRegister(t){
+async function startRegister(t,opts={}){
   if(!src){ setNote(`${t.name} 등록은 게임 화면을 연결하거나 스크린샷을 불러온 뒤에 할 수 있어요`); return; }
   setNote('');
   const snap=await snapshot(); if(!snap) return;
-  reg={t,steps:KINDS[t.kind].register.steps,i:0,snap,rects:{},drag:null,msg:''}; updateBanner(); drawPreview(null);
+  if(reg) cancelRegister();   // 다른 대상을 등록 중이었으면 그만둔다(첫 등록이었으면 그 대상은 지워진다)
+  reg={t,steps:KINDS[t.kind].register.steps,i:0,snap,rects:{},drag:null,msg:'',fresh:!!opts.fresh}; updateBanner(); drawPreview(null);
   $('#stage').scrollIntoView({behavior:'smooth',block:'center'});
 }
 const STEP_TEXT={ area:l=>`${l.area}을 넉넉하게 드래그하세요`, icon:l=>`${l.icon} 하나만 꼭 맞게 드래그하세요` };
@@ -49,7 +50,10 @@ function updateBanner(){
   b.classList.add('on');
   $('#bannerText').textContent=(reg.msg?`⚠ ${reg.msg} · `:'')+`${reg.t.name} ${'①②③'[reg.i]} ${STEP_TEXT[reg.steps[reg.i]](labelsOf(reg.t))}`;
 }
-function cancelRegister(){ reg=null; updateBanner(); }
+function cancelRegister(){
+  const r=reg; reg=null; updateBanner();
+  if(r&&r.fresh){ removeTargetNow(r.t); setNote(`${r.t.name} 등록을 취소해서 목록에서 뺐어요`,'info'); }   // 빈 "등록 필요" 카드가 쌓이지 않게
+}
 // 모든 단계를 마치면 종류의 검사(validate)를 거쳐 저장(save). 검사에 걸리면 이유를 배너에 보이고 처음 단계부터 다시 드래그
 function finishRegister(){
   const t=reg.t, k=KINDS[t.kind], why=k.register.validate(t,reg.rects,reg.snap);

@@ -34,9 +34,11 @@ export function check(name, cond, detail) {
 }
 export function done() { console.log(`RESULT ${pass} passed, ${fail} failed`); }
 
-// 미리보기 캔버스 위에서 이미지 좌표 (x0,y0)→(x1,y1)로 드래그한다(영역·아이콘 등록용)
+// 미리보기 캔버스 위에서 이미지 좌표 (x0,y0)→(x1,y1)로 드래그한다(영역·아이콘 등록용). 부드러운 스크롤이 멈출 때까지 기다린 뒤 좌표를 잡는다
 export async function drag(page, x0, y0, x1, y1) {
-  const r = await page.evaluate(() => { const c = document.querySelector("#preview"), b = c.getBoundingClientRect(); return { l: b.left, t: b.top, sx: b.width / c.width, sy: b.height / c.height }; });
+  const rect = () => page.evaluate(() => { const c = document.querySelector("#preview"), b = c.getBoundingClientRect(); return { l: b.left, t: b.top, sx: b.width / c.width, sy: b.height / c.height }; });
+  let r = await rect();
+  for (let i = 0; i < 30; i++) { await page.waitForTimeout(100); const n = await rect(); if (n.t === r.t && n.l === r.l) break; r = n; }
   const P = (x, y) => [r.l + x * r.sx, r.t + y * r.sy];
   await page.mouse.move(...P(x0, y0)); await page.mouse.down(); await page.mouse.move(...P((x0 + x1) / 2, (y0 + y1) / 2)); await page.mouse.move(...P(x1, y1)); await page.mouse.up();
 }
