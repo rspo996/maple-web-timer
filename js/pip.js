@@ -32,25 +32,25 @@ let pipWin=null, pipResizeTimer=null;
 const pipFlash={};            // 행 id(또는 맨 위 줄 'sys') → {kind, at}
 const pipSupported=()=>!!(window.documentPictureInPicture&&typeof window.documentPictureInPicture.requestWindow==='function');
 const PIP_CSS=`
-:root{color-scheme:light dark;--bg:#fffaf0;--ink:#3b2814;--muted:#7a5f45;--line:#e3cfae;--ok:#23803a;--warn:#b52f22;--bar:#e8791f;--bar-ink:#ffffff;--bar-o:#7a3a0a;--rim:#5c3a1a}
-@media (prefers-color-scheme:dark){:root{--bg:#1a2547;--ink:#e9eefc;--muted:#a3b2d6;--line:#2f3f6e;--ok:#5fd37a;--warn:#ff8173;--bar:#2c4385;--bar-ink:#ffd666;--bar-o:#060a18;--rim:#060a18}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.35 "Pretendard","Malgun Gothic",system-ui,sans-serif;border:2px solid var(--rim);min-height:100vh}
-#pipStatus,.r{position:relative;display:flex;gap:6px;align-items:baseline;padding:6px 10px;border-bottom:1px solid var(--line);min-height:34px}
-:where(#pipStatus){background:var(--bar);color:var(--bar-ink);border-bottom:2px solid var(--rim);font:16px/1.3 "Jua Tabular","Pretendard","Malgun Gothic",system-ui,sans-serif;
-  text-shadow:-1px 0 var(--bar-o),1px 0 var(--bar-o),0 -1px var(--bar-o),0 1px var(--bar-o),0 2px var(--bar-o)}
-:where(#pipStatus).bad{background:#c8321f;color:#fff;--bar-o:#5a1209}
+:root{color-scheme:light;--paper:#f8f3fa;--paper-2:#efe8f2;--paper-3:#e4dce8;--rule:#d3c9da;--ink:#1d0f25;--ink-2:#3d2f46;--muted:#615569;
+  --ok:#456700;--warn:#c12100;--ember:#f24700;--info:#00b7c1;--accent-ink:#1d0f25;
+  --display:"Black Han Sans","Malgun Gothic","Apple SD Gothic Neo",sans-serif;--body:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.35 var(--body);border:2px solid var(--rule);min-height:100vh}
+#pipStatus,.r{position:relative;display:flex;gap:8px;align-items:baseline;padding:8px 12px;border-bottom:1px solid var(--rule);min-height:34px}
+:where(#pipStatus){background:var(--paper-2);color:var(--ink);border-bottom:2px solid var(--rule);font:16px/1.3 var(--display)}
+:where(#pipStatus).bad{background:var(--ember);color:var(--accent-ink);border-bottom-color:var(--accent-ink)}
 .r .l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.r .s{color:var(--muted);white-space:nowrap}.r .t{font:15px/1.2 "Jua Tabular","Pretendard",system-ui,sans-serif;min-width:3.2em;text-align:right}
+.r .s{color:var(--muted);white-space:nowrap}.r .t{font-weight:700;font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
 .r .m{font-weight:700;min-width:.8em}.r>span{position:relative;z-index:1}
-.lv-ok .s{color:var(--ok)}.lv-warn .s,.lv-alert .s,.lv-alert .t{color:var(--warn)}.lv-idle{opacity:.7}
-.flash-pre,.hold-pre{background:#ffc53d;color:#3b2208;text-shadow:none}.flash-gone,.hold-gone{background:#c8321f;color:#fff;text-shadow:none}
-.flash-info,.hold-info{background:#2a6fc9;color:#fff;text-shadow:none}.flash-bad,.hold-bad{background:repeating-linear-gradient(135deg,#555 0 8px,#666 8px 16px);color:#fff;text-shadow:none}
+.lv-ok .s{color:var(--ok)}.lv-warn .s,.lv-alert .s,.lv-alert .t{color:var(--warn)}.lv-idle .l,.lv-idle .t{color:var(--ink-2)}
+.flash-pre,.hold-pre{background:var(--ember);color:var(--accent-ink)}.flash-gone,.hold-gone{background:var(--ink-2);color:var(--paper)}
+.flash-info,.hold-info{background:var(--info);color:var(--accent-ink)}.flash-bad,.hold-bad{background:repeating-linear-gradient(135deg,var(--paper-3) 0 8px,var(--rule) 8px 16px);color:var(--ink)}
 [class*=flash-] .s,[class*=hold-] .s,[class*=flash-] .t,[class*=hold-] .t{color:inherit}
-[class*=flash-]::after{content:"";position:absolute;inset:0;background:var(--bg);animation:pipblink 1s step-end infinite}
+[class*=flash-]::after{content:"";position:absolute;inset:0;background:var(--paper);animation:pipblink 1s step-end infinite}
 @keyframes pipblink{0%{opacity:0}50%{opacity:1}}
 @media (prefers-reduced-motion:reduce){[class*=flash-]::after{animation:none;opacity:0}}`;
-// 작은 창 문서는 about:blank라 상대 경로가 안 풀린다. 이 페이지 기준 절대 주소로 서체를 건다(못 읽으면 시스템 글꼴)
-const pipFontCss=()=>`@font-face{font-family:"Jua Tabular";src:url("${new URL('fonts/jua-tabular.woff2',document.baseURI).href}") format("woff2");font-display:swap}`;
+// 작은 창 문서는 about:blank라 상대 경로가 안 풀린다. 표시 글꼴은 절대 주소(Google Fonts)로 건다(못 읽으면 시스템 고딕)
+const pipFontCss=()=>'@import url("https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap");';
 function pipInit(){
   const b=$('#btnPip');
   if(!pipSupported()){ b.disabled=true; $('#pipNote').hidden=false; return; }

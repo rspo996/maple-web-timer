@@ -4,14 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>메이플 재획 알리미</title>
-<link rel="preload" href="fonts/jua-tabular.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="메이플스토리 창을 화면 공유로 받아 버프 만료·부스터·룬을 감지하고 소리와 음성으로 알려 주는 개인용 알리미.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <header class="masthead">
   <div class="brand">
     <svg class="crest" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-      <rect x="1.5" y="1.5" width="37" height="37" rx="9" class="crest-slot"/>
+      <rect x="1.5" y="1.5" width="37" height="37" rx="4" class="crest-slot"/>
       <path class="crest-bell" d="M20 7.5c-1.3 0-2.2 1-2.2 2.1v.9c-4.3 1.1-7 4.8-7 9.4v5.4l-2.6 3.1c-.6.7-.1 1.8.8 1.8h22c.9 0 1.4-1.1.8-1.8l-2.6-3.1v-5.4c0-4.6-2.7-8.3-7-9.4v-.9c0-1.1-.9-2.1-2.2-2.1z"/>
       <path class="crest-shine" d="M15.2 15.6c.9-1.9 2.4-3.1 4-3.5"/>
       <circle class="crest-clapper" cx="20" cy="33" r="2.6"/>
@@ -19,10 +22,10 @@
     <h1>메이플 재획 알리미</h1>
   </div>
   <div class="tools">
-    <button id="btnConnect" class="primary">게임 화면 연결</button>
-    <button id="btnImage">스크린샷으로 테스트</button>
+    <button id="btnConnect" type="button" class="primary">게임 화면 연결</button>
+    <button id="btnImage" type="button">스크린샷으로 테스트</button>
     <input id="fileImage" type="file" accept="image/*" hidden>
-    <button id="btnNotify">브라우저 알림 허용</button>
+    <button id="btnNotify" type="button">브라우저 알림 허용</button>
     <button id="btnPip" type="button">작은 창 열기</button> <span id="pipNote" class="sub" hidden>이 브라우저는 작은 창을 지원하지 않아요</span>
     <div class="soundbox">
       <label class="sw">음량 <input id="vol" type="range" min="0" max="200" step="5" value="80" list="volTicks" aria-describedby="volNote"> <b id="volPct" class="vol-pct">80%</b></label>
@@ -44,14 +47,51 @@
     <span id="soundLock" hidden><span class="note">소리가 꺼져 있어요</span> <button id="soundLockBtn" type="button">소리 켜기</button></span>
     <div class="end">
       <span id="watchBeat" class="sub"></span>
-      <button id="btnStop" hidden>감시 끝내기</button>
+      <button id="btnStop" type="button" hidden>감시 끝내기</button>
     </div>
   </div>
-  <div class="col col-main">
+  <div class="col col-targets">
+    <aside id="cards" class="win" aria-labelledby="subtitle">
+      <h2 class="wbar"><span id="subtitle">감지 대상</span></h2>
+      <div class="wbody">
+        <div id="addBar">
+          <button id="btnAdd" type="button" aria-expanded="false" aria-controls="addMenu">+ 대상 추가</button> <span id="addNote" class="sub" role="status"></span>
+          <div id="addMenu" hidden></div>
+        </div>
+        <div id="cardList"></div>
+      </div>
+    </aside>
+  </div>
+  <div class="col col-timers">
+    <section class="win" id="manual" aria-labelledby="manualTitle">
+      <div class="wbar mhead"><h2 id="manualTitle">수동 타이머</h2> <button id="manualClearDone" type="button" hidden>끝난 것 모두 지우기</button></div>
+      <div class="wbody">
+        <p class="sub mlead">화면을 보지 않고 직접 시작해요</p>
+        <div class="row chips" id="manualPresets" role="group" aria-label="프리셋: 누르면 바로 시작"></div>
+        <form id="manualForm" class="row">
+          <input id="manualName" placeholder="이름(선택)" maxlength="20" aria-label="타이머 이름">
+          <input id="manualDur" placeholder="분:초" size="7" aria-label="시간(분:초)">
+          <button class="primary">시작</button> <button type="button" id="manualSavePreset">프리셋으로 저장</button>
+          <label class="sw">미리 알림 <input id="manualPre" type="number" min="0" max="120" aria-describedby="manualPreSfx"> <span id="manualPreSfx" class="sub">초 전 (0=끔)</span></label>
+        </form>
+        <details id="manualRoutineBox"><summary>사냥·회수 반복 만들기</summary>
+          <form id="manualRoutine" class="grid">
+            <label for="manualN1">구간 1</label><span><input id="manualN1" name="n1" value="사냥" maxlength="20"> <input name="d1" placeholder="분:초" size="7" aria-label="구간 1 길이(분:초)"></span>
+            <label for="manualN2">구간 2</label><span><input id="manualN2" name="n2" value="회수" maxlength="20"> <input name="d2" placeholder="분:초" size="7" aria-label="구간 2 길이(분:초)"></span>
+            <span></span><span><button class="primary">시작</button> <span class="sub">멈출 때까지 번갈아 반복해요</span></span>
+          </form>
+        </details>
+        <details id="manualPresetEdit"><summary>프리셋 편집</summary><div id="manualPresetList"></div></details>
+        <p id="manualNote" class="sub" role="status"></p>
+        <div id="manualList"></div>
+      </div>
+    </section>
+  </div>
+  <div class="col col-screen">
     <section class="win" id="stagePanel" aria-labelledby="stageTitle">
       <h2 class="wbar" id="stageTitle">게임 화면</h2>
       <div class="wbody">
-        <div id="banner"><span id="bannerText"></span><span class="row"><button id="btnRetake">화면 다시 찍기</button><button id="btnCancel">취소</button></span></div>
+        <div id="banner"><span id="bannerText"></span><span class="row"><button id="btnRetake" type="button">화면 다시 찍기</button><button id="btnCancel" type="button">취소</button></span></div>
         <div id="stage"><canvas id="preview" width="960" height="540"></canvas><div id="empty">“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.</div></div>
       </div>
     </section>
@@ -100,41 +140,6 @@
           <p id="backupNote" class="sub" role="status"></p>
         </div>
       </details>
-    </section>
-  </div>
-  <div class="col col-side">
-    <aside id="cards" class="win" aria-labelledby="subtitle">
-      <h2 class="wbar"><span id="subtitle">감지 대상</span></h2>
-      <div class="wbody">
-        <div id="addBar">
-          <button id="btnAdd" aria-expanded="false" aria-controls="addMenu">+ 대상 추가</button> <span id="addNote" class="sub" role="status"></span>
-          <div id="addMenu" hidden></div>
-        </div>
-        <div id="cardList"></div>
-      </div>
-    </aside>
-    <section class="win" id="manual" aria-labelledby="manualTitle">
-      <div class="wbar mhead"><h2 id="manualTitle">수동 타이머</h2> <button id="manualClearDone" type="button" hidden>끝난 것 모두 지우기</button></div>
-      <div class="wbody">
-        <p class="sub mlead">화면을 보지 않고 직접 시작해요</p>
-        <div class="row chips" id="manualPresets" role="group" aria-label="프리셋: 누르면 바로 시작"></div>
-        <form id="manualForm" class="row">
-          <input id="manualName" placeholder="이름(선택)" maxlength="20" aria-label="타이머 이름">
-          <input id="manualDur" placeholder="분:초" size="7" aria-label="시간(분:초)">
-          <button class="primary">시작</button> <button type="button" id="manualSavePreset">프리셋으로 저장</button>
-          <label class="sw">미리 알림 <input id="manualPre" type="number" min="0" max="120" aria-describedby="manualPreSfx"> <span id="manualPreSfx" class="sub">초 전 (0=끔)</span></label>
-        </form>
-        <details id="manualRoutineBox"><summary>사냥·회수 반복 만들기</summary>
-          <form id="manualRoutine" class="grid">
-            <label for="manualN1">구간 1</label><span><input id="manualN1" name="n1" value="사냥" maxlength="20"> <input name="d1" placeholder="분:초" size="7" aria-label="구간 1 길이(분:초)"></span>
-            <label for="manualN2">구간 2</label><span><input id="manualN2" name="n2" value="회수" maxlength="20"> <input name="d2" placeholder="분:초" size="7" aria-label="구간 2 길이(분:초)"></span>
-            <span></span><span><button class="primary">시작</button> <span class="sub">멈출 때까지 번갈아 반복해요</span></span>
-          </form>
-        </details>
-        <details id="manualPresetEdit"><summary>프리셋 편집</summary><div id="manualPresetList"></div></details>
-        <p id="manualNote" class="sub" role="status"></p>
-        <div id="manualList"></div>
-      </div>
     </section>
   </div>
 </main>

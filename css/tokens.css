@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.2rem; --text-xl: 1.44rem; --text-2xl: 1.728rem; --text-3xl: 2.074rem;
+  --text-display-s: 1.44rem; --text-display: 1.728rem; --text-section: 1.2rem; --text-title: 1rem; --text-lead: 1rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --color-error: oklch(72% 0.15 27); --color-success: oklch(76% 0.13 150);
+  --container: 1440px; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 120px; --section-gap: 144px; --section-gap-l: 176px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+  /* 밝은 톤(2026-11-09 사용자 요청): Arcade의 어두운 토큰을 같은 색상각으로 다시 낸 값. 종이는 한 단계마다 어둡게, 잉크는 짙은 가지색 */
+  --color-paper: oklch(97% 0.01 315); --color-paper-2: oklch(94% 0.014 315); --color-paper-3: oklch(90.5% 0.018 315);
+  --color-ink: oklch(20% 0.045 312); --color-ink-2: oklch(33% 0.045 312); --color-muted: oklch(47% 0.035 312);
+  --color-rule: oklch(85% 0.025 312);
+  --color-accent: oklch(64% 0.22 40); --color-accent-2: oklch(87% 0.2 115); --color-accent-ink: oklch(20% 0.045 312);
+  --color-ok: oklch(47% 0.13 128);                  /* acid의 글자·선 버전: 밝은 바탕에서 연두(1.3:1)는 글자로 못 쓴다 */
+  --color-focus: var(--color-ok);
+  --color-crt-r: oklch(63% 0.24 25); --color-crt-g: oklch(80% 0.25 140); --color-crt-b: oklch(60% 0.24 265); --color-crt-c: oklch(70% 0.14 200); --color-shade: oklch(10% 0.03 312);
+  --color-screen-ink: oklch(92% 0.012 315);          /* 어두운 게임 화면 위 글자 */
+  /* 한글 화면이라 Bungee·Chivo 대신 같은 역할의 한글 글꼴: 표시 Black Han Sans(Google Fonts), 본문 시스템 고딕, 숫자 Silkscreen Tabular(fonts/, OFL) */
+  --font-display: "Black Han Sans", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --font-body: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-outlier: "Silkscreen Tabular", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --radius-card: 4px; --radius-pill: 0; --rule-hair: 1px; --rule-bar: 2px;
+  --shadow-card: 6px 6px 0 var(--color-accent-2);
+  --tracking-display: 0; --display-weight: 400;
+
+  /* 앱 화면용: 상태 색과 떠 있는 것 */
+  --color-warn-text: oklch(52% 0.2 36);             /* 밝은 바탕 위 경고 글자(ember보다 한 단계 짙게) */
+  --color-info: oklch(50% 0.11 215);                /* 스크린샷 테스트 중 */
+  --size-slot: 40px;                                /* 대상 아이콘 칸 */
+  --size-control: 34px;                             /* 버튼과 입력 칸이 같은 높이 */
+  --size-gauge-row: 6px;                            /* 접힌 대상 줄의 게이지 높이 */
+  --text-figure: 2.75rem;                           /* Silkscreen 숫자는 40px 이상에서만 */
+  --color-overlay: color-mix(in oklab, var(--color-shade) 72%, transparent);
+  --shadow-press: 4px 4px 0 var(--color-accent-2);  /* 누르는 면의 acid 그림자, 앱 밀도에 맞춰 4px */
+  --shadow-float: 6px 6px 0 var(--color-shade);     /* 알림 말풍선·되돌리기·대화상자 */
+  --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='M2 2.5l5 5 5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='square'/%3E%3C/svg%3E");
+  --crt-grille:
+    repeating-linear-gradient(to right, color-mix(in oklab, var(--color-crt-r) 7%, transparent) 0 1px, color-mix(in oklab, var(--color-crt-g) 7%, transparent) 1px 2px, color-mix(in oklab, var(--color-crt-b) 7%, transparent) 2px 3px),
+    repeating-linear-gradient(to bottom, transparent 0 2px, color-mix(in oklab, var(--color-shade) 40%, transparent) 2px 3px);
+
+  /* Hex 계약: tests/browser/regression.mjs가 이 넷을 '#'으로 시작하는 문자열로 읽는다. 값은 위 OKLCH 토큰의 sRGB 값 */
+  --warn-text: #c12100;   /* = --color-warn-text */
+  --alert-bg: #f24700;    /* = --color-accent */
+  --muted: #615569;       /* = --color-muted */
+  --accent: #f24700;      /* = --color-accent */
+}
+@font-face { font-family: "Silkscreen Tabular"; src: url("../fonts/silkscreen-tabular.woff2") format("woff2"); font-weight: 700; font-display: swap; }

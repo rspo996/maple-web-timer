@@ -6,26 +6,28 @@ function drawPreview(source){
   const [w,h]=dims(s); if(!w) return;
   if(pv.width!==w||pv.height!==h){ pv.width=w; pv.height=h; }
   pctx.drawImage(s,0,0);
-  const lw=Math.max(2,w/600); pctx.lineWidth=lw; pctx.font=`${Math.round(lw*7)}px sans-serif`;
+  const lw=Math.max(2,w/600); pctx.lineWidth=lw;
+  const tu=Math.max(lw,1.6*w/Math.max(1,pv.clientWidth||w));   // 라벨 글자 단위: 미리보기가 작게 보여도 화면에서 11px 이상
+  pctx.font=`${Math.round(tu*7)}px sans-serif`;
   const placed=[];
   if(!reg) for(const t of store.targets){ if(!KINDS[t.kind]) continue; const st=stateOf(t.id), ar=areaOf(t);
     // 점선 영역과 이름은 펼친 카드의 대상만(10개가 겹치지 않게). 일치 박스는 모든 대상에 그린다
     if(ar&&isOpen(t)){ pctx.setLineDash([lw*3,lw*2]); pctx.strokeStyle='rgba(255,255,255,.55)'; pctx.strokeRect(ar.x,ar.y,ar.w,ar.h);
-      pctx.setLineDash([]); pctx.fillStyle='rgba(255,255,255,.8)'; pctx.fillText(t.name,ar.x+2,ar.y+lw*8); }
+      pctx.setLineDash([]); pctx.fillStyle='rgba(255,255,255,.8)'; pctx.fillText(t.name,ar.x+2,ar.y+tu*8); }
     // 종류가 박스·라벨을 정할 수 있다(사냥 멈춤: 영역과 "변화 N / 기준 M"). 기본은 찾은 위치와 일치도/기준값
     const K=KINDS[t.kind], pl=!src?null:K.previewLabel?K.previewLabel(t,st):st.pos?{rect:st.pos,text:`${t.name} ${st.score.toFixed(2)} / ${t.threshold.toFixed(2)}`,hit:st.score>=t.threshold}:null;
     if(pl){ const hit=pl.hit, P=pl.rect;
       pctx.setLineDash([]); pctx.strokeStyle=pl.color||(hit?'#3ccf7d':'rgba(255,107,107,.7)'); pctx.strokeRect(P.x,P.y,P.w,P.h);
       // 기준값을 맞출 때 카드와 캔버스를 오가지 않도록 일치도/기준값을 박스 바로 아래에 표시
-      const label=pl.text, fs=Math.round(lw*9);
+      const label=pl.text, fs=Math.round(tu*9);
       pctx.save(); pctx.font=`600 ${fs}px sans-serif`;
-      const bw=pctx.measureText(label).width+lw*4, bh=fs+lw*3;
-      let ly=P.y+P.h+lw*2; if(ly+bh>h) ly=Math.max(0,P.y-bh-lw*2);
+      const bw=pctx.measureText(label).width+tu*4, bh=fs+tu*3;
+      let ly=P.y+P.h+tu*2; if(ly+bh>h) ly=Math.max(0,P.y-bh-tu*2);
       const lx=Math.min(Math.max(0,P.x),w-bw);
-      while(placed.some(p=>lx<p.x+p.w&&p.x<lx+bw&&ly<p.y+p.h&&p.y<ly+bh)) ly+=bh+lw;   // 다른 대상의 표시와 겹치면 아래로 비킴
+      while(placed.some(p=>lx<p.x+p.w&&p.x<lx+bw&&ly<p.y+p.h&&p.y<ly+bh)) ly+=bh+tu;   // 다른 대상의 표시와 겹치면 아래로 비킴
       placed.push({x:lx,y:ly,w:bw,h:bh});
       pctx.fillStyle='rgba(0,0,0,.75)'; pctx.fillRect(lx,ly,bw,bh);
-      pctx.fillStyle=hit?'#3ccf7d':'#ff8a8a'; pctx.fillText(label,lx+lw*2,ly+fs+lw/2);
+      pctx.fillStyle=hit?'#3ccf7d':'#ff8a8a'; pctx.fillText(label,lx+tu*2,ly+fs+tu/2);
       pctx.restore(); }
     if(st.ocrRect&&src){ pctx.strokeStyle='#f0c040'; pctx.strokeRect(st.ocrRect.x,st.ocrRect.y,st.ocrRect.w,st.ocrRect.h); } }
   if(reg){

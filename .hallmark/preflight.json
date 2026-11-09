@@ -1,0 +1,22 @@
+{
+  "scanned": "2026-11-09",
+  "findings": {
+    "design_md": "DESIGN.md (locked): game-window world, light sky/wood and dark navy/gold, follows prefers-color-scheme",
+    "fonts": "Jua Tabular, local woff2 (css/app.css:3); body Pretendard / Malgun Gothic / Apple SD Gothic Neo / system-ui (css/app.css:8)",
+    "palette": "hex custom properties at :root (css/app.css:4) with a dark pair (css/app.css:26)",
+    "motion": "CSS only, state motion, no library",
+    "spacing": "DESIGN.md step set 4, 6, 8, 10, 14, 16, 20px",
+    "framework": "vanilla HTML + ES modules, no package.json; node tests in tests/*.test.js and tests/browser",
+    "render": "render tier unavailable: no puppeteer-core"
+  },
+  "preserve": [
+    "DESIGN.md system: tokens, Jua Tabular, window build, buff slot + gauge, two tonal worlds",
+    "every id, handler, field and script hook (tests read the ids)",
+    "the Hex Contract Rule (--warn-text, --alert-bg, --muted, --accent stay plain hex)",
+    "user decision: the stopwatch glyph in the status line and tab title, and the expand/collapse arrows on card toggles stay (.impeccable/surfaces/index-html.md)"
+  ],
+  "introduce": [
+    "Floor fixes: colour literals into tokens, overflow-x clip, disabled in three channels",
+    "composition changes at full depth, inside the existing shell"
+  ]
+}

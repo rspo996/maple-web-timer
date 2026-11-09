@@ -1,0 +1,30 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "arcade",
+  "axes": "dark/pixel/chromatic-ember",
+  "hero": "none (app screen)",
+  "nav": "top bar: wordmark and session tools",
+  "footer": "none",
+  "imagery": "the live game capture in the preview canvas",
+  "photos": [],
+  "entry": "status band",
+  "fingerprint": "app/status-band/menu-left/screen-right/hairline-rows/ember-lit-row",
+  "sections": [
+   "status band",
+   "target menu",
+   "manual timers",
+   "game screen",
+   "setup guide",
+   "sounds",
+   "backup"
+  ],
+  "signature": "target list as a cabinet menu, the row that needs you lit ember",
+  "waived": [],
+  "prompt": "a personal tool that watches a shared game screen for buff expiry, booster countdown and rune spawns and alerts by sound; set it up, confirm it is watching, then hide the tab",
+  "date": "2026-11-09"
+ }
+]
