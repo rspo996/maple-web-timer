@@ -84,11 +84,22 @@ function dispatchEvents(list,now){
 }
 // 카드의 "알림 테스트": 묶지 않고 첫 이벤트를 개별 알림으로 재생
 function testAlert(t){ const def=KINDS[t.kind].events[0]; Alerts.fire({...reqFor(t,def,{}),src:'test',group:null}); }
+// 틱이 느려졌는지 지켜본다(스펙 9.3 ①): 지수 이동 평균이 limitMs를 needTicks번 연속 넘으면 그때의 평균(ms)을 한 번 돌려주고, 회복하면 다시 알릴 수 있다
+function createSlowWatch(limitMs,needTicks){
+  let ema=null, over=0, warned=false;
+  return { push(ms){
+    ema=ema==null?ms:ema*0.8+ms*0.2;
+    if(ema>limitMs) over++; else { over=0; warned=false; }
+    if(over>=needTicks&&!warned){ warned=true; return Math.round(ema); }
+    return null;
+  } };
+}
+const slowWatch=createSlowWatch(450,20);
 let busy=false;
 async function tick(){
   if(busy) return; busy=true;
   try{
-    const now=Date.now(), g=await grab(), source=g.frame; frameFresh=g.fresh;
+    const t0=performance.now(), now=Date.now(), g=await grab(), source=g.frame; frameFresh=g.fresh;
     if(source){ [frame.w,frame.h]=dims(source); }
     const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
     if(live){
@@ -102,14 +113,18 @@ async function tick(){
       const k=KINDS[t.kind]; if(!k) continue;
       const st=stateOf(t.id);
       if(ok && t.enabled && !reg){
-        const det=k.detect(t,source,ctx);
+        const d0=performance.now(), det=k.detect(t,source,ctx);
         if(det){ st.score=det.score; st.pos=det.pos; collectEvents(t,k.step(t,st,det,source,now,ctx),evq); }
         else if(k.onSkip) collectEvents(t,k.step(t,st,null,source,now,ctx),evq);
+        const dt=performance.now()-d0; st.ms=st.ms==null?dt:st.ms*0.8+dt*0.2;     // 대상별 감지 시간(지수 이동 평균). 카드에 표시
       } else if(k.onSkip && t.enabled) collectEvents(t,k.step(t,st,null,null,now,ctx),evq);   // 감지를 건너뛴 틱에도 부르는 종류(묶음 3)
       if(!document.hidden) renderCard(t);
     }
     dispatchEvents(evq,now);
+    const slow=ok&&live?slowWatch.push(performance.now()-t0):null;
+    if(slow) setNote(`감지가 느려요 (평균 ${slow} ms) · 사용 안 하는 대상은 꺼 주세요`);
     renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
     if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
   } finally { busy=false; Alerts.flush(Date.now()); }
 }
+if(typeof module==='object') module.exports={createSlowWatch};

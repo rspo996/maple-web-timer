@@ -64,3 +64,32 @@ test('ocrSevenSeg: 글씨가 없거나 너무 작으면 null', () => {
   const blank = new Uint8ClampedArray(40 * 20 * 4); for (let i = 3; i < blank.length; i += 4) blank[i] = 255;
   assert.equal(ocrSevenSeg(blank, 40, 20), null);
 });
+
+// ---- 버퍼 재사용 (스펙 9.3 ④): 결과는 그대로, 크기가 같거나 작으면 적분 배열을 새로 만들지 않는다 ----
+const { matchStats } = require('../js/match.js');
+function matchRef(img, W, H, tpl) {          // 분리 전 원본 알고리즘(호출마다 새 배열)
+  const { t, w, h, norm } = tpl; if (W < w || H < h || norm < 1e-3) return { score: 0, x: 0, y: 0 };
+  const W1 = W + 1, S = new Float64Array(W1 * (H + 1)), Q = new Float64Array(W1 * (H + 1));
+  for (let y = 0; y < H; y++) { let rs = 0, rq = 0; for (let x = 0; x < W; x++) { const v = img[y * W + x]; rs += v; rq += v * v; S[(y + 1) * W1 + x + 1] = S[y * W1 + x + 1] + rs; Q[(y + 1) * W1 + x + 1] = Q[y * W1 + x + 1] + rq; } }
+  const n = w * h; let best = -2, bx = 0, by = 0;
+  for (let y = 0; y <= H - h; y++) for (let x = 0; x <= W - w; x++) { const a = y * W1 + x, b = a + w, c = (y + h) * W1 + x, d = c + w; const sum = S[d] - S[b] - S[c] + S[a], sq = Q[d] - Q[b] - Q[c] + Q[a]; const v = sq - sum * sum / n; if (v < 1e-3) continue; let cr = 0; for (let ty = 0; ty < h; ty++) { const ro = (y + ty) * W + x, to = ty * w; for (let tx = 0; tx < w; tx++) cr += t[to + tx] * img[ro + tx]; } const sc = cr / (norm * Math.sqrt(v)); if (sc > best) { best = sc; bx = x; by = y; } }
+  return { score: Math.max(best, 0), x: bx, y: by };
+}
+
+test('matchTemplate: 크기가 다른 호출을 번갈아 해도 원본 알고리즘과 같은 결과', () => {
+  const cases = [[80, 50, 1], [30, 20, 2], [64, 36, 3], [80, 50, 4], [17, 41, 5]];
+  for (const [W, H, seed] of cases) {
+    const img = noiseImage(W, H, seed), tpl = prepTemplate(crop(img, W, 3, 2, 8, 8), 8, 8), other = noiseImage(W, H, seed + 100);
+    for (const im of [img, other]) assert.deepEqual(matchTemplate(im, W, H, tpl), matchRef(im, W, H, tpl));
+  }
+});
+
+test('matchTemplate: 적분 배열은 더 큰 크기가 필요할 때만 새로 만든다', () => {
+  const tpl = prepTemplate(noiseImage(8, 8, 9), 8, 8);
+  matchTemplate(noiseImage(100, 80, 1), 100, 80, tpl);
+  const after = matchStats.allocs;
+  matchTemplate(noiseImage(40, 30, 2), 40, 30, tpl); matchTemplate(noiseImage(100, 80, 3), 100, 80, tpl);
+  assert.equal(matchStats.allocs, after);
+  matchTemplate(noiseImage(200, 100, 4), 200, 100, tpl);
+  assert.equal(matchStats.allocs, after + 1);
+});

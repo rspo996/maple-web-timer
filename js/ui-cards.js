@@ -86,7 +86,8 @@ function renderCard(t){
   const tu=t.tpl?t.tpl.url:(t.preset?PRESETS[t.preset].icons[0].url:''), th=q('.thumb'); th.hidden=!tu; if(tu&&th.getAttribute('src')!==tu) th.src=tu;
   const rb=q('[data-a=reset]'); if(rb) rb.style.display=t.tpl?'':'none';
   setText(q('[data-s=thr]'),t.threshold.toFixed(2));
-  setText(q('[data-s=score]'),src&&(t.tpl||t.preset)?st.score.toFixed(2)+(st.score>=t.threshold?' ✔':''):'–');
+  const ms=st.ms==null?'':` · 감지 ${st.ms<10?st.ms.toFixed(1):Math.round(st.ms)} ms`;   // 이 대상의 감지에 든 시간(느린 대상을 찾는 용도)
+  setText(q('[data-s=score]'),src&&(t.tpl||t.preset)?st.score.toFixed(2)+(st.score>=t.threshold?' ✔':'')+ms:'–');
   const s=cardStatus(t,st,Date.now(),{src:!!src,frame}), sEl=q('[data-s=status]');
   setText(sEl,s.text); const cls='status '+s.cls; if(sEl.className!==cls) sEl.className=cls; setText(q('[data-s=sub]'),s.sub);
   const mini=q('[data-s=mini]'); setText(mini,s.text); const mc='mini '+s.cls; if(mini.className!==mc) mini.className=mc;   // 접힌 카드의 한 줄 상태
