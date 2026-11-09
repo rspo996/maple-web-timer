@@ -84,3 +84,4 @@ function stepCountdown(st, cfg, value, now){
   if(value<=cfg.leadSec && value>0 && !st.alertedPre){ st.alertedPre=true; ev.push('pre'); }
   return ev;
 }
+if(typeof module==='object') module.exports={stepDetector,newState,SEG_DIGITS,ocrSevenSeg,UNREAD_MS,stepCountdown};

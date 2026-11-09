@@ -30,3 +30,4 @@ function matchTemplate(img, W, H, tpl){
   }
   return {score:Math.max(best,0),x:bx,y:by};
 }
+if(typeof module==='object') module.exports={toGray,prepTemplate,matchTemplate};

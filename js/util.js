@@ -8,3 +8,4 @@ const eulReul=w=>w+(batchim(w)?'을':'를');   // 받침에 맞춘 을/를
 const UI_STORE='maple-web-timer-ui';
 let ui={}; try{ ui=JSON.parse(localStorage.getItem(UI_STORE)||'{}'); }catch(e){}
 function saveUi(){ try{ localStorage.setItem(UI_STORE,JSON.stringify(ui)); }catch(e){} }
+if(typeof module==='object') module.exports={fmt,parseDur,clampInt,batchim,eunNeun,eulReul};   // node 테스트용. 브라우저에서는 무시됨
