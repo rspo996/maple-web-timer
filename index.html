@@ -6,46 +6,85 @@
 <title>메이플 재획 알리미</title>
 <style>
 :root{
-  --bg:#f4f5f8;--panel:#ffffff;--ink:#1c1f26;--muted:#6a7180;--line:#dde1e8;
-  --accent:#e8742c;--accent-ink:#fff;--ok:#1f9d55;--warn:#d64545;--info:#2f6fd6;
-  --flash:#ffe3cf;
+  --bg:#f4f5f8;--panel:#ffffff;--ink:#1c1f26;--muted:#646b7a;--line:#dde1e8;
+  --accent:#e8742c;--accent-ink:#1a1206;--ok:#1f9d55;--warn:#d64545;--warn-text:#b83232;--info:#2f6fd6;
+  --flash:#ffe3cf;--alert-bg:#b83232;--alert-ink:#ffffff;
 }
 @media (prefers-color-scheme: dark){
   :root{--bg:#14161b;--panel:#1d2027;--ink:#e9ecf2;--muted:#9aa2b1;--line:#2d313b;
-    --accent:#f08a45;--accent-ink:#1a1206;--ok:#3ccf7d;--warn:#ff6b6b;--info:#6aa1ff;--flash:#4a2c16;}
+    --accent:#f08a45;--accent-ink:#1a1206;--ok:#3ccf7d;--warn:#ff6b6b;--warn-text:#ff6b6b;--info:#6aa1ff;--flash:#4a2c16;}
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Pretendard","Malgun Gothic",system-ui,sans-serif}
-header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
-header h1{font-size:18px;margin:0}
+::selection{background:var(--flash);color:var(--ink)}
+:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+input[type=range],input[type=checkbox]{accent-color:var(--accent)}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px 0;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:24px;margin:0}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
 button:hover{border-color:var(--muted)}
 button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
 button:disabled{opacity:.45;cursor:default}
-main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;padding:16px 20px;max-width:1500px;margin:0 auto}
-@media (max-width:980px){main{grid-template-columns:1fr}}
+/* 감시 상태줄: 탭을 숨기기 전에 무엇을 감시하는지 한 줄로 확인 */
+.watch{flex:0 0 calc(100% + 40px);margin:0 -20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:9px 20px;min-height:48px;border-top:1px solid var(--line);font-size:14px}
+.watch button{padding:3px 10px;font-size:13px}
+.watch .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+.watch.on .dot{background:var(--ok)}
+.watch.test .dot{background:var(--info)}
+.watch.bad .dot{background:var(--warn)}
+.watch.bad #watchState{color:var(--warn-text)}
+.watch .dot.beat{animation:beat .5s cubic-bezier(.16,1,.3,1)}
+@keyframes beat{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}to{box-shadow:0 0 0 7px transparent}}
+@media (prefers-reduced-motion:reduce){.watch .dot.beat{animation:none}}
+.watch .live{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-width:0}
+.watch .targets{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.watch .targets .off,.watch .targets .sep,.watch .targets .unseen{color:var(--muted)}
+.watch .targets button{padding:2px 9px;font-size:13px}
+.watch .note{color:var(--warn-text)}
+.watch .note.info{color:var(--muted)}
+.watch .end{margin-left:auto;display:flex;gap:10px;align-items:center}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"stage cards" "help cards" "sounds cards";grid-template-rows:auto auto 1fr;gap:16px;padding:16px 20px;max-width:1500px;margin:0 auto}
+#stagePanel{grid-area:stage}
+#cards{grid-area:cards;display:grid;gap:12px;align-content:start}
+#help{grid-area:help;align-self:start}
+#sounds{grid-area:sounds;align-self:start}
+@media (max-width:980px){
+  main{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "cards" "help" "sounds";grid-template-rows:auto}
+  #cards{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
 #stage{position:relative;background:#000;border-radius:8px;overflow:hidden;min-height:200px;display:flex;align-items:center;justify-content:center}
 #preview{display:block;max-width:100%;height:auto;cursor:crosshair;touch-action:none}
 #empty{color:#aab;position:absolute;text-align:center;padding:20px}
 #banner{display:none;margin-bottom:10px;padding:10px 12px;border-radius:8px;background:var(--flash);font-weight:600}
 #banner.on{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;transition:background .2s}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;transition:background .2s}
 .card.flash{animation:flash 1s ease-in-out 4}
 @keyframes flash{50%{background:var(--flash)}}
-.card h2{font-size:16px;margin:0;display:flex;align-items:center;gap:8px}
+.card h2{font-size:18px;margin:0;display:flex;align-items:center;gap:8px}
 .card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .status{font-size:22px;font-weight:700;margin:4px 0;font-variant-numeric:tabular-nums}
 .status.on{color:var(--ok)}.status.off{color:var(--muted)}.status.alert{color:var(--warn)}
 .sub{color:var(--muted);font-size:13px}
-.thumb{width:32px;height:32px;image-rendering:pixelated;border-radius:4px;border:1px solid var(--line);object-fit:contain;background:#000}
+.thumb{height:32px;width:auto;min-width:32px;max-width:72px;image-rendering:pixelated;border-radius:4px;border:1px solid var(--line);object-fit:contain;background:#000}
 .grid{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-top:8px;font-size:13px}
 .grid input[type=text],.grid input[type=number]{width:90px;font:inherit;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.grid input::placeholder{color:var(--muted);opacity:1}
 .grid input[type=range]{width:100%}
 label.sw{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
-#toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--warn);color:#fff;padding:12px 22px;border-radius:10px;font-size:18px;font-weight:700;display:none;z-index:9;box-shadow:0 6px 24px rgba(0,0,0,.3)}
-details{margin-top:12px;font-size:14px}details li{margin:3px 0}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100vw - 32px);background:var(--alert-bg);color:var(--alert-ink);padding:12px 22px;border-radius:10px;font-size:18px;font-weight:700;display:none;z-index:9;box-shadow:0 6px 24px rgba(0,0,0,.3);pointer-events:none}
+details{font-size:14px}details li{margin:3px 0}
+summary{cursor:pointer}
+/* 알림 소리 바꾸기: 알림별로 내 소리 파일을 고름 */
+.snd-group{margin-top:14px}
+.snd-group>b{display:block;margin-bottom:2px}
+.snd-row{display:grid;grid-template-columns:7em minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.snd-file{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.snd-file.custom{color:var(--ink)}
+.snd-row button{padding:3px 10px;font-size:13px}
+#soundNote{min-height:1.5em;margin:8px 0 0}
+#soundNote.warn{color:var(--warn-text)}
 .score{font-variant-numeric:tabular-nums}
 </style>
 </head>
@@ -60,12 +99,27 @@ details{margin-top:12px;font-size:14px}details li{margin:3px 0}
     <label class="sw">음량 <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8"></label>
     <label class="sw"><input id="voice" type="checkbox" checked> 음성</label>
   </div>
+  <div id="watch" class="watch">
+    <span class="dot" id="watchDot" aria-hidden="true"></span>
+    <div class="live" role="status" aria-live="polite">
+      <b id="watchState">연결 안 됨 · 감시하지 않아요</b>
+      <span id="watchTargets" class="targets"></span>
+      <span id="watchNote" class="note"></span>
+    </div>
+    <div class="end">
+      <span id="watchBeat" class="sub"></span>
+      <button id="btnStop" hidden>감시 끝내기</button>
+    </div>
+  </div>
 </header>
 <main>
-  <section class="panel">
+  <section class="panel" id="stagePanel">
     <div id="banner"><span id="bannerText"></span><span class="row"><button id="btnRetake">화면 다시 찍기</button><button id="btnCancel">취소</button></span></div>
     <div id="stage"><canvas id="preview" width="960" height="540"></canvas><div id="empty">“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.</div></div>
-    <details open>
+  </section>
+  <aside id="cards" aria-label="감지 대상"></aside>
+  <section class="panel" id="help">
+    <details id="helpDetails">
       <summary><b>처음 설정하는 법</b></summary>
       <ol>
         <li><b>게임 화면 연결</b> → 메이플스토리 <u>창</u>을 선택합니다. (이 탭은 다른 모니터에 두거나 뒤로 숨겨도 계속 동작합니다)</li>
@@ -74,12 +128,20 @@ details{margin-top:12px;font-size:14px}details li{margin:3px 0}
         <li>지속시간 칸을 비워두면 한 번 켜졌다 꺼지는 걸 보고 <b>자동으로 학습</b>합니다. 알고 있으면 <code>분:초</code>로 직접 입력하세요.</li>
         <li>일치도 숫자를 보면서 켜져 있을 땐 기준값보다 높고, 꺼져 있을 땐 낮게 나오도록 기준값을 조절하세요.</li>
       </ol>
+      <p class="sub">알림 소리는 대상마다 달라요. 각 카드의 <b>알림 테스트</b>로 미리 들어 보세요. 화면 연결이 끊기거나 게임 화면이 들어오지 않으면 낮은 경고음과 음성으로 알려요. 아래 <b>알림 소리 바꾸기</b>에서 내 WAV 파일로 바꿀 수도 있어요.</p>
       <p class="sub">설정은 이 브라우저에 저장됩니다. 게임 해상도·창 크기가 바뀌면 다시 등록해야 합니다.</p>
     </details>
   </section>
-  <aside id="cards"></aside>
+  <section class="panel" id="sounds">
+    <details id="soundsDetails">
+      <summary><b>알림 소리 바꾸기</b> <span class="sub">내 WAV 파일 쓰기</span></summary>
+      <p class="sub">파일을 고르면 그 알림은 기본 경고음과 음성 대신 고른 소리로 울려요. 10초 이하, 5MB 이하 소리만 쓸 수 있고, 파일은 이 브라우저에만 저장돼요.</p>
+      <div id="soundRows"></div>
+      <p id="soundNote" class="sub" role="status"></p>
+    </details>
+  </section>
 </main>
-<div id="toast"></div>
+<div id="toast" role="alert"></div>
 
 <script>
 /* ===== 핵심 계산: 정규화 상호상관(NCC) 템플릿 매칭 ===== */
@@ -119,7 +181,7 @@ function stepDetector(st, cfg, matched, now){
   const ev=[]; const need = cfg.kind==='buff' ? {on:2,off:4} : {on:2,off:4};
   if(matched){ st.onStreak++; st.offStreak=0; } else { st.offStreak++; st.onStreak=0; }
   if(!st.present && st.onStreak>=need.on){
-    st.present=true;
+    st.present=true; st.presentAt=now;
     if(st.armed){ st.appearedAt=now; st.alertedPre=false; ev.push('appear'); }
     else { st.appearedAt=null; ev.push('appear-unknown'); }   // 연결 시점에 이미 켜져 있던 경우
     st.lastRemind=now;
@@ -145,7 +207,7 @@ function stepDetector(st, cfg, matched, now){
   }
   return ev;
 }
-function newState(){ return {present:false,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:''}; }
+function newState(){ return {present:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
 
 /* ===== 부스터 타이머 숫자 읽기 (7세그먼트) ===== */
 // 노란/흰 7세그먼트 숫자(검은 배경)를 읽어 {value, text} 반환. 못 읽으면 null
@@ -181,10 +243,16 @@ function ocrSevenSeg(rgba, W, H, litMin=110){
   return {value:parseFloat(text), text};
 }
 // 읽은 숫자로 남은 시간 갱신. 잘못 읽은 값 하나로 알림이 울리지 않도록, 예상값과 맞거나 두 번 연속 일치할 때만 받아들임
+const UNREAD_MS=20000;   // 켜져 있는데 이만큼 숫자를 못 읽으면 미리 알림을 못 하므로 한 번 알림
 function stepCountdown(st, cfg, value, now){
   const ev=[];
-  if(!st.present){ st.remain=null; st.cand=null; return ev; }
-  if(value==null) return ev;
+  if(!st.present){ st.remain=null; st.cand=null; st.lastReadAt=null; st.ocrWarned=false; return ev; }
+  if(st.lastReadAt==null) st.lastReadAt=st.presentAt ?? now;
+  if(value==null){
+    if(!st.ocrWarned && now-st.lastReadAt>=UNREAD_MS){ st.ocrWarned=true; ev.push('unread'); }
+    return ev;
+  }
+  st.lastReadAt=now; st.ocrWarned=false;
   const exp=st.remain!=null ? st.remain-(now-st.remainAt)/1000 : null;
   const candExp=st.cand!=null ? st.cand-(now-st.candAt)/1000 : null;
   const ok=(exp!=null && Math.abs(value-exp)<=2) || (candExp!=null && Math.abs(value-candExp)<=1);
@@ -217,31 +285,41 @@ for(const d of DEFS) states[d.id]=newState();
 
 const fmt=s=>{ s=Math.max(0,Math.ceil(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); };
 const parseDur=v=>{ v=(v||'').trim(); if(!v) return null; const m=v.match(/^(\d+)(?::(\d{1,2}))?$/); if(!m) return undefined; return m[2]!==undefined? (+m[1])*60+(+m[2]) : (+m[1])*60; };
+const clampInt=(v,lo,hi,dflt)=>{ v=Math.round(+v); return Number.isFinite(v)&&v>=lo ? Math.min(hi,v) : dflt; };
+const batchim=w=>{ const k=w.charCodeAt(w.length-1)-0xAC00; return k>=0&&k<11172&&k%28>0; };
+const eunNeun=w=>w+(batchim(w)?'은':'는');   // 받침에 맞춘 은/는
+const eulReul=w=>w+(batchim(w)?'을':'를');   // 받침에 맞춘 을/를
+const UI_STORE='maple-web-timer-ui';
+let ui={}; try{ ui=JSON.parse(localStorage.getItem(UI_STORE)||'{}'); }catch(e){}
+function saveUi(){ try{ localStorage.setItem(UI_STORE,JSON.stringify(ui)); }catch(e){} }
+const needsRegister=d=>!cfgs[d.id].tpl && !d.presets;
+const needsReregister=d=>{ const c=cfgs[d.id]; return !!(c.tpl && c.frameW && frame.w && (c.frameW!==frame.w||c.frameH!==frame.h)); };
 
 /* ----- 카드 UI ----- */
 function buildCards(){
   const box=$('#cards'); box.innerHTML='';
   for(const d of DEFS){
-    const c=cfgs[d.id], el=document.createElement('div'); el.className='card'; el.id='card-'+d.id;
+    const c=cfgs[d.id], el=document.createElement('div'), id='t-'+d.id; el.className='card'; el.id='card-'+d.id;
+    const lead=`<label for="${id}-lead">미리 알림</label><span><input id="${id}-lead" type="number" min="1" max="120" data-k="leadSec"> 초 전</span>`;
     el.innerHTML=`
-      <div class="top"><h2><img class="thumb" alt="">${d.name}</h2>
+      <div class="top"><h2><img class="thumb" alt="" hidden>${d.name}</h2>
         <label class="sw"><input type="checkbox" data-k="enabled"> 사용</label></div>
       <div class="status off" data-s="status">등록 필요</div>
       <div class="sub" data-s="sub"></div>
       <div class="grid">
         ${d.kind==='countdown'
-          ? `<span>미리 알림</span><span><input type="number" min="1" max="120" data-k="leadSec"> 초 전</span>`
+          ? lead
           : d.kind==='buff'
-          ? `<span>지속시간</span><span><input type="text" data-k="duration" placeholder="자동 학습"> <span class="sub">분:초</span></span>
-             <span>미리 알림</span><span><input type="number" min="1" max="120" data-k="leadSec"> 초 전</span>`
-          : `<span>반복 알림</span><span><input type="number" min="0" max="600" data-k="repeatSec"> 초마다 <span class="sub">(0=끔)</span></span>`}
-        <span>기준값</span><span class="row"><input type="range" min="0.4" max="0.98" step="0.01" data-k="threshold" style="flex:1"> <b data-s="thr"></b></span>
+          ? `<label for="${id}-dur">지속시간</label><span><input id="${id}-dur" type="text" data-k="duration" placeholder="자동 학습" aria-describedby="${id}-durfmt"> <span class="sub" id="${id}-durfmt">분:초</span></span>
+             ${lead}`
+          : `<label for="${id}-rep">반복 알림</label><span><input id="${id}-rep" type="number" min="0" max="600" data-k="repeatSec"> 초마다 <span class="sub">(0=끔)</span></span>`}
+        <label for="${id}-thr">기준값</label><span class="row"><input id="${id}-thr" type="range" min="0.4" max="0.98" step="0.01" data-k="threshold" style="flex:1"> <b data-s="thr"></b></span>
         <span>일치도</span><span class="score" data-s="score">–</span>
       </div>
       <div class="row" style="margin-top:10px">
         <button data-a="register">등록</button><button data-a="test">알림 테스트</button>
         ${d.kind==='buff'?'<button data-a="restart">방금 켰어요</button>':''}
-        ${d.presets?'<button data-a="reset">기본 아이콘으로</button>':''}
+        ${d.presets?'<button data-a="reset">기본 아이콘으로 되돌리기</button>':''}
       </div>`;
     box.appendChild(el);
     const q=s=>el.querySelector(s);
@@ -252,17 +330,16 @@ function buildCards(){
     if(d.kind==='buff'){
       const di=q('[data-k=duration]'); di.value=c.durationSec?fmt(c.durationSec):'';
       di.onchange=()=>{ const v=parseDur(di.value); if(v===undefined){di.value=c.durationSec?fmt(c.durationSec):'';return;} c.durationSec=v; save(); };
+      q('[data-a=restart]').onclick=()=>{ const st=states[d.id]; st.appearedAt=Date.now(); st.alertedPre=false; st.present=true; st.seen=true; st.onStreak=2; st.offStreak=0; st.armed=true; };
+    }
+    if(d.kind!=='rune'){
       q('[data-k=leadSec]').value=c.leadSec;
-      q('[data-k=leadSec]').onchange=e=>{c.leadSec=Math.max(1,+e.target.value||10);save();};
-      q('[data-a=restart]').onclick=()=>{ const st=states[d.id]; st.appearedAt=Date.now(); st.alertedPre=false; st.present=true; st.onStreak=2; st.offStreak=0; st.armed=true; };
-    } else if(d.kind==='countdown'){
-      q('[data-k=leadSec]').value=c.leadSec;
-      q('[data-k=leadSec]').onchange=e=>{c.leadSec=Math.max(1,+e.target.value||10);save();};
+      q('[data-k=leadSec]').onchange=e=>{ c.leadSec=clampInt(e.target.value,1,120,10); e.target.value=c.leadSec; save(); };
     } else {
       q('[data-k=repeatSec]').value=c.repeatSec;
-      q('[data-k=repeatSec]').onchange=e=>{c.repeatSec=Math.max(0,+e.target.value||0);save();};
+      q('[data-k=repeatSec]').onchange=e=>{ c.repeatSec=clampInt(e.target.value,0,600,0); e.target.value=c.repeatSec; save(); };
     }
-    if(d.presets) q('[data-a=reset]').onclick=()=>{ c.tpl=null; c.area=null; c.frameW=c.frameH=0; save(); states[d.id]=newState(); renderCard(d); };
+    if(d.presets) q('[data-a=reset]').onclick=()=>{ c.tpl=null; c.area=null; c.frameW=c.frameH=0; save(); states[d.id]=newState(); renderCard(d); setNote(`${d.name} 기본 아이콘으로 되돌렸어요`,'info'); };
     q('[data-a=register]').onclick=()=>startRegister(d);
     q('[data-a=test]').onclick=()=>{ unlockAudio(); fire(d, d.kind==='rune'?'appear':'pre'); };
     renderCard(d);
@@ -271,20 +348,23 @@ function buildCards(){
 function renderCard(d){
   const el=$('#card-'+d.id); if(!el) return;
   const c=cfgs[d.id], st=states[d.id], q=s=>el.querySelector(s);
-  const tu=c.tpl?c.tpl.url:(d.presets?d.presets[0].url:''); q('.thumb').src=tu; q('.thumb').style.visibility=tu?'visible':'hidden';
+  const tu=c.tpl?c.tpl.url:(d.presets?d.presets[0].url:''), th=q('.thumb'); th.hidden=!tu; if(tu&&th.getAttribute('src')!==tu) th.src=tu;
   const rb=q('[data-a=reset]'); if(rb) rb.style.display=c.tpl?'':'none';
   q('[data-s=thr]').textContent=c.threshold.toFixed(2);
   q('[data-s=score]').textContent=src&&(c.tpl||d.presets)?st.score.toFixed(2)+(st.score>=c.threshold?' ✔':''):'–';
   const s=q('[data-s=status]'), sub=q('[data-s=sub]');
   let text, cls='off', subt='';
-  if(!c.tpl&&!d.presets){ text='등록 필요'; subt=`${d.areaLabel} → ${d.iconLabel} 순서로 드래그`; }
+  if(needsRegister(d)){ text='등록 필요'; subt=`${d.areaLabel} → ${d.iconLabel} 순서로 드래그`; }
   else if(!src){ text='대기 중'; subt='게임 화면을 연결하세요'; }
-  else if(c.tpl && c.frameW && frame.w && (c.frameW!==frame.w||c.frameH!==frame.h)){ text='다시 등록 필요'; cls='alert'; subt=`등록 당시 화면 ${c.frameW}×${c.frameH}, 지금 ${frame.w}×${frame.h}`; }
+  else if(needsReregister(d)){ text='다시 등록 필요'; cls='alert'; subt=`등록 당시 화면 ${c.frameW}×${c.frameH}, 지금 ${frame.w}×${frame.h}`; }
   else if(d.kind==='rune'){ text=st.present?'룬 있음!':'룬 없음'; cls=st.present?'alert':'off'; }
+  // 꺼져 있는 것과 아이콘을 못 찾는 것을 구분: 이번 연결에서 한 번도 못 봤으면 따로 표시
+  else if(!st.present && !st.seen){ text='아직 못 찾음'; subt='이번 연결에서 아직 한 번도 못 봤어요 · 켜져 있는데도 이러면 “등록”으로 직접 지정'; }
   else if(!st.present){ text='꺼져 있음'; }
   else if(d.kind==='countdown'){
-    if(st.remain==null){ text='켜짐 · 숫자 읽는 중'; cls='on'; subt=st.lastText?'읽은 값 '+st.lastText:'타이머 숫자를 아직 못 읽었어요'; }
-    else { const rem=st.remain-(Date.now()-st.remainAt)/1000; text='남은 시간 '+fmt(rem); cls=rem<=c.leadSec?'alert':'on'; subt='읽은 값 '+st.lastText+'초'; } }
+    const stuck=`숫자를 ${UNREAD_MS/1000}초 넘게 못 읽었어요`;
+    if(st.remain==null){ text=st.ocrWarned?'켜짐 · 숫자를 못 읽음':'켜짐 · 숫자 읽는 중'; cls=st.ocrWarned?'alert':'on'; subt=st.ocrWarned?stuck+' · 안 되면 “등록”으로 “◷ 남은시간” 글자를 직접 지정':st.lastText?'읽은 값 '+st.lastText:'타이머 숫자를 아직 못 읽었어요'; }
+    else { const rem=st.remain-(Date.now()-st.remainAt)/1000; text='남은 시간 '+fmt(rem); cls=rem<=c.leadSec?'alert':'on'; subt=st.ocrWarned?stuck+' · 이 시간은 추정이에요':'읽은 값 '+st.lastText+'초'; } }
   else if(!st.appearedAt){ text='켜짐'; cls='on'; subt='켜진 시점을 몰라요 · 다음 사용부터 계산 (또는 “방금 켰어요”)'; }
   else if(!c.durationSec){ text='켜짐 · 학습 중'; cls='on'; subt=`${fmt((Date.now()-st.appearedAt)/1000)} 경과 · 꺼지면 지속시간을 기억합니다`; }
   else { const rem=(st.appearedAt+c.durationSec*1000-Date.now())/1000; text='남은 시간 '+fmt(rem); cls=rem<=c.leadSec?'alert':'on'; }
@@ -293,65 +373,262 @@ function renderCard(d){
 }
 
 /* ----- 알림 ----- */
-let actx=null;
-function unlockAudio(){ try{ actx=actx||new AudioContext(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
-function beep(pattern){
-  if(!actx) return; const vol=+$('#vol').value; let t=actx.currentTime+0.02;
-  for(const [f,dur] of pattern){ const o=actx.createOscillator(), g=actx.createGain();
-    o.type='square'; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18*vol,t+0.01); g.gain.setValueAtTime(0.18*vol,t+dur-0.03); g.gain.linearRampToValueAtTime(0,t+dur);
+// 소리만 듣고도 무슨 알림인지 알 수 있게 대상·이벤트마다 패턴을 나눔. 연결 문제는 음색부터 다르게(톱니파, 낮은 음)
+const SOUNDS={
+  sol:    {wave:'square',  notes:[[1046,.15],[1046,.15],[784,.3]]},              // 딩딩-동
+  booster:{wave:'square',  notes:[[1318,.08],[1318,.08],[1318,.08],[988,.28]]},  // 딱딱딱-동
+  gone:   {wave:'square',  notes:[[784,.2],[523,.45]]},                          // 내려가는 두 음
+  rune:   {wave:'square',  notes:[[880,.12],[1175,.12],[1568,.2]]},              // 올라가는 세 음
+  system: {wave:'sawtooth',notes:[[330,.22],[330,.22],[330,.22]],gain:.13},      // 낮은 경고음
+};
+let actx=null, beepEnd=0;
+function unlockAudio(){ try{ actx=actx||new AudioContext(); if(actx.state==='suspended') actx.resume(); }catch(e){} predecodeSounds(); }
+// 알림 순간에 디코딩하느라 순서가 밀리지 않도록, 오디오를 켤 때 내 소리를 미리 풀어 둠
+function predecodeSounds(){ if(!actx) return; for(const c of customSounds.values()) if(!c.buf&&!c.decoding){ c.decoding=true; actx.decodeAudioData(c.data.slice(0)).then(b=>{ c.buf=b; },()=>{}).finally(()=>{ c.decoding=false; }); } }
+// 앞 소리가 끝난 뒤에 이어서 예약해 겹치지 않게 함. 끝날 때까지 남은 초를 돌려줌
+function beep(name){
+  const s=SOUNDS[name]; if(!actx||!s) return 0;
+  const amp=(s.gain||.18)*(+$('#vol').value); let t=Math.max(actx.currentTime+0.02, beepEnd);
+  for(const [f,dur] of s.notes){ const o=actx.createOscillator(), g=actx.createGain();
+    o.type=s.wave; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(amp,t+0.01); g.gain.setValueAtTime(amp,t+dur-0.03); g.gain.linearRampToValueAtTime(0,t+dur);
     o.connect(g).connect(actx.destination); o.start(t); o.stop(t+dur); t+=dur+0.06; }
+  beepEnd=t; return t-actx.currentTime;
 }
+// 음성은 끊지 않고 차례로 말함. 같은 문구가 8초 안에 또 오면 건너뛰고, 큐가 15초 넘게 막혀 있으면 비운 뒤 다시 말함
+const spokenAt=new Map(); let speakQueuedAt=0;
 function speak(text){
   if(!$('#voice').checked||!('speechSynthesis' in window)) return;
+  const now=Date.now(); if(now-(spokenAt.get(text)||0)<8000) return; spokenAt.set(text,now);
+  if((speechSynthesis.speaking||speechSynthesis.pending) && now-speakQueuedAt>15000) speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.volume=+$('#vol').value; u.rate=1.1;
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  speechSynthesis.speak(u); speakQueuedAt=now;
 }
-let toastTimer, titleTimer;
-function fire(d, kind){
-  const c=cfgs[d.id];
-  const msg = kind==='pre' ? `${d.name} ${c.leadSec}초 전`
-            : kind==='gone' ? `${d.name} 꺼졌어요`
-            : kind==='remind' ? `룬 아직 있어요` : `룬이 나왔어요`;
-  beep(d.kind==='rune'? [[880,.12],[1175,.12],[1568,.2]] : [[1046,.15],[1046,.15],[784,.3]]);
-  setTimeout(()=>speak(msg), 700);
+const MSG={
+  pre:(d,c)=>`${d.name} ${c.leadSec}초 전`,
+  gone:d=>`${d.name} 꺼졌어요`,
+  appear:()=>'룬이 나왔어요',
+  remind:()=>'룬 아직 있어요',
+  unread:d=>`${d.name} 숫자를 못 읽고 있어요`,
+};
+const SYS_MSG={ lost:'화면 연결이 끊겼어요. 다시 연결해 주세요', stall:'게임 화면이 들어오지 않아요', back:'게임 화면이 다시 들어와요' };
+let toastTimer, titleTimer=null;
+// 기본 소리: 경고음 뒤에 음성
+function playDefault(msg, sound){ const wait=beep(sound); setTimeout(()=>speak(msg), Math.round(wait*1000)+150); }
+// slot에 내 소리가 있으면 그걸 틀고, 없으면 기본 소리
+function notify(msg, sound, tag, slot){
+  if(!playCustom(slot, ()=>playDefault(msg,sound))) playDefault(msg, sound);
   const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',6000);
-  const card=$('#card-'+d.id); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
-  clearInterval(titleTimer); let i=0; titleTimer=setInterval(()=>{ document.title=(i++%2)?'⚠ '+msg:'메이플 재획 알리미'; if(i>12){clearInterval(titleTimer);document.title='메이플 재획 알리미';} },700);
-  if(document.hidden && 'Notification' in window && Notification.permission==='granted'){ try{ new Notification(msg,{tag:d.id,renotify:true}); }catch(e){} }
+  clearInterval(titleTimer); let i=0;
+  titleTimer=setInterval(()=>{ document.title=(i++%2)?'⚠ '+msg:baseTitle(); if(i>12){ clearInterval(titleTimer); titleTimer=null; document.title=baseTitle(); } },700);
+  if(document.hidden && 'Notification' in window && Notification.permission==='granted'){ try{ new Notification(msg,{tag,renotify:true}); }catch(e){} }
 }
+const soundName=(d,kind)=> kind==='gone' ? 'gone' : kind==='unread' ? 'system' : d.kind==='rune' ? 'rune'
+                         : SOUNDS[d.id] ? d.id : d.kind==='countdown' ? 'booster' : 'sol';
+function fire(d, kind){
+  notify(MSG[kind](d,cfgs[d.id]), soundName(d,kind), d.id, `${d.id}.${kind}`);
+  const card=$('#card-'+d.id); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+}
+// 화면을 받는 쪽의 문제(끊김·멈춤)는 게임 알림과 다른 소리로 알림. 회복은 음성만
+function fireSystem(kind){ if(kind==='back'){ speak(SYS_MSG.back); return; } notify(SYS_MSG[kind],'system','system','sys.'+kind); }
+
+/* ----- 알림 소리 바꾸기 (내 WAV 등) ----- */
+const SLOTS=[
+  {key:'sol.pre',        group:'솔 야누스', label:'미리 알림'},
+  {key:'sol.gone',       group:'솔 야누스', label:'꺼짐'},
+  {key:'booster.pre',    group:'부스터',    label:'미리 알림'},
+  {key:'booster.gone',   group:'부스터',    label:'꺼짐'},
+  {key:'booster.unread', group:'부스터',    label:'숫자 못 읽음'},
+  {key:'rune.appear',    group:'룬',        label:'나왔을 때'},
+  {key:'rune.remind',    group:'룬',        label:'아직 있을 때'},
+  {key:'sys.lost',       group:'연결 문제', label:'연결 끊김'},
+  {key:'sys.stall',      group:'연결 문제', label:'화면 안 들어옴'},
+];
+const SOUND_MAX_SEC=10, SOUND_MAX_BYTES=5*1024*1024;   // 긴 소리는 다음 알림을 밀어내므로 제한
+const customSounds=new Map();   // slot → {name, data:ArrayBuffer, dur, buf:AudioBuffer|null}
+// 파일은 용량이 커서 localStorage 대신 IndexedDB에 보관
+function soundStore(mode){
+  return new Promise((resolve,reject)=>{ const r=indexedDB.open('maple-web-timer',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('sounds');
+    r.onsuccess=()=>resolve(r.result.transaction('sounds',mode).objectStore('sounds')); r.onerror=()=>reject(r.error); });
+}
+const idb=q=>new Promise((resolve,reject)=>{ q.onsuccess=()=>resolve(q.result); q.onerror=()=>reject(q.error); });
+// 다른 알림 소리 뒤에 이어서 예약해 재생. 내 소리가 없거나 오디오가 아직 꺼져 있으면 false
+function playCustom(slot, fallback){
+  const c=slot&&customSounds.get(slot); if(!c||!actx) return false;
+  const play=buf=>{ const n=actx.createBufferSource(), g=actx.createGain(); n.buffer=buf; g.gain.value=+$('#vol').value;
+    n.connect(g).connect(actx.destination); const t=Math.max(actx.currentTime+0.02, beepEnd); n.start(t); beepEnd=t+buf.duration+0.06; };
+  if(c.buf) play(c.buf);
+  else actx.decodeAudioData(c.data.slice(0)).then(b=>{ c.buf=b; play(b); }, ()=>{ if(fallback) fallback(); });
+  return true;
+}
+const slotName=s=>`${s.group} ${s.label}`;
+function soundNote(text, warn){ const n=$('#soundNote'); n.textContent=text; n.className='sub'+(warn?' warn':''); }
+function previewSlot(s){
+  unlockAudio(); if(playCustom(s.key)) return;
+  const [id,kind]=s.key.split('.');
+  if(id==='sys') playDefault(SYS_MSG[kind],'system');
+  else { const d=defOf(id); playDefault(MSG[kind](d,cfgs[d.id]), soundName(d,kind)); }
+}
+async function pickSound(s, file){
+  unlockAudio();
+  if(file.size>SOUND_MAX_BYTES){ soundNote(`${slotName(s)}: 5MB 이하 파일만 쓸 수 있어요`,true); return; }
+  let data, buf;
+  try{ data=await file.arrayBuffer(); buf=await actx.decodeAudioData(data.slice(0)); }
+  catch(e){ soundNote(`${slotName(s)}: 이 파일은 재생할 수 없어요. WAV 파일인지 확인해 주세요`,true); return; }
+  if(buf.duration>SOUND_MAX_SEC){ soundNote(`${slotName(s)}: ${SOUND_MAX_SEC}초 이하 소리만 쓸 수 있어요 (이 파일은 ${buf.duration.toFixed(1)}초)`,true); return; }
+  const rec={name:file.name, data, dur:buf.duration};
+  customSounds.set(s.key,{...rec,buf}); renderSounds();
+  try{ const st=await soundStore('readwrite'); await idb(st.put(rec,s.key)); soundNote(`${slotName(s)} 소리를 바꿨어요`); }
+  catch(e){ soundNote(`${slotName(s)} 소리를 바꿨지만 저장하지 못했어요. 새로고침하면 기본 소리로 돌아가요`,true); }
+  playCustom(s.key);
+}
+async function resetSound(s){
+  customSounds.delete(s.key); renderSounds();
+  try{ const st=await soundStore('readwrite'); await idb(st.delete(s.key)); }catch(e){}
+  soundNote(`${eulReul(slotName(s))} 기본 소리로 되돌렸어요`);
+}
+function buildSounds(){
+  const box=$('#soundRows'); box.textContent=''; let group=null, wrap=null;
+  for(const s of SLOTS){
+    if(s.group!==group){ group=s.group; wrap=document.createElement('div'); wrap.className='snd-group';
+      const h=document.createElement('b'); h.textContent=group; wrap.append(h); box.append(wrap); }
+    const row=document.createElement('div'); row.className='snd-row';
+    row.innerHTML=`<span>${s.label}</span><span class="snd-file sub"></span>
+      <span class="row"><button data-a="pick">파일 고르기</button><button data-a="play">듣기</button><button data-a="reset">기본으로</button></span>
+      <input type="file" accept=".wav,audio/*" hidden>`;
+    const q=x=>row.querySelector(x), inp=q('input');
+    q('[data-a=pick]').setAttribute('aria-label',`${slotName(s)} 소리 파일 고르기`);
+    q('[data-a=play]').setAttribute('aria-label',`${slotName(s)} 소리 듣기`);
+    q('[data-a=reset]').setAttribute('aria-label',`${slotName(s)} 기본 소리로 되돌리기`);
+    q('[data-a=pick]').onclick=()=>{ unlockAudio(); inp.click(); };
+    inp.onchange=()=>{ const f=inp.files[0]; inp.value=''; if(f) pickSound(s,f); };
+    q('[data-a=play]').onclick=()=>previewSlot(s);
+    q('[data-a=reset]').onclick=()=>resetSound(s);
+    s.row=row; wrap.append(row);
+  }
+  renderSounds();
+}
+function renderSounds(){
+  for(const s of SLOTS){ const c=customSounds.get(s.key), f=s.row.querySelector('.snd-file');
+    f.textContent=c?`${c.name} · ${c.dur.toFixed(1)}초`:'기본 소리'; f.title=c?c.name:''; f.classList.toggle('custom',!!c);
+    const rb=s.row.querySelector('[data-a=reset]'); rb.style.visibility=c?'':'hidden'; rb.disabled=!c; }   // 자리는 남겨 버튼 줄을 맞춤
+}
+async function loadSounds(){
+  try{ const st=await soundStore('readonly'); const keys=idb(st.getAllKeys()), vals=idb(st.getAll());
+    const [ks,vs]=await Promise.all([keys,vals]); ks.forEach((k,i)=>{ if(SLOTS.some(s=>s.key===k)) customSounds.set(k,{...vs[i],buf:null}); }); renderSounds(); predecodeSounds(); }
+  catch(e){ soundNote('이 브라우저에서는 내 소리를 저장할 수 없어요. 기본 소리로 알려요',true); }
+}
+
+/* ----- 감시 상태줄 ----- */
+const EMPTY_DEFAULT='“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.';
+const EMPTY_LOST='화면 연결이 끊겼어요. “게임 화면 연결”을 다시 눌러 주세요.';
+const STALL_MS=10000, LOST_REMIND_MS=120000, LOST_REMIND_MAX=2;
+const health={lostAt:null,reminders:0,remindAt:0,badSince:null,badWarned:false,okAt:0};
+function watchStatus(){
+  if(src&&src.type==='stream') return health.badWarned ? {cls:'bad',state:'게임 화면이 안 들어와요',title:'⚠ 화면 안 들어옴'} : {cls:'on',state:'감시 중',title:'● 감시 중'};
+  if(src) return {cls:'test',state:'스크린샷 테스트 중 · 실제 감시 아님',title:''};
+  if(health.lostAt) return {cls:'bad',state:'연결 끊김 · 알림이 멈췄어요',title:'⚠ 연결 끊김'};
+  return {cls:'',state:'연결 안 됨 · 감시하지 않아요',title:''};
+}
+function baseTitle(){ const t=watchStatus().title; return (t?t+' · ':'')+'메이플 재획 알리미'; }
+let watchKey='', noteTimer;
+function setNote(text, kind='warn'){
+  const n=$('#watchNote'); n.textContent=text; n.className='note'+(kind==='info'?' info':'');
+  clearTimeout(noteTimer); if(text&&kind==='info') noteTimer=setTimeout(()=>{ n.textContent=''; },8000);
+}
+function renderWatch(){
+  const w=watchStatus();
+  const targets=src ? DEFS.map(d=>({d, s:!cfgs[d.id].enabled?'off':needsRegister(d)?'reg':needsReregister(d)?'rereg'
+    :(d.kind!=='rune'&&!states[d.id].seen)?'unseen':'ok'})) : [];
+  const key=w.cls+'|'+w.state+'|'+targets.map(t=>t.d.id+':'+t.s).join(',')+'|'+(src&&src.type);
+  if(key!==watchKey){   // 바뀔 때만 다시 그려서 화면 낭독기가 매 틱 읽지 않게 함
+    watchKey=key; $('#watch').className='watch '+w.cls; $('#watchState').textContent=w.state;
+    const box=$('#watchTargets'); box.textContent='';
+    targets.forEach(({d,s},i)=>{
+      if(i){ const sep=document.createElement('span'); sep.className='sep'; sep.setAttribute('aria-hidden','true'); sep.textContent='·'; box.append(sep); }
+      // 연결 뒤 다음에 할 일(등록)이 주된 버튼이 되도록 primary로 강조
+      if(s==='reg'||s==='rereg'){ const b=document.createElement('button'); b.className='primary'; b.textContent=`${d.name} ${s==='reg'?'등록하기':'다시 등록'}`; b.onclick=()=>startRegister(d); box.append(b); }
+      else { const sp=document.createElement('span'); if(s!=='ok') sp.className=s; sp.textContent=s==='off'?`${d.name} 꺼둠`:s==='unseen'?`${d.name} 아직 못 찾음`:d.name; box.append(sp); }
+    });
+    const stop=$('#btnStop'); stop.hidden=!src; stop.textContent=src&&src.type==='image'?'테스트 끝내기':'감시 끝내기';
+  }
+  if(titleTimer===null){ const bt=baseTitle(); if(document.title!==bt) document.title=bt; }
+  const stale=src&&src.type==='stream' ? (Date.now()-health.okAt)/1000 : 0;   // 2초 넘게 확인이 없을 때만 경과 시간 표시
+  const beat=stale>2 ? `마지막 확인 ${Math.floor(stale)}초 전` : '';
+  if($('#watchBeat').textContent!==beat) $('#watchBeat').textContent=beat;
+}
+function pulse(){ const dot=$('#watchDot'); dot.classList.remove('beat'); void dot.offsetWidth; dot.classList.add('beat'); }
 
 /* ----- 화면 소스 ----- */
 let src=null;            // {type:'stream', video, track, cap} | {type:'image', img}
 const frame={w:0,h:0};
 const work=document.createElement('canvas'); const wctx=work.getContext('2d',{willReadFrequently:true});
 let lastBitmap=null;
+// grabFrame()은 새 프레임이 올 때까지 기다리므로, 화면이 멈추면 감지 루프 전체가 멈추지 않게 시간 제한을 둠
+function grabFrameWithin(cap, ms){
+  return new Promise((resolve,reject)=>{ let late=false;
+    const timer=setTimeout(()=>{ late=true; reject(new Error('timeout')); },ms);
+    cap.grabFrame().then(b=>{ if(late){ if(b.close) b.close(); return; } clearTimeout(timer); resolve(b); },
+                         e=>{ if(!late){ clearTimeout(timer); reject(e); } });
+  });
+}
 async function grab(){
   if(!src) return null;
   if(src.type==='image') return src.img;
-  if(src.cap && document.hidden){ try{ const b=await src.cap.grabFrame(); if(lastBitmap&&lastBitmap.close) lastBitmap.close(); lastBitmap=b; return b; }catch(e){} }
+  if(src.cap && document.hidden){
+    try{ const b=await grabFrameWithin(src.cap,1500); if(lastBitmap&&lastBitmap.close) lastBitmap.close(); lastBitmap=b; return b; }
+    catch(e){ if(e.message==='timeout') return null; }   // 새 프레임이 없음 → 화면 안 들어옴으로 집계
+  }
   return src.video.readyState>=2 ? src.video : null;
 }
 function dims(s){ return s instanceof HTMLVideoElement ? [s.videoWidth,s.videoHeight] : [s.naturalWidth||s.width, s.naturalHeight||s.height]; }
 
+function teardown(emptyText){
+  src=null; pctx.clearRect(0,0,pv.width,pv.height);   // 멈춘 마지막 화면 대신 빈 화면 위에 안내문을 보여줌
+  $('#empty').textContent=emptyText; $('#empty').style.display=''; $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
+  DEFS.forEach(renderCard); renderWatch();
+}
 $('#btnConnect').onclick=async()=>{
-  unlockAudio();
+  unlockAudio(); setNote('');
   try{
     const stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:5,max:10},cursor:'never'},audio:false});
     const video=document.createElement('video'); video.muted=true; video.playsInline=true; video.srcObject=stream; await video.play();
     const track=stream.getVideoTracks()[0];
     let cap=null; try{ if('ImageCapture' in window) cap=new ImageCapture(track); }catch(e){}
-    track.onended=()=>{ src=null; $('#empty').style.display=''; $('#btnConnect').textContent='게임 화면 연결'; DEFS.forEach(renderCard); };
-    src={type:'stream',video,track,cap}; $('#empty').style.display='none'; $('#btnConnect').textContent='다른 창 연결';
+    if(src&&src.track) src.track.stop();   // 다른 창으로 바꾸면 이전 공유를 닫음 (stop()은 ended를 일으키지 않음)
+    // 사용자가 브라우저의 “공유 중지”를 누르거나 게임 창이 닫히면 감시가 멈추므로 소리로 알림. 지금 쓰는 공유일 때만
+    track.onended=()=>{
+      if(!src||src.track!==track) return;
+      Object.assign(health,{lostAt:Date.now(),reminders:0,remindAt:Date.now(),badSince:null,badWarned:false});
+      teardown(EMPTY_LOST); fireSystem('lost');
+    };
+    src={type:'stream',video,track,cap}; $('#empty').style.display='none';
+    $('#btnConnect').textContent='다른 창 연결'; $('#btnConnect').classList.remove('primary');   // 연결 뒤에는 주된 행동이 아님
+    Object.assign(health,{lostAt:null,badSince:null,badWarned:false,okAt:Date.now()});
     for(const d of DEFS){ states[d.id]=newState(); }
-  }catch(e){ if(e.name!=='NotAllowedError') alert('화면 연결 실패: '+e.message); }
+    ui.connectedOnce=true; saveUi();
+    const need=DEFS.filter(d=>cfgs[d.id].enabled&&needsRegister(d)).map(d=>d.name);
+    speak('감시 시작할게요'+(need.length?`. ${eunNeun(need.join(', '))} 등록이 필요해요`:''));
+    renderWatch();
+  }catch(e){ if(e.name!=='NotAllowedError') setNote(`화면 연결에 실패했어요 (${e.message}). “게임 화면 연결”을 다시 눌러 주세요.`); }
+};
+$('#btnStop').onclick=()=>{
+  const wasTest=src&&src.type==='image';
+  if(src&&src.track) src.track.stop(); health.lostAt=null; health.badWarned=false;
+  teardown(EMPTY_DEFAULT); setNote(wasTest?'스크린샷 테스트를 끝냈어요':'감시를 끝냈어요','info');
 };
 $('#btnImage').onclick=()=>$('#fileImage').click();
 $('#fileImage').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const img=new Image();
-  img.onload=()=>{ if(src&&src.track) src.track.stop(); src={type:'image',img}; $('#empty').style.display='none'; for(const d of DEFS){ states[d.id]=newState(); states[d.id].armed=true; } };
+  img.onload=()=>{ if(src&&src.track) src.track.stop(); src={type:'image',img}; health.lostAt=null; health.badWarned=false; $('#empty').style.display='none'; for(const d of DEFS){ states[d.id]=newState(); states[d.id].armed=true; } renderWatch(); };
   img.src=URL.createObjectURL(f); e.target.value='';
 };
-$('#btnNotify').onclick=async()=>{ unlockAudio(); if(!('Notification' in window)) return alert('이 브라우저는 알림을 지원하지 않아요.'); const p=await Notification.requestPermission(); $('#btnNotify').textContent=p==='granted'?'알림 허용됨':'알림 차단됨'; };
+$('#btnNotify').onclick=async()=>{
+  unlockAudio();
+  if(!('Notification' in window)){ setNote('이 브라우저는 알림을 지원하지 않아요. 소리와 음성으로만 알려요','info'); return; }
+  const p=await Notification.requestPermission(); $('#btnNotify').textContent=p==='granted'?'알림 허용됨':'알림 차단됨';
+  if(p!=='granted') setNote('브라우저 알림이 차단돼 있어요. 소리와 음성으로만 알려요','info');
+};
 if('Notification' in window && Notification.permission==='granted') $('#btnNotify').textContent='알림 허용됨';
 
 /* ----- 감지 ----- */
@@ -401,29 +678,45 @@ function readTimer(source, p){
   work.width=W; work.height=H; wctx.drawImage(source,x0,y0,W,H,0,0,W,H);
   return {rect:{x:x0,y:y0,w:W,h:H}, read:ocrSevenSeg(wctx.getImageData(0,0,W,H).data,W,H)};
 }
+// 거의 검은 프레임(맵 이동 중 암전, 창 최소화 등)인지. 이때 감지하면 버프가 꺼진 것으로 오판하므로 건너뜀
+function isBlank(s){
+  const [w,h]=dims(s); if(!w||!h) return true;
+  work.width=64; work.height=36; wctx.drawImage(s,0,0,w,h,0,0,64,36);
+  const p=wctx.getImageData(0,0,64,36).data;
+  for(let i=0;i<p.length;i+=4) if(0.299*p[i]+0.587*p[i+1]+0.114*p[i+2]>=8) return false;
+  return true;
+}
 let busy=false;
 async function tick(){
   if(busy) return; busy=true;
   try{
     const now=Date.now(), source=await grab();
     if(source){ [frame.w,frame.h]=dims(source); }
+    const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
+    if(live){
+      if(ok){ health.okAt=now; health.badSince=null; if(health.badWarned){ health.badWarned=false; fireSystem('back'); } }
+      else { health.badSince=health.badSince||now; if(!health.badWarned && now-health.badSince>=STALL_MS){ health.badWarned=true; fireSystem('stall'); } }
+    } else if(!src && health.lostAt && health.reminders<LOST_REMIND_MAX && now-health.remindAt>=LOST_REMIND_MS){
+      health.reminders++; health.remindAt=now; fireSystem('lost');
+    }
     for(const d of DEFS){
       const c=cfgs[d.id], st=states[d.id];
-      if(source && c.enabled && !reg){
+      if(ok && c.enabled && !reg){
         const r=detect(d,source);
         if(r){ st.score=r.score; st.pos=r.pos;
-          const evs=stepDetector(st,c,r.score>=c.threshold,now);
+          const evs=stepDetector(st,c,r.score>=c.threshold,now); if(st.present) st.seen=true;
           if(d.kind==='countdown'){ const o=st.present&&r.score>=c.threshold?readTimer(source,r.pos):null; st.ocrRect=o&&o.rect; if(o&&o.read) st.lastText=o.read.text;
             evs.push(...stepCountdown(st,c,o&&o.read?o.read.value:null,now)); }
           for(const ev of evs){
             if(ev.learn){ c.durationSec=ev.learn; save(); const inp=document.querySelector(`#card-${d.id} [data-k=duration]`); if(inp) inp.value=fmt(ev.learn); }
-            else if(ev==='pre'||ev==='gone'||ev==='remind'||(ev==='appear'&&d.kind==='rune')||(ev==='appear-unknown'&&d.kind==='rune')) fire(d,ev.startsWith('appear')?'appear':ev);
+            else if(ev==='pre'||ev==='gone'||ev==='remind'||ev==='unread'||(ev==='appear'&&d.kind==='rune')||(ev==='appear-unknown'&&d.kind==='rune')) fire(d,ev.startsWith('appear')?'appear':ev);
           }
         }
       }
       if(!document.hidden) renderCard(d);
     }
-    if(!document.hidden) drawPreview(source);
+    renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
+    if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
   } finally { busy=false; }
 }
 
@@ -436,10 +729,23 @@ function drawPreview(source){
   if(pv.width!==w||pv.height!==h){ pv.width=w; pv.height=h; }
   pctx.drawImage(s,0,0);
   const lw=Math.max(2,w/600); pctx.lineWidth=lw; pctx.font=`${Math.round(lw*7)}px sans-serif`;
+  const placed=[];
   if(!reg) for(const d of DEFS){ const c=cfgs[d.id], st=states[d.id], ar=areaOf(d.id); if(!ar) continue;
     pctx.setLineDash([lw*3,lw*2]); pctx.strokeStyle='rgba(255,255,255,.55)'; pctx.strokeRect(ar.x,ar.y,ar.w,ar.h);
     pctx.setLineDash([]); pctx.fillStyle='rgba(255,255,255,.8)'; pctx.fillText(d.name,ar.x+2,ar.y+lw*8);
-    if(st.pos&&src){ pctx.strokeStyle=st.score>=c.threshold?'#3ccf7d':'rgba(255,107,107,.7)'; pctx.strokeRect(st.pos.x,st.pos.y,st.pos.w,st.pos.h); }
+    if(st.pos&&src){ const hit=st.score>=c.threshold;
+      pctx.strokeStyle=hit?'#3ccf7d':'rgba(255,107,107,.7)'; pctx.strokeRect(st.pos.x,st.pos.y,st.pos.w,st.pos.h);
+      // 기준값을 맞출 때 카드와 캔버스를 오가지 않도록 일치도/기준값을 박스 바로 아래에 표시
+      const label=`${d.name} ${st.score.toFixed(2)} / ${c.threshold.toFixed(2)}`, fs=Math.round(lw*9);
+      pctx.save(); pctx.font=`600 ${fs}px sans-serif`;
+      const bw=pctx.measureText(label).width+lw*4, bh=fs+lw*3;
+      let ly=st.pos.y+st.pos.h+lw*2; if(ly+bh>h) ly=Math.max(0,st.pos.y-bh-lw*2);
+      const lx=Math.min(Math.max(0,st.pos.x),w-bw);
+      while(placed.some(p=>lx<p.x+p.w&&p.x<lx+bw&&ly<p.y+p.h&&p.y<ly+bh)) ly+=bh+lw;   // 다른 대상의 표시와 겹치면 아래로 비킴
+      placed.push({x:lx,y:ly,w:bw,h:bh});
+      pctx.fillStyle='rgba(0,0,0,.75)'; pctx.fillRect(lx,ly,bw,bh);
+      pctx.fillStyle=hit?'#3ccf7d':'#ff8a8a'; pctx.fillText(label,lx+lw*2,ly+fs+lw/2);
+      pctx.restore(); }
     if(st.ocrRect&&src){ pctx.strokeStyle='#f0c040'; pctx.strokeRect(st.ocrRect.x,st.ocrRect.y,st.ocrRect.w,st.ocrRect.h); } }
   if(reg){
     pctx.setLineDash([]);
@@ -453,7 +759,8 @@ async function snapshot(){
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(s,0,0); return cv;
 }
 async function startRegister(d){
-  if(!src){ alert('먼저 게임 화면을 연결하거나 스크린샷을 불러오세요.'); return; }
+  if(!src){ setNote(`${d.name} 등록은 게임 화면을 연결하거나 스크린샷을 불러온 뒤에 할 수 있어요`); return; }
+  setNote('');
   const snap=await snapshot(); if(!snap) return;
   reg={def:d,step:'area',snap,area:null,drag:null}; updateBanner(); drawPreview(null);
   $('#stage').scrollIntoView({behavior:'smooth',block:'center'});
@@ -481,11 +788,12 @@ pv.addEventListener('pointerup',()=>{
   const c=cfgs[reg.def.id];
   Object.assign(c,{area:{x:x0,y:y0,w:x1-x0,h:y1-y0},tpl:{url:cv.toDataURL('image/png'),w:r.w,h:r.h},frameW:reg.snap.width,frameH:reg.snap.height});
   save(); states[reg.def.id]=newState(); states[reg.def.id].armed = src&&src.type==='image';
-  const d=reg.def; reg=null; updateBanner(); renderCard(d);
+  const d=reg.def; reg=null; updateBanner(); renderCard(d); renderWatch(); setNote(`${d.name} 등록했어요`,'info');
 });
 
 /* ----- 백그라운드에서도 멈추지 않는 타이머 (Worker) ----- */
-buildCards();
+buildCards(); renderWatch(); buildSounds(); loadSounds();
+$('#helpDetails').open = !(ui.connectedOnce || DEFS.some(d=>cfgs[d.id].tpl));   // 처음에만 펼침
 try{
   const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),500)'],{type:'text/javascript'})));
   wk.onmessage=tick;
