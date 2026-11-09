@@ -23,7 +23,7 @@ function predecodeSounds(){ if(!actx) return; for(const c of customSounds.values
 // 앞 소리가 끝난 뒤에 이어서 예약해 겹치지 않게 함. 끝날 때까지 남은 초를 돌려줌
 function beep(name){
   const s=SOUNDS[name]; if(!actx||!s) return 0;
-  const amp=(s.gain||.18)*(+$('#vol').value); let t=Math.max(actx.currentTime+0.02, beepEnd);
+  const amp=s.gain||.18; let t=Math.max(actx.currentTime+0.02, beepEnd);   // 음량은 마스터(Alerts.audioOut)에서 한 번만 곱한다(묶음 5)
   for(const [f,dur] of s.notes){ const o=actx.createOscillator(), g=actx.createGain();
     o.type=s.wave; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(amp,t+0.01); g.gain.setValueAtTime(amp,t+dur-0.03); g.gain.linearRampToValueAtTime(0,t+dur);
     o.connect(g).connect(Alerts.audioOut()); o.start(t); o.stop(t+dur); t+=dur+0.06; }
@@ -35,7 +35,7 @@ function speak(text){
   if(!$('#voice').checked||!('speechSynthesis' in window)) return;
   const now=Date.now(); if(now-(spokenAt.get(text)||0)<8000) return; spokenAt.set(text,now);
   if((speechSynthesis.speaking||speechSynthesis.pending) && now-speakQueuedAt>15000) speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.volume=+$('#vol').value; u.rate=1.1;
+  const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.volume=ttsVolume(clampVolumePct($('#vol').value)); u.rate=1.1;
   speechSynthesis.speak(u); speakQueuedAt=now;
 }
 const SYS_MSG={ lost:'화면 연결이 끊겼어요. 다시 연결해 주세요', stall:'게임 화면이 들어오지 않아요', back:'게임 화면이 다시 들어와요' };

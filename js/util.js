@@ -7,10 +7,15 @@ const eunNeun=w=>w+(batchim(w)?'은':'는');   // 받침에 맞춘 은/는
 const eulReul=w=>w+(batchim(w)?'을':'를');   // 받침에 맞춘 을/를
 const UI_STORE='maple-web-timer-ui';
 let ui={}; try{ ui=JSON.parse(localStorage.getItem(UI_STORE)||'{}'); }catch(e){}
-function saveUi(){ try{ localStorage.setItem(UI_STORE,JSON.stringify(ui)); }catch(e){} }
+let importing=false;   // 백업을 불러와 새로고침하기 전까지 모든 저장을 막는다(묶음 5)
+function saveUi(){ if(importing) return; try{ localStorage.setItem(UI_STORE,JSON.stringify(ui)); }catch(e){} }
+// 음량(퍼센트 정수 0~200, 기본 80). 내부 배율은 pct/100이라 1.0이 예전의 100%와 같다. 음성은 1을 넘지 못한다
+const clampVolumePct=v=>{ if(v==null||v==='') return 80; const n=Math.round(Number(v)); return Number.isFinite(n)?Math.min(200,Math.max(0,n)):80; };
+const volumeToGain=pct=>pct/100;
+const ttsVolume=pct=>Math.min(1,pct/100);
 // 지속시간이 미리 알림 초 이하이면 켜지자마자 미리 알림이 울린다 → 입력을 거절하는 문구(통과하면 null). field: 'duration'|'lead'
 const checkDurLead=(durationSec,leadSec,field)=>{
   if(!durationSec||durationSec>leadSec) return null;
   return field==='lead' ? `미리 알림은 지속시간(${fmt(durationSec)})보다 짧게 입력해 주세요` : `미리 알림(${leadSec}초)보다 길게 입력해 주세요`;
 };
-if(typeof module==='object') module.exports={fmt,parseDur,clampInt,batchim,eunNeun,eulReul,checkDurLead};   // node 테스트용. 브라우저에서는 무시됨
+if(typeof module==='object') module.exports={fmt,parseDur,clampInt,batchim,eunNeun,eulReul,checkDurLead,clampVolumePct,volumeToGain,ttsVolume};   // node 테스트용. 브라우저에서는 무시됨

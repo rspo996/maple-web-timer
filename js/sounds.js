@@ -15,7 +15,7 @@ const idb=q=>new Promise((resolve,reject)=>{ q.onsuccess=()=>resolve(q.result); 
 // 다른 알림 소리 뒤에 이어서 예약해 재생. 내 소리가 없거나 오디오가 아직 꺼져 있으면 false
 function playCustom(slot, fallback){
   const c=slot&&customSounds.get(slot); if(!c||!actx) return false;
-  const play=buf=>{ const n=actx.createBufferSource(), g=actx.createGain(); n.buffer=buf; g.gain.value=+$('#vol').value;
+  const play=buf=>{ const n=actx.createBufferSource(), g=actx.createGain(); n.buffer=buf; g.gain.value=1;
     n.connect(g).connect(Alerts.audioOut()); const t=Math.max(actx.currentTime+0.02, beepEnd); n.start(t); beepEnd=t+buf.duration+0.06; };
   if(c.buf) play(c.buf);
   else actx.decodeAudioData(c.data.slice(0)).then(b=>{ c.buf=b; play(b); }, ()=>{ if(fallback) fallback(); });

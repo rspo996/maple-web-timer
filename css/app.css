@@ -124,3 +124,5 @@ summary{cursor:pointer}
 .mt .mt-btns button{padding:3px 9px;font-size:13px}
 .mt .mt-edit{margin-top:8px}
 #soundLock .note{color:var(--warn-text)}
+.vol-pct{display:inline-block;min-width:3.2em;font-variant-numeric:tabular-nums}
+#volNote{color:var(--warn-text)}

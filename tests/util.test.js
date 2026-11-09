@@ -49,3 +49,11 @@ test('checkDurLead: 지속시간이 미리 알림 이하이면 거절 문구, �
   assert.equal(checkDurLead(60, 60, 'lead'), '미리 알림은 지속시간(01:00)보다 짧게 입력해 주세요');
   assert.equal(checkDurLead(60, 59, 'lead'), null);
 });
+
+// ---- 묶음 5: 볼륨 ----
+test('clampVolumePct·volumeToGain·ttsVolume', () => {
+  const { clampVolumePct, volumeToGain, ttsVolume } = require('../js/util.js');
+  assert.deepEqual([-1, 250, 'abc', 80.4, null, undefined, '120'].map(clampVolumePct), [0, 200, 80, 80, 80, 80, 120]);
+  assert.deepEqual([0, 80, 100, 200].map(volumeToGain), [0, 0.8, 1, 2]);
+  assert.deepEqual([0, 80, 100, 200].map(ttsVolume), [0, 0.8, 1, 1]);
+});

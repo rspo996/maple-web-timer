@@ -31,10 +31,11 @@
     black(on = true) { black = on; },
     resize(w, h) { cv.width = w; cv.height = h; },
     skew(ms) { skew += ms; },
-    reset() { fake.spoken.length = 0; fake.beeps = 0; fake.osc.length = 0; },
+    reset() { fake.spoken.length = 0; fake.beeps = 0; fake.osc.length = 0; if (fake.volumes) fake.volumes.length = 0; },
     wait(ms) { return new Promise(r => setTimeout(r, ms)); },
   };
-  speechSynthesis.speak = u => fake.spoken.push(u.text);   // 음성 문구를 기록만 한다(실제로 말하지 않음)
+  fake.volumes = [];
+  speechSynthesis.speak = u => { fake.spoken.push(u.text); fake.volumes.push(u.volume); };   // 음성 문구·음량을 기록만 한다(실제로 말하지 않음)
   const co = AudioContext.prototype.createOscillator;
   fake.osc = [];                                           // 재생된 비프를 [파형, 주파수]로 기록(알림 소리 구분 확인용)
   AudioContext.prototype.createOscillator = function () {
