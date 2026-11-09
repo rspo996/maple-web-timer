@@ -1,0 +1,52 @@
+// 감시 상태줄: 연결 상태, 대상 요약, 안내, 수동 타이머 요약, 소리 잠김, 마지막 확인
+import { Fragment } from 'react';
+import { useBus } from './useBus.js';
+import { src, stopWatching } from '../app/capture.js';
+import { startRegister, startRegisterQueue } from '../app/register.js';
+import { targetById } from '../app/store.js';
+import { beatText, note, stripItems, toggleStripOpen, watchStatus } from '../app/ui-watch.js';
+
+// 상태줄 항목 하나. 연결 뒤 다음에 할 일(등록)이 주된 버튼이 되도록 primary로 강조
+function StripItem({ it }) {
+  if (it.type === 'btn') return <button className="primary" onClick={() => startRegister(targetById(it.id))}>{it.label}</button>;
+  if (it.type === 'reregAll') return <button className="primary" onClick={() => startRegisterQueue(it.ids)}>{it.label}</button>;
+  if (it.type === 'okGroup') return <button aria-expanded={it.open ? 'true' : 'false'} onClick={toggleStripOpen}>{it.label}</button>;
+  return <span className={it.cls || undefined}>{it.text}</span>;
+}
+
+export function WatchBar() {
+  useBus();
+  const w = watchStatus(), items = stripItems();
+  return (
+    <div id="watch" className={'watch ' + w.cls}>
+      <span className="dot" id="watchDot" aria-hidden="true" />
+      {/* 바뀐 글자만 DOM에 쓰이므로 화면 낭독기가 매 틱 읽지 않는다 */}
+      <div className="live" role="status" aria-live="polite">
+        <b id="watchState">{w.state}</b>
+        {' '}
+        <span id="watchTargets" className="targets">
+          {items.map((it, i) => (
+            <Fragment key={i}>
+              {i > 0 && <span className="sep" aria-hidden="true">·</span>}
+              <StripItem it={it} />
+            </Fragment>
+          ))}
+        </span>
+        {' '}
+        <span id="watchNote" className={'note' + (note.kind === 'info' ? ' info' : '')}>{note.text}</span>
+      </div>
+      <span id="watchManual" className="sub" role="timer" />
+      {' '}
+      <span id="soundLock" hidden>
+        <span className="note">소리가 꺼져 있어요</span>
+        {' '}
+        <button id="soundLockBtn" type="button">소리 켜기</button>
+      </span>
+      <div className="end">
+        <span id="watchBeat" className="sub">{beatText()}</span>
+        {' '}
+        <button id="btnStop" type="button" hidden={!src} onClick={stopWatching}>{src && src.type === 'image' ? '테스트 끝내기' : '감시 끝내기'}</button>
+      </div>
+    </div>
+  );
+}

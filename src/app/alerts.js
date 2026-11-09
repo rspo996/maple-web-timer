@@ -1,4 +1,5 @@
 /* ===== 알림 경로 (묶음 1 스펙 7절). 모든 알림은 Alerts.fire 한 곳을 지난다 ===== */
+import {bump} from './bus.js';
 import {$} from './dom.js';
 import {customSounds,playCustom} from './sounds.js';
 import {baseTitle} from './ui-watch.js';
@@ -46,6 +47,7 @@ export function speak(text){
 }
 export const SYS_MSG={ lost:'화면 연결이 끊겼어요. 다시 연결해 주세요', stall:'게임 화면이 들어오지 않아요', back:'게임 화면이 다시 들어와요' };
 export let toastTimer, titleTimer=null;
+export const toast={text:'',on:false};   // 화면 아래 알림 문구(ui/Toast.jsx). 6초 보인다
 // 기본 소리: 경고음 뒤에 음성. beep가 없으면 음성만
 export function playDefault(msg, sound){ const wait=sound?beep(sound):0; setTimeout(()=>speak(msg), Math.round(wait*1000)+150); }
 
@@ -59,7 +61,7 @@ export const browserIO={
     return custom;
   },
   ui(text,tag){
-    const t=$('#toast'); t.textContent=text; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',6000);
+    toast.text=text; toast.on=true; bump(); clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ toast.on=false; bump(); },6000);
     clearInterval(titleTimer); let i=0;
     titleTimer=setInterval(()=>{ document.title=(i++%2)?'⚠ '+text:baseTitle(); if(i>12){ clearInterval(titleTimer); titleTimer=null; document.title=baseTitle(); } },700);
     if(document.hidden && 'Notification' in window && Notification.permission==='granted'){ try{ new Notification(text,{tag,renotify:true}); }catch(e){} }

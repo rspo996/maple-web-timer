@@ -1,5 +1,4 @@
-/* 부팅: 이 파일만 최상위에서 코드를 실행한다. 다른 모듈은 정의와 init*()만 둔다 */
-import '../styles/app.css';
+/* 엔진 부팅: 화면(React)이 처음 그려진 뒤 App이 boot()를 한 번 부른다. 다른 모듈은 정의와 init*()만 둔다 */
 import '../core/idle.js';          // import하면 KINDS.idle이 등록된다. initTargets()가 저장소를 읽기 전에 모든 종류가 있어야 한다
 import '../core/cooldown.js';      // KINDS.cooldown
 import './dev-globals.js';
@@ -24,14 +23,18 @@ function onWorkerTick(){
   tick();
   Alerts.flush(Date.now()); // busy로 tick이 건너뛰어진 메시지에서도 묶기 대기열을 비운다
 }
-// 순수 계산 쪽(core)이 부르는 화면·캡처 기능
-setHooks({setNote,onTargetChanged,detectTemplate,readTimer,loadTpl,hasSource:()=>!!src});
-initTargets(); initCapture(); initRegister(); initCards(); initSounds();
-manualInit(); audioInit(); pipInit(); backupInit();
-renderWatch();
-$('#helpDetails').open = !(ui.connectedOnce || store.targets.some(t=>t.tpl));   // 처음에만 펼침
-try{
-  // 숨은 탭에서도 500ms 간격을 지키도록 Worker 타이머를 쓴다
-  const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),500)'],{type:'text/javascript'})));
-  wk.onmessage=onWorkerTick;
-}catch(e){ setInterval(onWorkerTick,500); }
+let booted=false;
+export function boot(){
+  if(booted) return; booted=true;
+  // 순수 계산 쪽(core)이 부르는 화면·캡처 기능
+  setHooks({setNote,onTargetChanged,detectTemplate,readTimer,loadTpl,hasSource:()=>!!src});
+  initTargets(); initCapture(); initRegister(); initCards(); initSounds();
+  manualInit(); audioInit(); pipInit(); backupInit();
+  renderWatch();
+  $('#helpDetails').open = !(ui.connectedOnce || store.targets.some(t=>t.tpl));   // 처음에만 펼침
+  try{
+    // 숨은 탭에서도 500ms 간격을 지키도록 Worker 타이머를 쓴다
+    const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),500)'],{type:'text/javascript'})));
+    wk.onmessage=onWorkerTick;
+  }catch(e){ setInterval(onWorkerTick,500); }
+}

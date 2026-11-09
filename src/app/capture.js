@@ -47,6 +47,12 @@ export function teardown(emptyText){
   $('#empty').textContent=emptyText; $('#empty').style.display=''; $('#btnConnect').textContent='게임 화면 연결'; $('#btnConnect').classList.add('primary');
   store.targets.forEach(renderCard); renderWatch();
 }
+// 상태줄의 "감시 끝내기"·"테스트 끝내기"
+export function stopWatching(){
+  const wasTest=src&&src.type==='image';
+  if(src&&src.track) src.track.stop(); health.lostAt=null; health.badWarned=false;
+  teardown(EMPTY_DEFAULT); setNote(wasTest?'스크린샷 테스트를 끝냈어요':'감시를 끝냈어요','info');
+}
 export function initCapture(){
 $('#btnConnect').onclick=async()=>{
   unlockAudio(); setNote('');
@@ -71,11 +77,6 @@ $('#btnConnect').onclick=async()=>{
     speak('감시 시작할게요'+(need.length?`. ${eunNeun(need.join(', '))} 등록이 필요해요`:''));
     renderWatch();
   }catch(e){ if(e.name!=='NotAllowedError') setNote(`화면 연결에 실패했어요 (${e.message}). “게임 화면 연결”을 다시 눌러 주세요.`); }
-};
-$('#btnStop').onclick=()=>{
-  const wasTest=src&&src.type==='image';
-  if(src&&src.track) src.track.stop(); health.lostAt=null; health.badWarned=false;
-  teardown(EMPTY_DEFAULT); setNote(wasTest?'스크린샷 테스트를 끝냈어요':'감시를 끝냈어요','info');
 };
 $('#btnImage').onclick=()=>$('#fileImage').click();
 $('#fileImage').onchange=e=>{

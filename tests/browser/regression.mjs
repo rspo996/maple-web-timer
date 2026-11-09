@@ -71,12 +71,13 @@ check("음성: 같은 문구는 한 번만, 다른 문구는 이어서", J(said)
 // 7) 숨은 탭: grabFrame으로 감시, 응답이 없으면 1.5초 뒤 포기하고 10초 넘으면 화면 안 들어옴
 await ev(() => { __fake.reset(); Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); });
 await wait(2000);
-check("숨은 탭에서도 감시 중(grabFrame)", (await txt("#watchState")) === "감시 중");
+check("숨은 탭에서도 감시 중(grabFrame)", (await ev(() => watchStatus().state)) === "감시 중");   // 숨은 동안은 화면을 그리지 않으므로 엔진 상태를 본다
 await ev(() => { src.cap.grabFrame = () => new Promise(() => {}); });   // 새 프레임이 영원히 안 오는 상태
 await wait(3500); await ev(() => __fake.skew(11000)); await wait(3500);
-const hid = await ev(() => ({ spoken: __fake.spoken.slice(), state: document.querySelector("#watchState").textContent, base: baseTitle() }));
+const hid = await ev(() => ({ spoken: __fake.spoken.slice(), state: watchStatus().state, base: baseTitle() }));
 check("grabFrame 무응답: 감지가 멈추지 않고 화면 안 들어옴 알림 · 탭 제목", hid.spoken.includes("게임 화면이 들어오지 않아요") && hid.state === "게임 화면이 안 들어와요" && hid.base === "⚠ 화면 안 들어옴 · 메이플 재획 알리미", hid);
-await ev(() => { delete document.hidden; });
+const shown = await ev(() => { delete document.hidden; document.dispatchEvent(new Event("visibilitychange")); return document.querySelector("#watchState").textContent; });
+check("탭이 다시 보이면 숨은 동안 미룬 상태줄을 바로 그린다", shown === "게임 화면이 안 들어와요", shown);
 
 // 8) 연결 끊김: 즉시 1번 + 2분 간격 2번에서 멈춤(총 3번), 낮은 경고음
 await ev(() => { __fake.reset(); src.track.dispatchEvent(new Event("ended")); });

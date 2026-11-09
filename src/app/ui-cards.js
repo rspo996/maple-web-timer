@@ -2,6 +2,7 @@
 import {Alerts,unlockAudio} from './alerts.js';
 import {frame,src,viewCtx} from './capture.js';
 import {stateOf,states,testAlert} from './detect-run.js';
+import {bump} from './bus.js';
 import {$} from './dom.js';
 import {saveUi,ui} from './prefs.js';
 import {clearRegister,reg,startRegister} from './register.js';
@@ -162,17 +163,18 @@ export function removeTargetNow(t){
 export function moveCard(t,delta){ if(moveTarget(store,t.id,delta)>=0){ saveTargets(); onTargetsChanged(); } }
 /* ----- 삭제: 확인 → 바로 뺌 → 10초 되돌리기. 내 소리 파일은 10초 뒤에 지운다(그 사이 탭이 닫히면 다음 로드의 고아 정리가 지움) ----- */
 export const UNDO_MS=10000, trash=new Map();   // id → {t, index, sounds:Map(slot→소리), timer}
+export const undoState={id:null,text:''};       // 되돌리기 막대(ui/UndoBar.jsx)는 마지막으로 지운 대상을 되돌린다. 지운 것이 남아 있는 동안 보인다
 export function deleteTarget(t){
   const keys=ownedSlotKeys([...customSounds.keys()],t.id);
   if(!confirm(deleteConfirmText(t.name,keys.length))) return;
   const sounds=new Map(keys.map(k=>[k,customSounds.get(k)])); keys.forEach(k=>customSounds.delete(k));
   const index=removeTargetNow(t);           // 등록 중이면 취소하고, 목록·소리 설정·상태줄을 다시 그림
   const e={t,index,sounds,timer:setTimeout(()=>finalizeDelete(t.id),UNDO_MS)}; trash.set(t.id,e);
-  $('#undoText').textContent=`"${t.name}" 지웠어요 ·`; $('#undoBar').hidden=false; $('#undoBtn').onclick=()=>undoDelete(t.id); $('#undoBtn').focus();
+  undoState.id=t.id; undoState.text=`"${t.name}" 지웠어요 ·`; bump(); $('#undoBtn').focus();
 }
 export function finalizeDelete(id){
   const e=trash.get(id); if(!e) return; trash.delete(id); deleteSoundKeys([...e.sounds.keys()]);
-  if(!trash.size) $('#undoBar').hidden=true;
+  if(!trash.size) bump();
 }
 export function undoDelete(id){
   const e=trash.get(id); if(!e) return;
@@ -180,5 +182,5 @@ export function undoDelete(id){
   clearTimeout(e.timer); trash.delete(id);
   insertTargetAt(store,e.t,e.index); states[e.t.id]=newState(); e.sounds.forEach((v,k)=>customSounds.set(k,v));
   saveTargets(); onTargetsChanged(); renderSounds();
-  if(!trash.size) $('#undoBar').hidden=true;
+  if(!trash.size) bump();
 }
