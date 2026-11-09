@@ -17,6 +17,9 @@ check("패널: 프리셋 칩 7개 + 내 프리셋", J(chips) === J(["5분", "10�
 await page.click("#manualPresets button:first-child"); await wait(800);
 const m1 = await ev(() => ({ ids: manual.timers.map(t => t.id + ":" + t.label + ":" + t.status), time: document.querySelector("#manual-m1 [data-s=time]").textContent }));
 check("프리셋: 5분 타이머가 바로 실행", m1.ids[0] === "m1:5분 타이머:running" && /^(5:00|4:59)$/.test(m1.time), m1);
+const strip = await ev(() => ({ manual: document.querySelector("#watchManual").textContent, role: document.querySelector("#watchManual").getAttribute("role"), title: document.title, lock: document.querySelector("#soundLock").hidden }));
+check("상태줄·탭 제목: 남은 시간 표시(화면 연결 없이도), role=timer, 소리 켜짐이라 잠김 안내 없음",
+  /^⏱ 5분 타이머 (5:00|4:59)$/.test(strip.manual) && strip.role === "timer" && /^⏱ (5:00|4:59) · 메이플 재획 알리미$/.test(strip.title) && strip.lock, strip);
 await ev(() => { __fake.reset(); __fake.skew(290_000); }); await wait(1500);
 const pre = await ev(() => ({ spoken: __fake.spoken.slice(), osc: __fake.osc.slice() }));
 check("미리 알림: 5분 타이머 10초 전, 같은 음 두 번", J(pre.spoken) === J(["5분 타이머 10초 전"]) && J(pre.osc) === J([["square", 988], ["square", 988]]), pre);
@@ -47,6 +50,12 @@ const before = await ev(() => manual.timers.map(t => [t.id, t.status, t.endAt]))
 await page.reload(); await wait(1200); await page.evaluate(harness);
 const after = await ev(() => manual.timers.map(t => [t.id, t.status, t.endAt]));
 check("새로고침: 같은 타이머·상태·끝 시각", J(after) === J(before), { before, after });
+const lock1 = await ev(() => ({ hidden: document.querySelector("#soundLock").hidden, text: document.querySelector("#soundLock").textContent.replace(/\s+/g, " ").trim() }));
+await page.click("#soundLockBtn"); await wait(800);
+const lock2 = await ev(() => ({ hidden: document.querySelector("#soundLock").hidden, state: actx && actx.state }));
+check("새로고침 뒤 소리 잠김: 안내와 소리 켜기 버튼, 누르면 사라짐", !lock1.hidden && lock1.text === "소리가 꺼져 있어요 소리 켜기" && lock2.hidden && lock2.state === "running", { lock1, lock2 });
+const multi = await ev(() => document.querySelector("#watchManual").textContent);
+check("상태줄: 실행 중인 루틴은 지금 구간 이름으로", /^⏱ 회수 \d+:\d\d$/.test(multi) || /^⏱ 사냥 \d+:\d\d$/.test(multi), multi);
 
 // 6) 실행 중인 타이머 삭제는 두 번 눌러야 한다
 await btn("m3", "삭제"); await wait(200);
