@@ -36,7 +36,9 @@ await ev(() => { const t = store.targets.find(x => x.kind === "idle"), c = docum
   const r = c.querySelector("[data-f=repeatSec]"); r.value = "5"; r.dispatchEvent(new Event("change")); });
 await changeFor(6);
 const mv = await st();
-check("변하는 중: 경험치가 움직여요, 변화량 표시", mv.status === "경험치가 움직여요" && /^\d+픽셀 ✔ · 최근 60초 최대 \d+ · 중앙 \d+ · 변화 \d+번/.test(mv.score), mv);
+const mvMax = +((/최근 60초 최대 (\d+)/.exec(mv.score) || [])[1] || 0);
+check("변하는 중: 경험치가 움직여요, 변화량 표시", mv.status === "경험치가 움직여요" && /^\d+픽셀( ✔)? · 최근 60초 최대 \d+ · 중앙 \d+ · 변화 \d+번/.test(mv.score) && mvMax >= 8, mv);
+await wait(1500);   // 스트림(5fps)의 늦은 프레임이 다 들어온 뒤에 시계를 앞당긴다(늦은 프레임이 "변화"로 확정되지 않게)
 
 // 4) 멈춤 → 10초 뒤 알림(느린 두 음 왕복, 삼각파), 상태줄·카드
 await ev(() => { __fake.reset(); __fake.skew(11_000); }); await wait(2800);   // 비프(약 1.2초) 뒤에 음성
@@ -54,15 +56,17 @@ await changeFor(3);
 const rs = await st();
 check("재무장: 다시 변하면 움직여요 + 멈췄다가 다시 변했어요", rs.status === "경험치가 움직여요" && /멈췄다가 다시 변했어요$/.test(rs.sub) && !rs.strip.includes("경험치 그대로"), rs);
 
+await wait(1500);
 // 7) 검은 화면(맵 이동 암전)이 끼면 시간을 처음부터
-await ev(() => { __fake.reset(); __fake.skew(8_000); }); await wait(1200);
+// 경계에 걸리지 않게 앞당기는 시간을 6초로 둔다(실제 경과·프레임 지연을 더해도 10초 미만). 처음부터 세지 않으면 g1에서 16초가 넘어 울린다
+await ev(() => { __fake.reset(); __fake.skew(6_000); }); await wait(1200);
 await ev(() => __fake.black(true)); await wait(1200);
 await ev(() => __fake.black(false)); await wait(1500);
-await ev(() => __fake.skew(8_000)); await wait(1200);
+await ev(() => __fake.skew(6_000)); await wait(1200);
 const g1 = await st();
-await ev(() => __fake.skew(3_000)); await wait(2800);
+await ev(() => __fake.skew(4_000)); await wait(2800);
 const g2 = await st();
-check("암전 뒤 처음부터: 8+8초에는 안 울리고, 다시 10초가 지나야 울림", g1.spoken.length === 0 && g2.spoken.length === 1, { g1: g1.spoken, g2: g2.spoken });
+check("암전 뒤 처음부터: 6+6초에는 안 울리고, 다시 10초가 지나야 울림", g1.spoken.length === 0 && g2.spoken.length === 1, { g1: g1.spoken, g2: g2.spoken });
 
 // 8) 영역이 계속 변하면 한 번 말하고 카드·상태줄에 표시
 await ev(() => { __fake.reset(); const t = store.targets.find(x => x.kind === "idle"), S = states[t.id].idle; S.recent.length = 0; for (let i = 0; i < 120; i++) S.recent.push({ at: Date.now() - i * 400, px: 99 }); });
