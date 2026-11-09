@@ -39,6 +39,28 @@ let toastTimer, titleTimer=null;
 // 기본 소리: 경고음 뒤에 음성. beep가 없으면 음성만
 function playDefault(msg, sound){ const wait=sound?beep(sound):0; setTimeout(()=>speak(msg), Math.round(wait*1000)+150); }
 
+/* ----- 가까운 알림 묶기 계획 (순수) ----- */
+// fired: 이번 틱에 미리 알림(group:'pre')이 난 대상 id. 곧 끝나는 다른 대상(남은 시간 <= leadSec+windowSec)을 같이 묶는다(당겨 알림).
+// 돌려주는 값: members(묶일 대상 전부)와 pulled(그중 당겨온 것). 상태는 바꾸지 않는다 — 당겨온 대상의 pre 처리(markPre)는 부르는 쪽이 한다
+function planGroup(fired,targets,states,kinds,now,windowSec){
+  if(!fired.length) return {members:[],pulled:[]};
+  const members=[], pulled=[];
+  targets.forEach((t,order)=>{
+    const k=kinds[t.kind]; if(!k||!t.enabled) return;
+    if(fired.includes(t.id)){ members.push({id:t.id,rank:t.p.leadSec||0,pulled:false,order}); return; }
+    if(!k.events.some(e=>e.group==='pre')) return;                    // 룬 같은 종류는 묶지 않는다
+    const st=states[t.id]; if(!st||st.alertedPre) return;
+    const r=k.remainSec(t,st,now); if(r==null) return;                // 켜진 시점·지속시간을 모르면 null
+    if(r<=(t.p.leadSec||0)+windowSec){ members.push({id:t.id,rank:r,pulled:true,order}); pulled.push({id:t.id,rank:r}); }
+  });
+  return {members,pulled};
+}
+// 묶인 알림의 음성·토스트 문구. 이름 뒤 조사를 쓰지 않고 초는 말하지 않는다(멤버마다 남은 시간이 달라 한 숫자가 틀림)
+function groupText(cls,items){
+  const sorted=[...items].sort((a,b)=>a.rank-b.rank||a.order-b.order), tail=cls==='pre'?'곧 끝나요':'꺼졌어요';
+  return sorted.length>=4?`${sorted.length}개 ${tail}`:`${sorted.map(i=>i.label).join(', ')} ${tail}`;
+}
+
 /* ----- Alerts: 요청(AlertReq)을 받아 소리·화면 알림·카드 깜빡임으로 내보낸다. io를 바꿔 끼워 node에서 시험한다 -----
    AlertReq = {src:'target'|'manual'|'system'|'test', id, event, text, beep:string|null, slot:string|null, mode:'full'|'voice', group, flash:string|null}
    AlertRec = {at, src, ids[], event, text, grouped, custom}  (listen 구독자가 재생 직후 받음) */
@@ -87,4 +109,4 @@ const Alerts=Object.assign(createAlerts(browserIO),{
 
 // 화면을 받는 쪽의 문제(끊김·멈춤)는 게임 알림과 다른 소리로 알림. 회복은 음성만
 function fireSystem(kind){ Alerts.fire({src:'system',id:'sys',event:kind,text:SYS_MSG[kind],beep:'system',slot:'sys.'+kind,mode:kind==='back'?'voice':'full',flash:null}); }
-if(typeof module==='object') module.exports={createAlerts};
+if(typeof module==='object') module.exports={createAlerts,planGroup,groupText};
