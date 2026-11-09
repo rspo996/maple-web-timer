@@ -8,7 +8,7 @@ const keys = () => new Promise(res => { const r = indexedDB.open("maple-web-time
 const { ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-v2": V2 }, sounds: ["sol.pre", "u3.gone", "u9.pre", "booster.gone", "sys.lost", "grp.pre", "manual.end", "m2.pre"] });
 await wait(1500);
 const rows = await ev(() => [...document.querySelectorAll("#soundRows .snd-group > b")].map(b => b.textContent));
-check("소리 설정: 대상 이름 순서대로 그룹", JSON.stringify(rows) === JSON.stringify(["솔 야누스", "유니온의 힘", "묶음 알림", "연결 문제"]), rows);
+check("소리 설정: 대상 이름 순서대로 그룹", JSON.stringify(rows) === JSON.stringify(["솔 야누스", "유니온의 힘", "묶음 알림", "수동 타이머", "연결 문제"]), rows);
 const kept = await ev(keys);
 check("고아 정리: 없는 대상(u9, booster)만 삭제, 예약 접두어·현재 대상은 보존",
   JSON.stringify(kept) === JSON.stringify(["grp.pre", "m2.pre", "manual.end", "sol.pre", "sys.lost", "u3.gone"]), kept);

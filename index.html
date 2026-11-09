@@ -24,7 +24,8 @@
       <span id="watchTargets" class="targets"></span>
       <span id="watchNote" class="note"></span>
     </div>
-    <span id="watchManual" class="sub"></span>
+    <span id="watchManual" class="sub" role="timer"></span>
+    <span id="soundLock" hidden><span class="note">소리가 꺼져 있어요</span> <button id="soundLockBtn" type="button">소리 켜기</button></span>
     <div class="end">
       <span id="watchBeat" class="sub"></span>
       <button id="btnStop" hidden>감시 끝내기</button>
@@ -43,6 +44,26 @@
     </div>
     <div id="cardList"></div>
   </aside>
+  <section class="panel" id="manual" aria-labelledby="manualTitle">
+    <div class="mhead"><h2 id="manualTitle">수동 타이머</h2> <span class="sub">화면을 보지 않고 직접 시작해요</span> <button id="manualClearDone" type="button" hidden>끝난 것 모두 지우기</button></div>
+    <div class="row chips" id="manualPresets" role="group" aria-label="프리셋: 누르면 바로 시작"></div>
+    <form id="manualForm" class="row">
+      <input id="manualName" placeholder="이름(선택)" maxlength="20" aria-label="타이머 이름">
+      <input id="manualDur" placeholder="분:초" size="7" aria-label="시간(분:초)">
+      <button class="primary">시작</button> <button type="button" id="manualSavePreset">프리셋으로 저장</button>
+      <label class="sw">미리 알림 <input id="manualPre" type="number" min="0" max="120" aria-describedby="manualPreSfx"> <span id="manualPreSfx" class="sub">초 전 (0=끔)</span></label>
+    </form>
+    <details id="manualRoutineBox"><summary>사냥·회수 반복 만들기</summary>
+      <form id="manualRoutine" class="grid">
+        <label for="manualN1">구간 1</label><span><input id="manualN1" name="n1" value="사냥" maxlength="20"> <input name="d1" placeholder="분:초" size="7" aria-label="구간 1 길이(분:초)"></span>
+        <label for="manualN2">구간 2</label><span><input id="manualN2" name="n2" value="회수" maxlength="20"> <input name="d2" placeholder="분:초" size="7" aria-label="구간 2 길이(분:초)"></span>
+        <span></span><span><button class="primary">시작</button> <span class="sub">멈출 때까지 번갈아 반복해요</span></span>
+      </form>
+    </details>
+    <details id="manualPresetEdit"><summary>프리셋 편집</summary><div id="manualPresetList"></div></details>
+    <p id="manualNote" class="sub" role="status"></p>
+    <div id="manualList"></div>
+  </section>
   <section class="panel" id="help">
     <details id="helpDetails">
       <summary><b>처음 설정하는 법</b></summary>
@@ -90,6 +111,8 @@
 <script src="js/ui-watch.js"></script>
 <script src="js/ui-cards.js"></script>
 <script src="js/register.js"></script>
+<script src="js/manual-core.js"></script>
+<script src="js/manual-ui.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

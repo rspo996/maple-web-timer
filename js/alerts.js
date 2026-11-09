@@ -7,6 +7,7 @@ const SOUNDS={
   gone:   {wave:'square',  notes:[[784,.2],[523,.45]]},                          // 내려가는 두 음
   rune:   {wave:'square',  notes:[[880,.12],[1175,.12],[1568,.2]]},              // 올라가는 세 음
   multi:  {wave:'square',  notes:[[1046,.1],[1046,.1],[1046,.1],[1568,.28]]},    // 같은 음 세 번 + 높은 음(묶인 알림)
+  timer:  {wave:'square',  notes:[[988,.14],[988,.14]]},                          // 같은 음 두 번(수동 타이머 미리 알림)
   system: {wave:'sawtooth',notes:[[330,.22],[330,.22],[330,.22]],gain:.13},      // 낮은 경고음
 };
 let actx=null, beepEnd=0, audioOutNode=null; const audioWaiters=[];
