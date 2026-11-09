@@ -39,3 +39,13 @@ test('받침 조사: 은/는, 을/를', () => {
   assert.equal(eulReul('솔 야누스'), '솔 야누스를');
   assert.equal(eulReul('솔 야누스 미리 알림'), '솔 야누스 미리 알림을');
 });
+
+test('checkDurLead: 지속시간이 미리 알림 이하이면 거절 문구, 아니면 null', () => {
+  const { checkDurLead } = require('../js/util.js');
+  assert.equal(checkDurLead(null, 10, 'duration'), null);
+  assert.equal(checkDurLead(60, 10, 'duration'), null);
+  assert.equal(checkDurLead(10, 10, 'duration'), '미리 알림(10초)보다 길게 입력해 주세요');
+  assert.equal(checkDurLead(5, 10, 'duration'), '미리 알림(10초)보다 길게 입력해 주세요');
+  assert.equal(checkDurLead(60, 60, 'lead'), '미리 알림은 지속시간(01:00)보다 짧게 입력해 주세요');
+  assert.equal(checkDurLead(60, 59, 'lead'), null);
+});

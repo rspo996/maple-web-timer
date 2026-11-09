@@ -8,4 +8,9 @@ const eulReul=w=>w+(batchim(w)?'을':'를');   // 받침에 맞춘 을/를
 const UI_STORE='maple-web-timer-ui';
 let ui={}; try{ ui=JSON.parse(localStorage.getItem(UI_STORE)||'{}'); }catch(e){}
 function saveUi(){ try{ localStorage.setItem(UI_STORE,JSON.stringify(ui)); }catch(e){} }
-if(typeof module==='object') module.exports={fmt,parseDur,clampInt,batchim,eunNeun,eulReul};   // node 테스트용. 브라우저에서는 무시됨
+// 지속시간이 미리 알림 초 이하이면 켜지자마자 미리 알림이 울린다 → 입력을 거절하는 문구(통과하면 null). field: 'duration'|'lead'
+const checkDurLead=(durationSec,leadSec,field)=>{
+  if(!durationSec||durationSec>leadSec) return null;
+  return field==='lead' ? `미리 알림은 지속시간(${fmt(durationSec)})보다 짧게 입력해 주세요` : `미리 알림(${leadSec}초)보다 길게 입력해 주세요`;
+};
+if(typeof module==='object') module.exports={fmt,parseDur,clampInt,batchim,eunNeun,eulReul,checkDurLead};   // node 테스트용. 브라우저에서는 무시됨
