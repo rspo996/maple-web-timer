@@ -16,7 +16,7 @@ const iSolPre = await rowOf("sol.pre"), iSolGone = await rowOf("sol.gone");
 const note = () => ev(() => document.querySelector("#soundNote").textContent);
 
 await page.setInputFiles("#pick" + iSolPre, files.ok); await wait(1200);
-let r = await ev(() => ({ has: customSounds.has("sol.pre"), file: SLOTS[0].row.querySelector(".snd-file").textContent, note: document.querySelector("#soundNote").textContent }));
+let r = await ev(() => ({ has: customSounds.has("sol.pre"), file: document.querySelector("#soundRows .snd-row").querySelector(".snd-file").textContent, note: document.querySelector("#soundNote").textContent }));
 check("파일 고르기: 슬롯에 저장, 이름·길이 표시", r.has && r.file === "ding.wav · 0.3초" && r.note.includes("소리를 바꿨어요"), r);
 await page.setInputFiles("#pick" + iSolGone, files.long); await wait(1000);
 check("10초 넘는 소리는 거절", (await note()).includes("10초 이하 소리만 쓸 수 있어요") && !(await ev(() => customSounds.has("sol.gone"))), await note());
@@ -34,7 +34,7 @@ check("다른 알림은 기본 소리 그대로(비프 + 음성)", (await ev(() 
 // 새로고침해도 유지(IndexedDB), 기본으로 되돌리기
 await ev(() => location.reload()); await wait(2000);
 check("새로고침 뒤에도 유지", (await ev(() => customSounds.has("sol.pre"))) === true);
-await ev(() => { document.querySelector("#soundsDetails").open = true; SLOTS[0].row.querySelector("[data-a=reset]").click(); }); await wait(800);
+await ev(() => { document.querySelector("#soundsDetails").open = true; document.querySelector("#soundRows .snd-row").querySelector("[data-a=reset]").click(); }); await wait(800);
 const reset = await ev(async () => ({ has: customSounds.has("sol.pre"), note: document.querySelector("#soundNote").textContent, keys: await new Promise(res => { const q = indexedDB.open("maple-web-timer", 1); q.onsuccess = () => { const g = q.result.transaction("sounds").objectStore("sounds").getAllKeys(); g.onsuccess = () => res(g.result); }; }) }));
 check("기본으로: 슬롯·저장소에서 삭제, 안내 문구", !reset.has && reset.note === "솔 야누스 미리 알림을 기본 소리로 되돌렸어요" && reset.keys.length === 0, reset);
 await fs.rm(dir, { recursive: true, force: true });

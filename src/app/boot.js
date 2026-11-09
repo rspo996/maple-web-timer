@@ -7,10 +7,9 @@ import {Alerts} from './alerts.js';
 import {initCapture,src} from './capture.js';
 import {detectTemplate,loadTpl,readTimer,tick} from './detect-run.js';
 import {$} from './dom.js';
-import {manualInit,manualTick} from './manual-ui.js';
+import {manualInit,manualTick} from './manual.js';
 import {audioInit} from './audio.js';
 import {pipInit} from './pip.js';
-import {backupInit} from './backup.js';
 import {ui} from './prefs.js';
 import {initRegister} from './register.js';
 import {initSounds} from './sounds.js';
@@ -29,7 +28,7 @@ export function boot(){
   // 순수 계산 쪽(core)이 부르는 화면·캡처 기능
   setHooks({setNote,onTargetChanged,detectTemplate,readTimer,loadTpl,hasSource:()=>!!src});
   initTargets(); initCapture(); initRegister(); initCards(); initSounds();
-  manualInit(); audioInit(); pipInit(); backupInit();
+  manualInit(); audioInit(); pipInit();
   renderWatch();
   $('#helpDetails').open = !(ui.connectedOnce || store.targets.some(t=>t.tpl));   // 처음에만 펼침
   try{

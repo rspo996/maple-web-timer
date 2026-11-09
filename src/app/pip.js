@@ -1,7 +1,7 @@
 /* ----- 창 ----- */
 import {Alerts} from './alerts.js';
 import {$} from './dom.js';
-import {manual} from './manual-ui.js';
+import {manual} from './manual.js';
 import {saveUi,ui} from './prefs.js';
 import {store} from './store.js';
 import {setText} from './ui-cards.js';

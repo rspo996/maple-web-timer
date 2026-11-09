@@ -1,7 +1,7 @@
-/* ----- 알림 소리 바꾸기 (내 WAV 등) ----- */
+/* ----- 알림 소리 바꾸기 (내 WAV 등)의 엔진 쪽: 내 소리 보관·재생, 슬롯 목록, 묶기 설정. 화면은 ui/SoundSettings.jsx ----- */
 import {Alerts,SYS_MSG,actx,beepEnd,playDefault,predecodeSounds,setBeepEnd,unlockAudio} from './alerts.js';
-import {$} from './dom.js';
-import {MANUAL_BEEP,manualPreviewText} from './manual-ui.js';
+import {bump} from './bus.js';
+import {MANUAL_BEEP,manualPreviewText} from './manual.js';
 import {saveTargets,store,storeStatus,targetById} from './store.js';
 import {groupText} from '../core/alerts-core.js';
 import {KINDS} from '../core/kinds.js';
@@ -10,7 +10,7 @@ import {eulReul} from '../core/util.js';
 export let SLOTS=[];   // 소리 설정 화면의 행. 대상 목록에서 계산한다(targets.js의 slotsOf)
 export function refreshSlots(){ SLOTS=slotsOf(store.targets,{manual:true}); }
 // 대상이 추가·삭제·개명·순서 변경될 때 소리 설정 화면을 다시 만든다. 불러 둔 내 소리(customSounds)는 그대로 쓴다
-export function rebuildSounds(){ refreshSlots(); buildSounds(); }
+export function rebuildSounds(){ refreshSlots(); bump(); }
 export const SOUND_MAX_SEC=10, SOUND_MAX_BYTES=5*1024*1024;   // 긴 소리는 다음 알림을 밀어내므로 제한
 export const customSounds=new Map();   // slot → {name, data:ArrayBuffer, dur, buf:AudioBuffer|null}
 // 파일은 용량이 커서 localStorage 대신 IndexedDB에 보관
@@ -30,7 +30,8 @@ export function playCustom(slot, fallback){
   return true;
 }
 export const slotName=s=>`${s.group} ${s.label}`;
-export function soundNote(text, warn){ const n=$('#soundNote'); n.textContent=text; n.className='sub'+(warn?' warn':''); }
+export const soundMsg={text:'',warn:false};   // 소리 설정 창 아래 안내 한 줄
+export function soundNote(text, warn){ soundMsg.text=text; soundMsg.warn=!!warn; bump(); }
 export function previewSlot(s){
   unlockAudio(); if(playCustom(s.key)) return;
   const [id,ev]=s.key.split('.');
@@ -58,46 +59,19 @@ export async function resetSound(s){
   try{ const st=await soundStore('readwrite'); await idb(st.delete(s.key)); }catch(e){}
   soundNote(`${eulReul(slotName(s))} 기본 소리로 되돌렸어요`);
 }
-export function buildSounds(){
-  const box=$('#soundRows'); box.textContent=''; let group=null, wrap=null;
-  for(const s of SLOTS){
-    if(s.group!==group){ group=s.group; wrap=document.createElement('div'); wrap.className='snd-group';
-      const h=document.createElement('b'); h.textContent=group; wrap.append(h); box.append(wrap); }
-    const row=document.createElement('div'); row.className='snd-row';
-    row.innerHTML=`<span>${s.label}</span><span class="snd-file sub"></span>
-      <span class="row"><button data-a="pick">파일 고르기</button><button data-a="play">듣기</button><button data-a="reset">기본으로</button></span>
-      <input type="file" accept=".wav,audio/*" hidden>`;
-    const q=x=>row.querySelector(x), inp=q('input');
-    q('[data-a=pick]').setAttribute('aria-label',`${slotName(s)} 소리 파일 고르기`);
-    q('[data-a=play]').setAttribute('aria-label',`${slotName(s)} 소리 듣기`);
-    q('[data-a=reset]').setAttribute('aria-label',`${slotName(s)} 기본 소리로 되돌리기`);
-    q('[data-a=pick]').onclick=()=>{ unlockAudio(); inp.click(); };
-    inp.onchange=()=>{ const f=inp.files[0]; inp.value=''; if(f) pickSound(s,f); };
-    q('[data-a=play]').onclick=()=>previewSlot(s);
-    q('[data-a=reset]').onclick=()=>resetSound(s);
-    s.row=row; wrap.append(row);
-  }
-  renderSounds();
-}
-export function renderSounds(){
-  for(const s of SLOTS){ const c=customSounds.get(s.key), f=s.row.querySelector('.snd-file');
-    f.textContent=c?`${c.name} · ${c.dur.toFixed(1)}초`:'기본 소리'; f.title=c?c.name:''; f.classList.toggle('custom',!!c);
-    const rb=s.row.querySelector('[data-a=reset]'); rb.style.visibility=c?'':'hidden'; rb.disabled=!c; }   // 자리는 남겨 버튼 줄을 맞춤
-}
-export function initSounds(){ refreshSlots(); buildSounds(); loadSounds(); initGroupControl(); }
+// 내 소리가 바뀌면(고르기·되돌리기·불러오기·삭제 되돌리기) 소리 설정 화면을 다시 그린다
+export function renderSounds(){ bump(); }
+export function initSounds(){ refreshSlots(); loadSounds(); Alerts.configure(store.group); bump(); }
 // 묶음 알림 미리듣기에 쓸 이름: 해당 묶음 종류의 이벤트가 있는 켜진 대상 앞 두 개. 없으면 예시 이름
 export function groupPreviewItems(cls){
   const names=store.targets.filter(t=>t.enabled&&KINDS[t.kind]&&KINDS[t.kind].events.some(e=>e.group===cls)).slice(0,2).map(t=>t.name);
   return (names.length===2?names:['유니온의 힘','유니온의 부']).map((label,i)=>({label,rank:i,order:i}));
 }
-// 가까운 알림 묶기 설정: 끔 | 5초 | 10초 | 20초(기본 끔). 바꾸는 즉시 저장하고 Alerts에 알린다
-export function initGroupControl(){
-  const g=store.group, val=g.on?String(g.windowSec):'0';
-  for(const r of document.querySelectorAll('#groupCtl input')){
-    r.checked=r.value===val;
-    r.onchange=()=>{ if(!r.checked) return; const v=+r.value; store.group=v?{on:true,windowSec:v}:{on:false,windowSec:store.group.windowSec}; saveTargets(); Alerts.configure(store.group); };
-  }
-  Alerts.configure(store.group);
+// 가까운 알림 묶기 설정: 끔(0) | 5초 | 10초 | 20초(기본 끔). 바꾸는 즉시 저장하고 Alerts에 알린다
+export const groupValue=()=>store.group.on?store.group.windowSec:0;
+export function setGroupWindow(v){
+  store.group=v?{on:true,windowSec:v}:{on:false,windowSec:store.group.windowSec};
+  saveTargets(); Alerts.configure(store.group); bump();
 }
 export async function deleteSoundKeys(keys){
   try{ const st=await soundStore('readwrite'); await Promise.all(keys.map(k=>idb(st.delete(k)))); }catch(e){}

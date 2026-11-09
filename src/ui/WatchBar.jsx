@@ -2,6 +2,7 @@
 import { Fragment } from 'react';
 import { useBus } from './useBus.js';
 import { src, stopWatching } from '../app/capture.js';
+import { manualStripText, manualWake, soundLocked } from '../app/manual.js';
 import { startRegister, startRegisterQueue } from '../app/register.js';
 import { targetById } from '../app/store.js';
 import { beatText, note, stripItems, toggleStripOpen, watchStatus } from '../app/ui-watch.js';
@@ -35,12 +36,13 @@ export function WatchBar() {
         {' '}
         <span id="watchNote" className={'note' + (note.kind === 'info' ? ' info' : '')}>{note.text}</span>
       </div>
-      <span id="watchManual" className="sub" role="timer" />
+      {/* role=timer라 화면 낭독기가 매번 읽지 않는다 */}
+      <span id="watchManual" className="sub" role="timer">{manualStripText(Date.now())}</span>
       {' '}
-      <span id="soundLock" hidden>
+      <span id="soundLock" hidden={!soundLocked()}>
         <span className="note">소리가 꺼져 있어요</span>
         {' '}
-        <button id="soundLockBtn" type="button">소리 켜기</button>
+        <button id="soundLockBtn" type="button" onClick={manualWake}>소리 켜기</button>
       </span>
       <div className="end">
         <span id="watchBeat" className="sub">{beatText()}</span>

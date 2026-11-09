@@ -1,0 +1,20 @@
+// 수동 타이머 고치기 폼: 열기·포커스, 실행 중 길이 잠김, 빈 이름 거절, 저장, 멈춘 타이머의 길이 변경. 저장된 "미리 알림"이 새로고침 뒤 칸에 보이는지
+const { open, check, done } = await import("file://__ROOT__/tests/browser/prelude.mjs");
+const { page, ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-manual-v1": { v: 1, seq: 0, timers: [], presets: [], prefs: { preSec: 7 } } } });
+check("새로고침 뒤 저장된 미리 알림 값이 칸에", (await ev(() => document.querySelector("#manualPre").value)) === "7");
+await page.fill("#manualName", "경쿠"); await page.fill("#manualDur", "30:00"); await page.click("#manualForm button.primary"); await wait(300);
+await page.click("loc=role:button[name='경쿠 고치기']"); await wait(200);
+let r = await ev(() => { const f = document.querySelector("#manual-m1 form.mt-edit"); return { hidden: f.hidden, focus: document.activeElement === f.querySelector("input"), dur: f.querySelector("[data-e=d0]").disabled, pre: f.querySelector("[data-e=pre]").value }; });
+check("고치기: 폼 열림, 이름 칸에 포커스, 실행 중이라 길이 잠김, 미리 알림 7", !r.hidden && r.focus && r.dur && r.pre === "7", r);
+await page.fill("#manual-m1 [data-e=label]", ""); await page.click("#manual-m1 form.mt-edit button"); await wait(200);
+r = await ev(() => ({ err: document.querySelector("#manual-m1 form.mt-edit [role=alert]").textContent, label: manual.timers[0].label }));
+check("빈 이름은 거절", r.err === "이름을 비우거나 다른 타이머와 같게 할 수 없어요" && r.label === "경쿠", r);
+await page.fill("#manual-m1 [data-e=label]", "경험치 쿠폰"); await page.fill("#manual-m1 [data-e=pre]", "15"); await page.click("#manual-m1 form.mt-edit button"); await wait(200);
+r = await ev(() => ({ t: manual.timers[0], hidden: document.querySelector("#manual-m1 form.mt-edit").hidden, name: document.querySelector("#manual-m1 .mt-head b").textContent, stored: JSON.parse(localStorage.getItem("maple-web-timer-manual-v1")).timers[0].label }));
+check("저장: 이름·미리 알림 바뀜, 폼 닫힘, 저장소 반영", r.t.label === "경험치 쿠폰" && r.t.preSec === 15 && r.hidden && r.name === "경험치 쿠폰" && r.stored === "경험치 쿠폰", r);
+await page.click("loc=role:button[name='일시정지']"); await wait(200);
+await page.click("loc=role:button[name='경험치 쿠폰 고치기']"); await wait(200);
+await page.fill("#manual-m1 [data-e=d0]", "10:00"); await page.click("#manual-m1 form.mt-edit button"); await wait(200);
+r = await ev(() => ({ status: manual.timers[0].status, sec: manual.timers[0].phases[0].sec, time: document.querySelector("#manual-m1 [data-s=time]").textContent }));
+check("멈춘 타이머 길이 변경: 처음부터(대기)로, 10:00", r.status === "idle" && r.sec === 600 && r.time === "10:00", r);
+done();
