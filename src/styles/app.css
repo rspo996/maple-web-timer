@@ -253,9 +253,9 @@ details.win:not([open]) > summary { margin-bottom: 0; }
 
 /* ----- 알림 소리 바꾸기·설정 백업 ----- */
 #sounds .wbody > p:first-child { margin-top: 0; }
-#groupCtl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-md); margin: var(--space-sm) 0 0; padding: var(--space-sm) var(--space-md); background: var(--color-paper-2); border: var(--rule-bar) solid var(--color-rule); border-radius: var(--radius-card); }
-#groupCtl legend, #importDialog legend { float: left; width: 100%; padding: 0; font-weight: 700; }   /* 제목을 테두리 위가 아니라 칸 안 첫 줄에 */
-#groupCtl p { flex: 1 0 100%; margin: var(--space-2xs) 0 0; }
+#groupCtl, #voiceCtl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-md); margin: var(--space-sm) 0 0; padding: var(--space-sm) var(--space-md); background: var(--color-paper-2); border: var(--rule-bar) solid var(--color-rule); border-radius: var(--radius-card); }
+#groupCtl legend, #voiceCtl legend, #importDialog legend { float: left; width: 100%; padding: 0; font-weight: 700; }   /* 제목을 테두리 위가 아니라 칸 안 첫 줄에 */
+#groupCtl p, #voiceCtl p { flex: 1 0 100%; margin: var(--space-2xs) 0 0; }
 .snd-group { margin-top: var(--space-md); }
 .snd-group > b { display: block; margin-bottom: var(--space-2xs); }
 .snd-row { display: grid; grid-template-columns: 8em minmax(0, 1fr) auto; align-items: center; gap: var(--space-2xs) var(--space-sm); padding-block: var(--space-xs); border-top: var(--rule-hair) solid var(--color-rule); }

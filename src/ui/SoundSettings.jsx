@@ -2,6 +2,7 @@
 import { Fragment, useRef } from 'react';
 import { useBus } from './useBus.js';
 import { unlockAudio } from '../app/alerts.js';
+import { currentVoice, previewVoice, setVoiceName, voiceChoices, voiceNote } from '../app/voice.js';
 import { SLOTS, customSounds, groupValue, pickSound, previewSlot, resetSound, setGroupWindow, slotName, soundMsg } from '../app/sounds.js';
 
 const GROUP_CHOICES = [[0, '끔'], [5, '5초'], [10, '10초'], [20, '20초']];
@@ -37,6 +38,15 @@ export function SoundSettings() {
         <span className="bar-sub">내 WAV 파일 쓰기</span>
       </summary>
       <div className="wbody">
+        <fieldset id="voiceCtl">
+          <legend>음성</legend>
+          <select id="voiceName" aria-label="알림 음성" value={currentVoice()} onChange={e => setVoiceName(e.target.value)}>
+            {voiceChoices().map(v => <option key={v.id} value={v.id}>{v.text}</option>)}
+          </select>
+          {' '}
+          <button data-a="voice-play" type="button" onClick={() => { unlockAudio(); previewVoice(); }}>듣기</button>
+          <p id="voiceNote" className="sub">{voiceNote()}</p>
+        </fieldset>
         <p className="sub">파일을 고르면 그 알림은 기본 경고음과 음성 대신 고른 소리로 울려요. 10초 이하, 5MB 이하 소리만 쓸 수 있고, 파일은 이 브라우저에만 저장돼요.</p>
         <fieldset id="groupCtl">
           <legend>가까운 알림 묶기</legend>

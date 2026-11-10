@@ -1,5 +1,5 @@
 /* ===== 음량 0~200% (묶음 5). 비프·내 소리는 마스터 GainNode 한 곳에서 키우고, 100%를 넘을 때만 리미터를 거친다.
-   음성(TTS)은 Web Audio로 키울 수 없어 100%에서 멈춘다(ttsVolume) ===== */
+   브라우저 음성(TTS)은 Web Audio로 키울 수 없어 100%에서 멈춘다(ttsVolume). 미리 만든 Gemini 음성(묶음 6)은 마스터를 지나 함께 커진다 ===== */
 import {Alerts,beep,unlockAudio} from './alerts.js';
 import {bump} from './bus.js';
 import {saveUi,ui} from './prefs.js';

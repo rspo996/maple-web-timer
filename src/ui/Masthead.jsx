@@ -4,6 +4,7 @@ import { useBus } from './useBus.js';
 import { NativeInput } from './parts.jsx';
 import { commitVolume, previewVolume, setVoice, vol, voiceOn } from '../app/audio.js';
 import { connect, connectBtn, loadImageFile, notifyBtn, requestNotify } from '../app/capture.js';
+import { currentVoice } from '../app/voice.js';
 import { pipIsOpen, pipSupported, togglePip } from '../app/pip.js';
 
 export function Masthead() {
@@ -51,7 +52,7 @@ export function Masthead() {
             음성
           </label>
         </div>
-        <span id="volNote" className="sub" hidden={vol.pct <= 100}>음성은 100%까지만 커져요. 소리가 갈라지면 줄여 주세요</span>
+        <span id="volNote" className="sub" hidden={vol.pct <= 100 || currentVoice() !== 'browser'}>브라우저 음성은 100%까지만 커져요. 소리가 갈라지면 줄여 주세요</span>
       </div>
     </header>
   );
