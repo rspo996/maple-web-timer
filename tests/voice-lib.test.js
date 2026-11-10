@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TTS_URL, adoptManifest, buildTtsRequest, clipPath, emptyManifest, encodeMp3, extractAudioBase64, manifestGet, manifestSet, parseEnvKey, pcmFromAudio } from '../scripts/voice-lib.mjs';
+import { TTS_URL, adoptManifest, buildTtsRequest, clipPath, emptyManifest, encodeMp3, extractAudioBase64, manifestGet, manifestSet, parseArgs, parseEnvKey, pcmFromAudio } from '../scripts/voice-lib.mjs';
 import { VOICE_MODEL, VOICE_STYLE } from '../src/core/voice-phrases.js';
 
 function wav(samples, rate = 24000) {   // 모노 16비트 WAV
@@ -56,4 +56,18 @@ test('manifest: 새로 만들기, 넣고 꺼내기, 모델·말투가 같을 때
   assert.deepEqual(adoptManifest(JSON.parse(JSON.stringify(m))).files, m.files);
   assert.deepEqual(adoptManifest({ ...m, style: '다른 말투' }).files, {});
   assert.deepEqual(adoptManifest(null).files, {});
+});
+
+test('parseArgs: 옵션 형태, 잘못된 옵션은 던지고, npm이 가져간 --dry-run은 힌트', () => {
+  assert.deepEqual(parseArgs([], {}), { backup: null, voices: null, limit: null, dryRun: false, hint: null });
+  assert.deepEqual(parseArgs(['--backup', 'a.json', '--voices', 'Kore,Puck', '--limit', '3', '--dry-run'], {}), { backup: 'a.json', voices: ['Kore', 'Puck'], limit: 3, dryRun: true, hint: null });
+  assert.deepEqual(parseArgs(['--backup=a.json', '--voices=Kore', '--limit=2'], {}), { backup: 'a.json', voices: ['Kore'], limit: 2, dryRun: false, hint: null });
+  assert.throws(() => parseArgs(['--dryrun'], {}), /모르는 옵션: --dryrun/);
+  assert.throws(() => parseArgs(['--limit', 'abc'], {}), /--limit은 1 이상의 정수로 주세요/);
+  assert.throws(() => parseArgs(['--limit', '0'], {}), /--limit은 1 이상의 정수로 주세요/);
+  assert.throws(() => parseArgs(['--limit=1.5'], {}), /--limit은/);
+  assert.throws(() => parseArgs(['--backup'], {}), /--backup 뒤에 값을 주세요/);
+  assert.throws(() => parseArgs(['--voices', '--dry-run'], {}), /--voices 뒤에 값을 주세요/);
+  assert.deepEqual(parseArgs(['--voices', 'Kore,Kore, Puck'], {}).voices, ['Kore', 'Puck']);
+  const r = parseArgs([], { npm_config_dry_run: 'true' }); assert.equal(r.dryRun, true); assert.match(r.hint, /npm run voice -- --dry-run/);
 });

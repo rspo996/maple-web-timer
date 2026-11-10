@@ -53,3 +53,20 @@ export function adoptManifest(j){
 }
 export const manifestGet=(m,voice,text)=>(m.files[voice]&&m.files[voice][text])||null;
 export function manifestSet(m,voice,text,rel){ (m.files[voice]=m.files[voice]||{})[text]=rel; }
+// 명령줄 옵션 해석. 모르는 옵션·값 빠짐·잘못된 --limit은 던진다(오타가 전체 생성으로 번지지 않게). npm이 --dry-run을 가져간 경우도 알아본다
+export function parseArgs(argv,env){
+  const r={backup:null,voices:null,limit:null,dryRun:false,hint:null}, vals=['--backup','--voices','--limit'];
+  for(let i=0;i<argv.length;i++){
+    let a=argv[i], v;
+    const eq=a.indexOf('='); if(a.startsWith('--')&&eq>0&&vals.includes(a.slice(0,eq))){ v=a.slice(eq+1); a=a.slice(0,eq); }
+    if(a==='--dry-run'&&v===undefined){ r.dryRun=true; continue; }
+    if(!vals.includes(a)) throw new Error(`모르는 옵션: ${argv[i]} (쓸 수 있는 것: --backup 파일, --voices Kore,Zephyr, --limit N, --dry-run)`);
+    if(v===undefined){ const n=argv[i+1]; if(n===undefined||n.startsWith('--')) throw new Error(`${a} 뒤에 값을 주세요`); v=n; i++; }
+    if(v==='') throw new Error(`${a} 뒤에 값을 주세요`);
+    if(a==='--backup') r.backup=v;
+    else if(a==='--voices') r.voices=[...new Set(v.split(',').map(s=>s.trim()).filter(Boolean))];
+    else{ if(!/^\d+$/.test(v)||+v<1) throw new Error('--limit은 1 이상의 정수로 주세요'); r.limit=+v; }
+  }
+  if(env&&env.npm_config_dry_run==='true'){ r.dryRun=true; r.hint='npm이 --dry-run을 가져갔어요. 다음부터는 npm run voice -- --dry-run 처럼 -- 뒤에 옵션을 주세요'; }
+  return r;
+}
