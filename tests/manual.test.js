@@ -239,3 +239,12 @@ test('manualText: 카운트다운·루틴 문구, 루틴이 둘 이상이면 루
   assert.equal(manualText(r2, { type: 'pre', idx: 0 }, s.timers), '사냥·회수 2, 회수 10초 전');
   assert.equal(manualText(r, { type: 'switch', idx: 0 }, s.timers), '사냥·회수, 사냥 시간이에요');
 });
+
+// ---- 묶음 6: 프리셋으로 시작한 타이머 이름(음성 문구 목록이 같은 규칙을 쓴다) ----
+import { durLabel, presetTimerName } from '../src/core/manual-core.js';
+test('presetTimerName: 이름이 시간 표기와 같으면 "… 타이머", 직접 지은 이름은 그대로', () => {
+  assert.equal(durLabel(300), '5분'); assert.equal(durLabel(7200), '2시간');
+  assert.equal(presetTimerName({ label: '5분', sec: 300 }), '5분 타이머');
+  assert.equal(presetTimerName({ label: '1시간', sec: 3600 }), '1시간 타이머');
+  assert.equal(presetTimerName({ label: '보스', sec: 600 }), '보스');
+});

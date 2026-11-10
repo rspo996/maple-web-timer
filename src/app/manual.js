@@ -4,14 +4,14 @@ import {Alerts,actx,titleTimer,unlockAudio} from './alerts.js';
 import {bump} from './bus.js';
 import {importing} from './prefs.js';
 import {baseTitle,setNote,setTitlePrefix,titlePrefix} from './watch.js';
-import {MANUAL_LABEL_MAX,MANUAL_MAX,MANUAL_MIN_SEC,MANUAL_PRE_MAX,MANUAL_STORE,manualAdjust,manualEmptyStore,manualFmt,manualLoad,manualNew,manualRemainMs,manualReset,manualStart,manualStep,manualText} from '../core/manual-core.js';
+import {MANUAL_LABEL_MAX,MANUAL_MAX,MANUAL_MIN_SEC,MANUAL_PRE_MAX,MANUAL_STORE,durLabel,manualAdjust,manualEmptyStore,manualFmt,manualLoad,manualNew,manualRemainMs,manualReset,manualStart,manualStep,manualText,presetTimerName} from '../core/manual-core.js';
+export {durLabel};   // ManualPanel.jsx가 app 쪽에서 가져다 쓴다
 import {clampInt,parseDur} from '../core/util.js';
 export let manual=manualEmptyStore();
 export const manualDelArm={};                                       // 실행 중 삭제: 두 번 눌러야 지운다(id → 타이머)
 export const manualAudible=()=>!!actx&&actx.state==='running';     // 지금 소리가 실제로 나는지(미리 알림을 '들었는지' 판정)
 export function manualSave(){ if(importing) return; try{ localStorage.setItem(MANUAL_STORE,JSON.stringify(manual)); }catch(e){} }   // 실패하면 이 탭에서만 유지
 export const manualCurName=t=>t.kind==='routine'?t.phases[t.idx].name:t.label;
-export const durLabel=sec=>sec%3600===0?`${sec/3600}시간`:sec%60===0?`${sec/60}분`:manualFmt(sec*1000);
 export const manualById=id=>manual.timers.find(t=>t.id===id);
 export function manualSet(t){ manual.timers=manual.timers.map(x=>x.id===t.id?t:x); }
 export const manualFull=()=>manual.timers.length>=MANUAL_MAX;
@@ -80,7 +80,7 @@ export function manualSavePreset(nameRaw,durRaw){
   manual.presets.push({id:'p'+n,label,sec:d.sec}); manualSave(); manualNote(`“${label}” 프리셋을 저장했어요`);
 }
 // 프리셋 칩: 한 번 누르면 바로 시작. 시간만 있는 프리셋은 "5분 타이머", 이름 붙인 프리셋은 그 이름
-export function manualStartPreset(p){ const name=p.label===durLabel(p.sec)?`${p.label} 타이머`:p.label; manualAddAndStart('countdown',name,[{name,sec:p.sec}]); }
+export function manualStartPreset(p){ const name=presetTimerName(p); manualAddAndStart('countdown',name,[{name,sec:p.sec}]); }
 export function manualDeletePreset(p){ manual.presets=manual.presets.filter(x=>x!==p); manualSave(); bump(); }
 
 /* ----- 카드 조작 ----- */

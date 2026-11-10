@@ -76,6 +76,10 @@ export function manualFmt(ms){
   const s=Math.max(0,Math.ceil(ms/1000)), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=String(s%60).padStart(2,'0');
   return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`;
 }
+// 초를 "5분"·"1시간"처럼. 분·시간으로 떨어지지 않으면 분:초
+export const durLabel=sec=>sec%3600===0?`${sec/3600}시간`:sec%60===0?`${sec/60}분`:manualFmt(sec*1000);
+// 프리셋으로 시작한 타이머 이름: 이름이 시간 표기와 같으면 "5분 타이머", 직접 지은 이름이면 그대로
+export const presetTimerName=p=>p.label===durLabel(p.sec)?`${p.label} 타이머`:p.label;
 
 /* ----- 저장값 읽기·내보내기·불러오기 ----- */
 export const MANUAL_SEC_MAX=24*3600;
