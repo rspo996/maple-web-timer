@@ -7,6 +7,7 @@ import {store} from './store.js';
 import {renderWatch,setNote} from './watch.js';
 import {KINDS} from '../core/kinds.js';
 import {eunNeun} from '../core/util.js';
+import {WATCH_START} from '../core/voice-phrases.js';
 export const EMPTY_DEFAULT='“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.';
 export const EMPTY_LOST='화면 연결이 끊겼어요. “게임 화면 연결”을 다시 눌러 주세요.';
 export const STALL_MS=10000;   // 이만큼 화면이 안 들어오면 상태줄에 표시(소리 알림은 없음, 2026-11-10 사용자 결정)
@@ -76,7 +77,7 @@ export async function connect(){
     resetAllStates(false);
     ui.connectedOnce=true; saveUi();
     const need=store.targets.filter(t=>t.enabled&&KINDS[t.kind]&&!KINDS[t.kind].isRegistered(t)).map(t=>t.name);
-    speak('감시 시작할게요'+(need.length?`. ${eunNeun(need.join(', '))} 등록이 필요해요`:''));
+    speak(WATCH_START+(need.length?`. ${eunNeun(need.join(', '))} 등록이 필요해요`:''));
     renderWatch();
   }catch(e){ if(e.name!=='NotAllowedError') setNote(`화면 연결에 실패했어요 (${e.message}). “게임 화면 연결”을 다시 눌러 주세요.`); }
 }
