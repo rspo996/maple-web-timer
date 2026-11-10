@@ -19,6 +19,7 @@ check("마스터 체인: 오디오 running, audioOut이 마스터, 게인 1.5, 1
 
 // 음성은 100%를 넘지 못한다
 await ev(() => { __fake.reset(); speak("음량 확인"); });
+await wait(1000);   // 브라우저 음성은 이미 예약된 확인음이 끝난 뒤에 말한다(묶음 6: 두 소리가 겹치지 않게)
 check("150%에서도 음성 음량은 1", J(await ev(() => __fake.volumes.slice())) === J([1]), await ev(() => __fake.volumes.slice()));
 
 // 100%로 내리면 리미터를 빼고(이전과 같은 크기) 보조 문구를 숨긴다
