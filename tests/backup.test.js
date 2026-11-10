@@ -82,3 +82,11 @@ test('validateBackup: 대상이 v1 모양이면 옮겨서 검사, 수동 타이�
   assert.deepEqual(v.warnings, ['수동 타이머 설정이 깨져 있어서 건너뛰어요']);
   assert.deepEqual(v.groups.ui, { volumePct: 200, pip: { w: 160, h: 1200 } });
 });
+
+test('백업 ui: 고른 목소리(voiceName)는 영문 이름이나 browser만', () => {
+  const env = ui => ({ schema: 'maple-web-timer-backup', version: 1, includes: ['ui'], data: { ui } });
+  assert.deepEqual(L.validateBackup(env({ voiceName: 'Zephyr' })).groups.ui, { voiceName: 'Zephyr' });
+  assert.deepEqual(L.validateBackup(env({ voiceName: 'browser' })).groups.ui, { voiceName: 'browser' });
+  assert.deepEqual(L.validateBackup(env({ voiceName: '<b>' })).groups.ui, {});
+  assert.deepEqual(L.validateBackup(env({ voiceName: 'x'.repeat(40) })).groups.ui, {});
+});

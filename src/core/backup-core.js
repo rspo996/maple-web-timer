@@ -63,6 +63,7 @@ export function validateBackup(obj){
     const u=data.ui, o={};
     if('volumePct' in u) o.volumePct=clampVolumePct(u.volumePct);
     if(typeof u.voice==='boolean') o.voice=u.voice;
+    if(typeof u.voiceName==='string'&&/^([A-Za-z]{1,32}|browser)$/.test(u.voiceName)) o.voiceName=u.voiceName;   // 묶음 6: 고른 음성
     if(u.pip&&Number.isFinite(+u.pip.w)&&Number.isFinite(+u.pip.h)) o.pip={w:backupClamp(+u.pip.w,160,1200),h:backupClamp(+u.pip.h,60,1200)};
     groups.ui=o;
   }

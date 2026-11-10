@@ -33,7 +33,7 @@ export async function exportBackup(withSounds){
   }
   const now=new Date();
   const obj=buildBackup({targets:store,manualTimers:manualExport(manual),
-    ui:{volumePct:clampVolumePct(ui.volumePct),voice:ui.voice!==false,...(ui.pip?{pip:ui.pip}:{})},sounds:withSounds?sounds:null},now);
+    ui:{volumePct:clampVolumePct(ui.volumePct),voice:ui.voice!==false,...(ui.pip?{pip:ui.pip}:{}),...(ui.voiceName?{voiceName:ui.voiceName}:{})},sounds:withSounds?sounds:null},now);
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(obj)],{type:'application/json'})); a.download=backupFileName(now);
   document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),60000);
   backupNote(failed?`소리 ${failed}개를 읽지 못해 빼고 저장했어요`:'설정을 파일로 저장했어요',!!failed);
