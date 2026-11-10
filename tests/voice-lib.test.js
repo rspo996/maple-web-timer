@@ -19,6 +19,7 @@ test('buildTtsRequest: 문서의 Interactions 요청 모양, 키는 헤더로', 
 test('extractAudioBase64: Interactions 응답과 generateContent 응답, 없으면 오류', () => {
   assert.equal(extractAudioBase64({ steps: [{ type: 'thought', content: [] }, { type: 'model_output', content: [{ type: 'audio', data: 'QUJD' }] }] }), 'QUJD');
   assert.equal(extractAudioBase64({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/wav', data: 'REVG' } }] } }] }), 'REVG');
+  assert.equal(extractAudioBase64({ candidates: [{ content: { parts: [null, { inlineData: { data: 'WFla' } }] } }] }), 'WFla');
   assert.throws(() => extractAudioBase64({ steps: [] }), /응답에 음성이 없어요/);
 });
 
@@ -39,6 +40,9 @@ test('parseEnvKey: GEMINI_API_KEY 한 줄, 따옴표·주석·다른 줄 무시'
   assert.equal(parseEnvKey('GEMINI_API_KEY=abc123'), 'abc123');
   assert.equal(parseEnvKey('# x\nOTHER=1\nGEMINI_API_KEY = "q-w_e" # 메모\n'), 'q-w_e');
   assert.equal(parseEnvKey('OTHER=1'), null);
+  assert.equal(parseEnvKey('GEMINI_API_KEY=\nOTHER_SECRET=sk-123'), null);
+  assert.equal(parseEnvKey('export GEMINI_API_KEY=abc'), 'abc');
+  assert.equal(parseEnvKey('GEMINI_API_KEY=abc\r\nOTHER=1'), 'abc');
 });
 
 test('clipPath: 목소리 폴더 + 문구 sha1 앞 12자', () => {

@@ -13,7 +13,7 @@ export function buildTtsRequest({text,voice,key,model=VOICE_MODEL,style=VOICE_ST
 // 응답에서 base64 오디오. Interactions(steps[].content[] type audio)와 generateContent(candidates[].content.parts[].inlineData) 모두
 export function extractAudioBase64(j){
   for(const s of (j&&j.steps)||[]) for(const c of s.content||[]) if(c&&c.type==='audio'&&c.data) return c.data;
-  for(const c of (j&&j.candidates)||[]) for(const p of (c.content&&c.content.parts)||[]) if(p.inlineData&&p.inlineData.data) return p.inlineData.data;
+  for(const c of (j&&j.candidates)||[]) for(const p of (c.content&&c.content.parts)||[]) if(p&&p.inlineData&&p.inlineData.data) return p.inlineData.data;
   throw new Error('응답에 음성이 없어요: '+JSON.stringify(j).slice(0,300));
 }
 const int16At=(u,off,len)=>{ const n=len>>1, out=new Int16Array(n), dv=new DataView(u.buffer,u.byteOffset+off,n*2); for(let i=0;i<n;i++) out[i]=dv.getInt16(i*2,true); return out; };
@@ -42,7 +42,7 @@ export function encodeMp3(samples,sampleRate){
   for(const p of parts){ out.set(new Uint8Array(p.buffer,p.byteOffset,p.length),o); o+=p.length; }
   return out;
 }
-export function parseEnvKey(text){ const m=/^\s*GEMINI_API_KEY\s*=\s*["']?([^"'\s#]+)/m.exec(String(text)); return m?m[1]:null; }
+export function parseEnvKey(text){ const m=/^[ \t]*(?:export[ \t]+)?GEMINI_API_KEY[ \t]*=[ \t]*["']?([^"'\s#]+)/m.exec(String(text)); return m?m[1]:null; }
 export const clipPath=(voice,text)=>`${voice}/${createHash('sha1').update(text).digest('hex').slice(0,12)}.mp3`;
 export function emptyManifest(){ return {version:1,model:VOICE_MODEL,style:VOICE_STYLE,voices:VOICES.map(v=>({...v})),files:{}}; }
 // 저장된 manifest를 이어서 쓴다. 모델·말투가 바뀌었으면 처음부터(다른 소리가 섞이지 않게)
