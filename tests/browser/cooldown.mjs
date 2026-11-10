@@ -51,12 +51,12 @@ await ev(() => { __fake.reset(); __fake.shade("skill", 0); }); await wait(2800);
 const rd1 = await st();
 check("pre 뒤 다시 밝아짐: 무음, 카드는 쓸 수 있음", rd1.spoken.length === 0 && rd1.status === "쓸 수 있음", rd1);
 
-// 6) 새로 쓰고 pre 전에 밝아지면 "다시 쓸 수 있어요"(올라가는 두 음)
+// 6) 새로 쓰고 pre 전에 밝아져도 알림 없음, 카드만 쓸 수 있음("다시 쓸 수 있어요" 알림은 뺌(2026-11-10 사용자 결정))
 await ev(() => { __fake.reset(); __fake.shade("skill", 0.6); }); await wait(1500);
 await ev(() => __fake.skew(4_000)); await wait(600);
 await ev(() => __fake.shade("skill", 0)); await wait(2800);
 const rd2 = await st();
-check("pre 전에 밝아짐: 다시 쓸 수 있어요 + 올라가는 두 음", J(rd2.spoken) === J(["설치기 1 다시 쓸 수 있어요"]) && J(rd2.osc) === J([["square", 784], ["square", 1175]]), rd2);
+check("pre 전에 밝아짐: 소리 없음, 카드는 쓸 수 있음", rd2.spoken.length === 0 && rd2.osc.length === 0 && rd2.status === "쓸 수 있음", rd2);
 
 // 7) 3초 미만으로 어두웠다 밝아지면 알림 없음
 await ev(() => { __fake.reset(); __fake.shade("skill", 0.6); }); await wait(1200);

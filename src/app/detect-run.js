@@ -1,6 +1,6 @@
-import {Alerts,fireSystem} from './alerts.js';
+import {Alerts} from './alerts.js';
 import {batch} from './bus.js';
-import {LOST_REMIND_MAX,LOST_REMIND_MS,STALL_MS,dims,frame,grab,health,setFrameFresh,src,viewCtx} from './capture.js';
+import {STALL_MS,dims,frame,grab,health,setFrameFresh,src,viewCtx} from './capture.js';
 import {pipUpdate} from './pip.js';
 import {drawPreview,reg} from './register.js';
 import {store,targetById} from './store.js';
@@ -8,7 +8,7 @@ import {pulse,renderWatch,setNote} from './watch.js';
 import {planGroup} from '../core/alerts-core.js';
 import {newState,ocrSevenSeg} from '../core/detect-core.js';
 import {KINDS,isPresetMode} from '../core/kinds.js';
-import {matchTemplate,prepTemplate,toGray} from '../core/match.js';
+import {bandMask,diamondMask,matchTemplate,prepTemplate,toGray} from '../core/match.js';
 import {scratch} from '../core/scratch.js';
 import {createSlowWatch} from '../core/slow-watch.js';
 import {PRESETS} from '../core/targets.js';
@@ -19,20 +19,42 @@ export function resetAllStates(armed){ for(const t of store.targets){ states[t.i
 
 /* ----- 감지 ----- */
 export function scaleFor(tw,th){ return Math.min(1,Math.max(0.25,14/Math.min(tw,th))); }
-export function loadTpl(t){
-  const s=t.s||1, key=t.url+"@"+s; const ca=tplCache[key]; if(ca) return ca.ready?ca:null;
+// band([lo,hi])를 주면 그 가운데 행 띠를 빼고 비교하는 템플릿을 만들고, 축소 검색 뒤 다시 잴 원본 크기 템플릿(full)도 같이 만든다.
+// 아이콘의 shape가 'diamond'(내장 룬)면 마름모 안쪽만 비교한다(모서리의 미니맵 배경은 맵마다 다름)
+export function loadTpl(t,band){
+  const s=t.s||1, key=t.url+"@"+s+(band?"#"+band.join(","):"")+(t.shape?"#"+t.shape:""); const ca=tplCache[key]; if(ca) return ca.ready?ca:null;
   const ent={ready:false}; tplCache[key]=ent;
   const img=new Image(); img.onload=()=>{
     const m=t.crop||0, iw=img.width-2*m, ih=img.height-2*m;
+    const draw=(w,h)=>{ const {work,wctx}=scratch(); work.width=w; work.height=h; wctx.fillStyle="#000"; wctx.fillRect(0,0,w,h); wctx.drawImage(img,m,m,iw,ih,0,0,w,h); return toGray(wctx.getImageData(0,0,w,h).data,w*h); };
+    const maskOf=(w,h)=>t.shape==='diamond'?diamondMask(w,h):band?bandMask(w,h,band[0],band[1]):undefined;
     const k=scaleFor(iw*s,ih*s), w=Math.max(4,Math.round(iw*s*k)), h=Math.max(4,Math.round(ih*s*k));
-    const {work,wctx}=scratch(); work.width=w; work.height=h; wctx.fillStyle="#000"; wctx.fillRect(0,0,w,h); wctx.drawImage(img,m,m,iw,ih,0,0,w,h);
-    const gray=toGray(wctx.getImageData(0,0,w,h).data,w*h);   // 원본 회색값도 보관(설치기의 밝기 비, 묶음 4 스펙 15-1)
-    Object.assign(ent,{k,m:m*s,ready:true,gray},prepTemplate(gray,w,h));
+    const gray=draw(w,h);   // 원본 회색값도 보관(설치기의 밝기 비, 묶음 4 스펙 15-1)
+    let full=null;
+    if(band&&k<1){ const fw=Math.max(4,Math.round(iw*s)), fh=Math.max(4,Math.round(ih*s)); full=prepTemplate(draw(fw,fh),fw,fh,maskOf(fw,fh)); }
+    Object.assign(ent,{k,m:m*s,ready:true,gray,full},prepTemplate(gray,w,h,maskOf(w,h)));
   }; img.src=t.url; return null;
+}
+// 축소 검색으로 찾은 위치(x,y: 원본 화면 좌표) 주변 ±R px를 원본 해상도로 다시 잰다. 축소하면 숫자 띠를 뺀 템플릿이 작아져 다른 아이콘과 점수 차가 줄어들기 때문
+export function refineAt(source,tp,x,y,R){
+  const x0=Math.max(0,Math.round(x)-R), y0=Math.max(0,Math.round(y)-R);
+  const W=Math.min(frame.w,Math.round(x)+tp.w+R)-x0, H=Math.min(frame.h,Math.round(y)+tp.h+R)-y0;
+  if(W<tp.w||H<tp.h) return null;
+  const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,x0,y0,W,H,0,0,W,H);
+  const r=matchTemplate(toGray(wctx.getImageData(0,0,W,H).data,W*H),W,H,tp);
+  return {score:r.score,x:x0+r.x,y:y0+r.y};
+}
+// pos 상자 가운데 3×3의 평균 색이 fill(r,g,b)을 만족하는지
+export function fillAt(source,pos,fill){
+  const x=Math.round(pos.x+pos.w/2-1.5), y=Math.round(pos.y+pos.h/2-1.5);
+  if(x<0||y<0||x+3>frame.w||y+3>frame.h) return false;
+  const {work,wctx}=scratch(); work.width=3; work.height=3; wctx.drawImage(source,x,y,3,3,0,0,3,3);
+  const d=wctx.getImageData(0,0,3,3).data; let r=0,g=0,b=0; for(let i=0;i<36;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; }
+  return fill(r/9,g/9,b/9);
 }
 export function areaOf(t){
   if(t.area&&(t.tpl||(KINDS[t.kind]&&KINDS[t.kind].needsTemplate===false))) return t.area;   // 사냥 멈춤처럼 템플릿 없이 영역만 쓰는 종류
-  if(isPresetMode(t)&&frame.w) return PRESETS[t.preset].area(frame);   // 내장 아이콘: 솔 야누스는 오른쪽 위, 부스터는 위쪽 가운데
+  if(isPresetMode(t)&&frame.w) return PRESETS[t.preset].area(frame);   // 내장 아이콘: 솔 야누스는 오른쪽 위, 부스터는 위쪽 가운데, 룬은 왼쪽 위(미니맵)
   return null;
 }
 // 템플릿 매칭으로 대상을 찾는다. buff·countdown·rune이 공용(KINDS.detect의 기본값). 돌려주는 값은 {score, pos} 또는 null
@@ -44,14 +66,19 @@ export function detectTemplate(t, source){
   const cands=t.tpl?[t.tpl]:P.icons.flatMap(p=>P.scales.map(s=>({...p,s})));
   const st=stateOf(t.id), hit=st.hit&&cands.find(x=>x.url===st.hit.url&&x.s===st.hit.s);
   const order=hit?[hit,...cands.filter(x=>x!==hit)]:cands;
+  const band=KINDS[t.kind]&&KINDS[t.kind].timerBand||null;   // 버프: 남은 시간 숫자 띠를 빼고 비교
   let best=null;
   for(const c of order){
-    const tp=loadTpl(c); if(!tp) continue;
+    const tp=loadTpl(c,band); if(!tp) continue;
     if(best&&best.score>=t.threshold&&c!==order[0]) break;
     const W=Math.round(a.w*tp.k), H=Math.round(a.h*tp.k);
     const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,a.x,a.y,a.w,a.h,0,0,W,H);
     const r=matchTemplate(toGray(wctx.getImageData(0,0,W,H).data,W*H),W,H,tp);
-    if(!best||r.score>best.score) best={score:r.score,t:c,pos:{x:a.x+r.x/tp.k-tp.m,y:a.y+r.y/tp.k-tp.m,w:c.w*(c.s||1),h:c.h*(c.s||1)}};
+    let score=r.score, x=a.x+r.x/tp.k, y=a.y+r.y/tp.k;
+    if(tp.full){ const f=refineAt(source,tp.full,x,y,Math.ceil(1/tp.k)+1); if(f){ score=f.score; x=f.x; y=f.y; } }
+    const pos={x:x-tp.m,y:y-tp.m,w:c.w*(c.s||1),h:c.h*(c.s||1)};
+    if(P&&!t.tpl&&P.fill&&!fillAt(source,pos,P.fill)) score=0;   // 내장 룬: 모양은 비슷해도 안쪽 색이 다르면 룬이 아니다
+    if(!best||score>best.score) best={score,t:c,pos};
   }
   if(best&&best.score>=t.threshold) st.hit={url:best.t.url,s:best.t.s};
   return best;
@@ -108,11 +135,9 @@ export async function tick(){
     batch(()=>{   // 이번 틱에 바뀐 상태줄·카드·알림 문구를 한 번에 그린다
       if(source){ [frame.w,frame.h]=dims(source); }
       const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
-      if(live){
-        if(ok){ health.okAt=now; health.badSince=null; if(health.badWarned){ health.badWarned=false; fireSystem('back'); } }
-        else { health.badSince=health.badSince||now; if(!health.badWarned && now-health.badSince>=STALL_MS){ health.badWarned=true; fireSystem('stall'); } }
-      } else if(!src && health.lostAt && health.reminders<LOST_REMIND_MAX && now-health.remindAt>=LOST_REMIND_MS){
-        health.reminders++; health.remindAt=now; fireSystem('lost');
+      if(live){   // 화면 안 들어옴은 상태줄에만 표시(소리 알림은 없음, 2026-11-10 사용자 결정)
+        if(ok){ health.okAt=now; health.badSince=null; health.badWarned=false; }
+        else { health.badSince=health.badSince||now; if(now-health.badSince>=STALL_MS) health.badWarned=true; }
       }
       const evq=[], ctx=viewCtx();
       for(const t of store.targets){

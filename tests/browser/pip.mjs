@@ -13,7 +13,7 @@ const pip = () => ev(() => { const d = document.querySelector("#fakePip") && doc
 await page.click("#btnPip"); await wait(800);
 const p1 = await pip();
 check("열기: 버튼 문구 바뀜, 창 크기(260×대상 수), 전용 CSS", (await ev(() => document.querySelector("#btnPip").textContent)) === "작은 창 닫기" && J(await ev(() => window.__pipOpts)) === J({ width: 260, height: 44 + 34 * 3 }) && p1 && p1.css, { p1, opts: await ev(() => window.__pipOpts) });
-check("내용: 맨 위 감시 상태, 대상 3행(이름·상태)", p1.status === "감시 중" && J(p1.rows.map(r => r.text[1] + "|" + r.text[2])) === J(["솔 야누스|아직 못 찾음", "부스터|아직 못 찾음", "룬|등록 필요"]), p1);
+check("내용: 맨 위 감시 상태, 대상 3행(이름·상태)", p1.status === "감시 중" && J(p1.rows.map(r => r.text[1] + "|" + r.text[2])) === J(["솔 야누스|아직 못 찾음", "부스터|아직 못 찾음", "룬|룬 없음"]), p1);  // 룬도 내장 아이콘이 생겨 등록 없이 찾는다(2026-11-10)
 
 // 수동 타이머가 생기면 행이 늘고 남은 시간이 줄어든다(탭 숨김과 상관없이 tick마다 갱신)
 await page.click("#manualPresets button:first-child"); await wait(1200);
@@ -29,12 +29,12 @@ check("알림: 룬 행 깜빡임(파랑, ◆), 다른 행은 그대로", f1.cls 
 await ev(() => __fake.skew(6_000)); await wait(1000);
 check("5초 뒤: 깜빡임 대신 고정 색", (await pip()).rows.find(r => r.id === "rune").cls === "r hold-info");
 await ev(() => __fake.skew(30_000)); await wait(1000);
-check("30초 뒤: 원래 수준(등록 필요는 경고)", (await pip()).rows.find(r => r.id === "rune").cls === "r lv-warn");
+check("30초 뒤: 원래 수준(룬 없음은 평상)", (await pip()).rows.find(r => r.id === "rune").cls === "r lv-idle");
 
-// 연결 끊김 알림은 맨 위 줄
+// 연결 끊김은 맨 위 줄에 문제 색으로만 표시(소리 알림이 없으니 깜빡이지 않음, 2026-11-10 사용자 결정)
 await ev(() => src.track.dispatchEvent(new Event("ended"))); await wait(1200);
 const lost = await pip();
-check("연결 끊김: 맨 위 줄 '⚠ 연결 끊김 · 알림이 멈췄어요'와 문제 색", lost.status === "⚠ 연결 끊김 · 알림이 멈췄어요" && /bad/.test(lost.statusCls) && /flash-bad/.test(lost.statusCls), lost);
+check("연결 끊김: 맨 위 줄 '연결 끊김 · 알림이 멈췄어요'와 문제 색, 깜빡임 없음", lost.status === "연결 끊김 · 알림이 멈췄어요" && /bad/.test(lost.statusCls) && !/flash/.test(lost.statusCls), lost);
 
 // 움직임 줄이기: 깜빡이지 않고 고정 색
 await page.cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });

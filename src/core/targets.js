@@ -8,12 +8,16 @@ export const TARGET_MAX=12;
 export const BUILTIN={
   sol:{kind:'buff',name:'솔 야누스',preset:'sol',threshold:0.75},
   booster:{kind:'countdown',name:'부스터',preset:'booster',threshold:0.7},
-  rune:{kind:'rune',name:'룬',preset:null,threshold:0.8},
+  rune:{kind:'rune',name:'룬',preset:'rune',threshold:0.8},
 };
 // 내장 기본 아이콘 세트. 저장하지 않는 코드 상수. 아이콘 이미지는 preset-data.js
 export const PRESETS={
   sol:{scales:[1,1.25,1.5], area:f=>({x:Math.round(f.w*0.35),y:0,w:Math.round(f.w*0.65),h:Math.round(f.h*0.3)}), get icons(){ return PRESET_ICONS.sol; }},
   booster:{scales:[0.8,1,1.25,1.5], area:f=>({x:Math.round(f.w*0.2),y:0,w:Math.round(f.w*0.6),h:Math.round(f.h*0.3)}), get icons(){ return PRESET_ICONS.booster; }},
+  // 미니맵은 화면 왼쪽 위. 맵마다 크기가 달라 넉넉하게 잡는다(2026-11-10 스크린샷의 미니맵은 1352×751에서 x 5~205, y 60~155)
+  // fill: 찾은 자리 가운데 색 확인. 미니맵의 내 위치(노랑)·다른 사람(분홍) 표시도 흰·검은 테두리라 무늬만으로 0.68까지 나온다(실제 화면). 룬 안쪽은 (221,103,255)
+  rune:{scales:[1,1.25,1.5], area:f=>({x:0,y:0,w:Math.round(f.w*0.35),h:Math.round(f.h*0.4)}), get icons(){ return PRESET_ICONS.rune; },
+    fill:(r,g,b)=>r>=160&&b>=200&&g<=170&&b-g>=70},
 };
 
 /* ----- 저장소 v2: 형식·검사·이전 (순수 함수. 저장소 객체를 인자로 받아 node에서 시험한다) ----- */
@@ -35,6 +39,7 @@ export function normalizeTarget(t){
   o.enabled=typeof o.enabled==='boolean'?o.enabled:true;
   const th=+o.threshold; o.threshold=Number.isFinite(th)?Math.min(0.98,Math.max(0.4,th)):(BUILTIN[o.id]?BUILTIN[o.id].threshold:0.75);
   o.preset=PRESETS[o.preset]?o.preset:null;
+  if(!o.preset&&BUILTIN[o.id]&&BUILTIN[o.id].preset) o.preset=BUILTIN[o.id].preset;   // 내장 아이콘이 나중에 생긴 내장 대상(룬, 2026-11-10). 직접 등록한 아이콘(tpl)이 있으면 그것이 우선
   o.frameW=Math.max(0,Math.round(+o.frameW)||0); o.frameH=Math.max(0,Math.round(+o.frameH)||0);
   o.area=validRect(o.area)?{x:+o.area.x,y:+o.area.y,w:+o.area.w,h:+o.area.h}:null;
   o.tpl=o.tpl&&typeof o.tpl.url==='string'&&o.tpl.w>0&&o.tpl.h>0?{url:o.tpl.url,w:o.tpl.w,h:o.tpl.h}:null;
@@ -184,9 +189,8 @@ export const MANUAL_SLOTS=[['manual.pre','미리 알림'],['manual.end','타이�
 export function slotsOf(targets,opts){
   const out=[], manual=!(opts&&opts.manual===false);
   for(const t of targets){ const k=KINDS[t.kind]; if(!k) continue; for(const e of k.events) if(!e.noSlot) out.push({key:`${t.id}.${e.key}`,group:t.name,label:e.label}); }
-  out.push({key:'grp.pre',group:'묶음 알림',label:'미리 알림'},{key:'grp.gone',group:'묶음 알림',label:'꺼짐'});
+  out.push({key:'grp.pre',group:'묶음 알림',label:'미리 알림'});   // 묶음 꺼짐은 없음(꺼짐 알림을 뺌, 2026-11-10)
   if(manual) for(const [key,label] of MANUAL_SLOTS) out.push({key,group:'수동 타이머',label});
-  out.push({key:'sys.lost',group:'연결 문제',label:'연결 끊김'},{key:'sys.stall',group:'연결 문제',label:'화면 안 들어옴'});
   return out;
 }
 export const RESERVED_OWNER=/^(sys|grp|manual|m\d+)$/;

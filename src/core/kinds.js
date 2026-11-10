@@ -1,6 +1,6 @@
 /* ===== 종류 등록부 KINDS (묶음 1 스펙 3.4, 16절). 종류별 동작은 여기 한 곳에 둔다.
    묶음 3(idle)·4(cooldown)는 registerKind(이름, 정의)로 종류를 더한다. 이 파일은 정의만 하고 DOM은 호출 시점에만 건드린다. 화면·캡처 쪽 기능은 hooks로 부른다. ===== */
-import {UNREAD_MS,stepCountdown,stepDetector} from './detect-core.js';
+import {HOLD_GRACE_MS,UNREAD_MS,stepCountdown,stepDetector} from './detect-core.js';
 import {hooks} from './hooks.js';
 import {checkDurLead,clampInt,fmt,parseDur} from './util.js';
 export const KINDS={};
@@ -24,6 +24,7 @@ export function commonStatus(k,t,ctx){
 export const NOT_SEEN={text:'아직 못 찾음',cls:'off',sub:'이번 연결에서 아직 한 번도 못 봤어요 · 켜져 있는데도 이러면 “등록”으로 직접 지정'};
 export const KIND_DEFAULTS={
   label:'', needsTemplate:true, usesThreshold:true, trackSeen:false, maxInstances:12, onSkip:false, events:[], actions:[],
+  timerBand:null,                                              // [lo, hi]: 템플릿 비교에서 뺄 가운데 행 띠(높이 비율). 버프만 쓴다
   defaults:()=>({}), normalizeP:p=>p,
   isRegistered:t=>!!(t.tpl||t.preset),
   needsReregister:(t,frame)=>!!(t.tpl&&t.frameW&&frame&&frame.w&&(t.frameW!==frame.w||t.frameH!==frame.h)),
@@ -47,7 +48,9 @@ export function registerKind(name,def){
 // 카드 상태 문구. 내장 아이콘을 쓰는 중이고 안내가 없으면 자동 검색 중이라는 안내를 붙인다
 export function cardStatus(t,st,now,ctx){
   const r=Object.assign({sub:''},KINDS[t.kind].status(t,st,now,ctx));
-  if(!r.sub&&isPresetMode(t)&&ctx.src) r.sub=t.kind==='countdown'?'화면 위쪽 가운데의 “남은시간” 타이머를 자동 검색 중':'기본 아이콘으로 화면 오른쪽 위를 자동 검색 중 · 잘 안 잡히면 “등록”으로 직접 지정';
+  if(!r.sub&&isPresetMode(t)&&ctx.src) r.sub=t.kind==='countdown'?'화면 위쪽 가운데의 “남은시간” 타이머를 자동 검색 중'
+    :t.kind==='rune'?'미니맵(화면 왼쪽 위)에서 룬 아이콘을 자동 검색 중 · 잘 안 잡히면 “등록”으로 직접 지정'
+    :'기본 아이콘으로 화면 오른쪽 위를 자동 검색 중 · 잘 안 잡히면 “등록”으로 직접 지정';
   return r;
 }
 export const mapLearn=evs=>evs.map(e=>e&&e.learn!=null?{effect:'learn',durationSec:e.learn}:e);
@@ -57,13 +60,15 @@ export const leadField={key:'leadSec',label:'미리 알림',type:'number',min:1,
 
 registerKind('buff',{
   label:'버프', trackSeen:true,
+  // 메이플은 남은 시간이 짧아진 버프 아이콘을 어둡게 덮고 가운데에 노란 숫자(예: 2:54, 23)를 찍는다. 숫자가 매초 바뀌므로 그 띠를 빼고 비교한다.
+  // 실제 화면(2026-11-10 스크린샷)에서 숫자는 아이콘(가장자리 2px 뺀 28px) 높이의 약 0.29~0.75. 위아래로 조금 여유를 둔다
+  timerBand:[0.27,0.78],
   defaults:()=>({durationSec:null,leadSec:10}),
   normalizeP:p=>{ const lead=clampInt(p.leadSec,1,120,10), d=p.durationSec; return {...p,leadSec:lead,durationSec:(typeof d==='number'&&Number.isFinite(d)&&d>lead)?Math.round(d):null}; },
   labels:t=>({area:'버프창 영역',icon:`${t.name} 아이콘`}),
   events:[
     {key:'pre',label:'미리 알림',beep:'buff',group:'pre',msg:t=>`${t.name} ${t.p.leadSec}초 전`},
-    {key:'gone',label:'꺼짐',beep:'gone',group:'gone',msg:t=>`${t.name} 꺼졌어요`},
-  ],
+  ],   // 꺼짐 알림 없음(2026-11-10 사용자 결정). stepDetector의 gone은 감지 루프(collectEvents)가 버린다
   step(t,st,det,source,now){ const evs=stepDetector(st,cfgView(t),det.score>=t.threshold,now); if(st.present) st.seen=true; return mapLearn(evs); },
   remainSec(t,st,now){
     if(!st.present||st.alertedPre||!st.appearedAt||!t.p.durationSec) return null;
@@ -104,11 +109,13 @@ registerKind('countdown',{
   labels:()=>({area:'남은시간 타이머 주변',icon:'“◷ 남은시간” 글자'}),
   events:[
     {key:'pre',label:'미리 알림',beep:'booster',group:'pre',msg:t=>`${t.name} ${t.p.leadSec}초 전`},
-    {key:'gone',label:'꺼짐',beep:'gone',group:'gone',msg:t=>`${t.name} 꺼졌어요`},
+    // 꺼짐 알림 없음(2026-11-10 사용자 결정)
     {key:'unread',label:'숫자 못 읽음',beep:'system',group:null,msg:t=>`${t.name} 숫자를 못 읽고 있어요`},
   ],
   step(t,st,det,source,now){
-    const hit=det.score>=t.threshold, evs=stepDetector(st,cfgView(t),hit,now); if(st.present) st.seen=true;
+    // 숫자를 읽어 남은 시간을 알면, 그 시간이 다 될 때까지는 “남은시간” 글자가 안 보여도 가려진 것으로 보고 꺼짐 알림을 하지 않는다
+    const holdUntil=st.present&&st.remain!=null?st.remainAt+st.remain*1000+HOLD_GRACE_MS:0;
+    const hit=det.score>=t.threshold, evs=stepDetector(st,{...cfgView(t),holdUntil},hit,now); if(st.present) st.seen=true;
     const o=st.present&&hit?hooks.readTimer(source,det.pos):null; st.ocrRect=o&&o.rect; if(o&&o.read) st.lastText=o.read.text;
     evs.push(...stepCountdown(st,cfgView(t),o&&o.read?o.read.value:null,now));
     return evs;
@@ -126,7 +133,8 @@ registerKind('countdown',{
     if(st.remain==null) return {text:st.ocrWarned?'켜짐 · 숫자를 못 읽음':'켜짐 · 숫자 읽는 중',cls:st.ocrWarned?'alert':'on',
       sub:st.ocrWarned?stuck+' · 안 되면 “등록”으로 “◷ 남은시간” 글자를 직접 지정':st.lastText?'읽은 값 '+st.lastText:'타이머 숫자를 아직 못 읽었어요'};
     const rem=st.remain-(now-st.remainAt)/1000;
-    return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',sub:st.ocrWarned?stuck+' · 이 시간은 추정이에요':'읽은 값 '+st.lastText+'초'};
+    return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',
+      sub:st.held?'“남은시간” 글자가 가려져 있어요 · 읽어 둔 시간으로 계속 세요':st.ocrWarned?stuck+' · 이 시간은 추정이에요':'읽은 값 '+st.lastText+'초'};
   },
   cardFields:()=>[{...leadField,set:(t,raw)=>{ t.p.leadSec=clampInt(raw,1,120,10); return {}; }}],   // 부스터는 지속시간이 없어 검사할 것이 없다
 });

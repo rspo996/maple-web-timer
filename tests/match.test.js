@@ -93,3 +93,62 @@ test('matchTemplate: 적분 배열은 더 큰 크기가 필요할 때만 새로 
   matchTemplate(noiseImage(200, 100, 4), 200, 100, tpl);
   assert.equal(matchStats.allocs, after + 1);
 });
+
+// ---- 마스크 비교: 버프 아이콘의 남은 시간 숫자 띠 빼기(2026-11-10 실제 화면에서 솔 야누스를 못 찾던 문제), 룬 마름모 ----
+import { bandMask, diamondMask, maskRects } from '../src/core/match.js';
+import { KINDS } from '../src/core/kinds.js';
+import { SOL_TIMER, grayOf } from './fixtures/sol-janus-timer.js';
+import { RUNE_MINIMAP, grayOf as gunzipGray } from './fixtures/rune-minimap.js';
+const L_plain = x => JSON.parse(JSON.stringify(x));
+const rowsOf = (m, w, h) => [...Array(h).keys()].filter(y => m[y * w]);
+
+test('bandMask: 행 중심 비율이 lo~hi인 가운데 띠를 뺀다', () => {
+  assert.deepEqual(rowsOf(bandMask(28, 28, 0.27, 0.78), 28, 28), [0, 1, 2, 3, 4, 5, 6, 7, 22, 23, 24, 25, 26, 27]);
+  assert.deepEqual(rowsOf(bandMask(14, 14, 0.27, 0.78), 14, 14), [0, 1, 2, 3, 11, 12, 13]);
+  assert.deepEqual(L_plain(maskRects(bandMask(10, 10, 0.27, 0.78), 10, 10)), [[0, 3, 0, 10], [8, 10, 0, 10]]);   // 위아래 사각형 두 개
+});
+
+test('diamondMask: 11×11은 |dx|+|dy|≤5 마름모(61픽셀), 행마다 사각형 하나', () => {
+  const m = diamondMask(11, 11), n = m.reduce((a, b) => a + b, 0);
+  assert.equal(n, 61);
+  assert.equal(m[0 * 11 + 5], 1); assert.equal(m[0 * 11 + 4], 0); assert.equal(m[5 * 11 + 0], 1); assert.equal(m[1 * 11 + 3], 0);
+  assert.equal(maskRects(m, 11, 11).length, 11);
+  assert.deepEqual(L_plain(maskRects(undefined, 7, 5)), [[0, 5, 0, 7]]);
+});
+
+test('matchTemplate 마스크: 뺀 부분의 내용이 바뀌어도 원래 위치에서 점수 약 1', () => {
+  const W = 60, H = 40, img = noiseImage(W, H, 7), tg = crop(img, W, 13, 7, 10, 10), other = noiseImage(W, H, 55);
+  const changed = Float32Array.from(img);
+  for (let y = 7 + 3; y <= 7 + 7; y++) for (let x = 13; x < 23; x++) changed[y * W + x] = other[y * W + x];   // 가운데 띠(행 3~7)를 다른 무늬로 덮음
+  const whole = matchTemplate(changed, W, H, prepTemplate(tg, 10, 10));
+  const masked = matchTemplate(changed, W, H, prepTemplate(tg, 10, 10, bandMask(10, 10, 0.27, 0.78)));
+  assert.ok(whole.score < 0.8, 'whole ' + whole.score);
+  assert.equal(masked.x, 13); assert.equal(masked.y, 7);
+  assert.ok(masked.score > 0.999, 'masked ' + masked.score);
+});
+
+test('실제 화면: 남은 시간 "23"이 찍힌 솔 야누스 아이콘은 통째로는 기준값 아래, 숫자 띠를 빼면 찾는다', () => {
+  const { frame, icon, at } = SOL_TIMER, img = grayOf(frame), g = grayOf(icon), band = KINDS.buff.timerBand;
+  const whole = matchTemplate(img, frame.w, frame.h, prepTemplate(g, icon.w, icon.h));
+  const masked = matchTemplate(img, frame.w, frame.h, prepTemplate(g, icon.w, icon.h, bandMask(icon.w, icon.h, band[0], band[1])));
+  assert.ok(whole.score < 0.75, 'whole ' + whole.score);        // 솔 야누스 기준값 0.75 아래 = 고치기 전에 못 찾던 이유
+  assert.deepEqual([masked.x, masked.y], [at.x, at.y]);
+  assert.ok(masked.score > 0.85, 'masked ' + masked.score);
+});
+
+test('실제 미니맵: 룬 마름모만 비교하면 룬은 찾고, 룬이 없는 미니맵(다른 플레이어·포털 표시)은 기준값 0.8 아래', () => {
+  const { withRune, noRune, rune, at } = RUNE_MINIMAP, R = gunzipGray(rune), tp = prepTemplate(R, 11, 11, diamondMask(11, 11));
+  const hit = matchTemplate(gunzipGray(withRune), withRune.w, withRune.h, tp);
+  assert.deepEqual([hit.x, hit.y], [at.x, at.y]); assert.ok(hit.score > 0.99, 'hit ' + hit.score);
+  const miss = matchTemplate(gunzipGray(noRune), noRune.w, noRune.h, tp);
+  assert.ok(miss.score < 0.7, 'miss ' + miss.score);
+});
+
+test('실제 미니맵: 룬을 다른 맵 배경에 옮겨 놓아도 마름모 비교는 점수 약 1, 통째 비교는 배경 때문에 떨어진다', () => {
+  const { noRune, rune } = RUNE_MINIMAP, R = gunzipGray(rune), M = diamondMask(11, 11), bg = gunzipGray(noRune), X = 120, Y = 30;
+  for (let y = 0; y < 11; y++) for (let x = 0; x < 11; x++) if (M[y * 11 + x]) bg[(Y + y) * noRune.w + X + x] = R[y * 11 + x];   // 마름모 픽셀만 옮김(모서리는 그 맵 배경)
+  const masked = matchTemplate(bg, noRune.w, noRune.h, prepTemplate(R, 11, 11, M));
+  const whole = matchTemplate(bg, noRune.w, noRune.h, prepTemplate(R, 11, 11));
+  assert.deepEqual([masked.x, masked.y], [X, Y]); assert.ok(masked.score > 0.999, 'masked ' + masked.score);
+  assert.ok(whole.score < masked.score - 0.05, `whole ${whole.score}`);
+});

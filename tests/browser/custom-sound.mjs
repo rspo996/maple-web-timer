@@ -12,16 +12,16 @@ await fs.writeFile(files.ok, wav(0.3)); await fs.writeFile(files.long, wav(11));
 const { page, ev, wait } = await open(taskSpace, { connect: true });
 await ev(() => { document.querySelector("#soundsDetails").open = true; document.querySelectorAll("#soundRows .snd-row").forEach((r, i) => r.querySelector("input[type=file]").id = "pick" + i); });
 const rowOf = key => ev(k => SLOTS.findIndex(s => s.key === k), key);
-const iSolPre = await rowOf("sol.pre"), iSolGone = await rowOf("sol.gone");
+const iSolPre = await rowOf("sol.pre"), iOther = await rowOf("rune.appear");   // 거절 시험용 다른 슬롯(솔 야누스 꺼짐 슬롯은 없어짐, 2026-11-10)
 const note = () => ev(() => document.querySelector("#soundNote").textContent);
 
 await page.setInputFiles("#pick" + iSolPre, files.ok); await wait(1200);
 let r = await ev(() => ({ has: customSounds.has("sol.pre"), file: document.querySelector("#soundRows .snd-row").querySelector(".snd-file").textContent, note: document.querySelector("#soundNote").textContent }));
 check("파일 고르기: 슬롯에 저장, 이름·길이 표시", r.has && r.file === "ding.wav · 0.3초" && r.note.includes("소리를 바꿨어요"), r);
-await page.setInputFiles("#pick" + iSolGone, files.long); await wait(1000);
-check("10초 넘는 소리는 거절", (await note()).includes("10초 이하 소리만 쓸 수 있어요") && !(await ev(() => customSounds.has("sol.gone"))), await note());
-await page.setInputFiles("#pick" + iSolGone, files.big); await wait(1000);
-check("5MB 넘는 파일은 거절", (await note()).includes("5MB 이하 파일만 쓸 수 있어요") && !(await ev(() => customSounds.has("sol.gone"))), await note());
+await page.setInputFiles("#pick" + iOther, files.long); await wait(1000);
+check("10초 넘는 소리는 거절", (await note()).includes("10초 이하 소리만 쓸 수 있어요") && !(await ev(() => customSounds.has("rune.appear"))), await note());
+await page.setInputFiles("#pick" + iOther, files.big); await wait(1000);
+check("5MB 넘는 파일은 거절", (await note()).includes("5MB 이하 파일만 쓸 수 있어요") && !(await ev(() => customSounds.has("rune.appear"))), await note());
 
 // 내 소리가 있는 알림은 기본 경고음·음성 대신 그 소리만
 await ev(() => { __fake.reset(); window.__recs = []; Alerts.listen(x => __recs.push(x)); testAlert(targetById("sol")); });

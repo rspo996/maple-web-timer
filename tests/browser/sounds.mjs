@@ -8,12 +8,12 @@ const keys = () => new Promise(res => { const r = indexedDB.open("maple-web-time
 const { ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-v2": V2 }, sounds: ["sol.pre", "u3.gone", "u9.pre", "booster.gone", "sys.lost", "grp.pre", "manual.end", "m2.pre"] });
 await wait(1500);
 const rows = await ev(() => [...document.querySelectorAll("#soundRows .snd-group > b")].map(b => b.textContent));
-check("소리 설정: 대상 이름 순서대로 그룹", JSON.stringify(rows) === JSON.stringify(["솔 야누스", "유니온의 힘", "묶음 알림", "수동 타이머", "연결 문제"]), rows);
+check("소리 설정: 대상 이름 순서대로 그룹(연결 문제 알림은 없음, 2026-11-10)", JSON.stringify(rows) === JSON.stringify(["솔 야누스", "유니온의 힘", "묶음 알림", "수동 타이머"]), rows);
 const kept = await ev(keys);
 check("고아 정리: 없는 대상(u9, booster)만 삭제, 예약 접두어·현재 대상은 보존",
   JSON.stringify(kept) === JSON.stringify(["grp.pre", "m2.pre", "manual.end", "sol.pre", "sys.lost", "u3.gone"]), kept);
 const shown = await ev(() => [...document.querySelectorAll(".snd-file.custom")].length);
-check("소리 설정: 보이는 슬롯의 내 소리 3개(sol.pre, u3.gone, sys.lost) 표시", shown >= 3, shown);
+check("소리 설정: 보이는 슬롯의 내 소리 3개(sol.pre, grp.pre, manual.end) 표시. 없어진 슬롯(u3.gone, sys.lost)의 저장 파일은 지우지 않고 숨김", shown === 3, shown);
 // 저장소가 깨진 채 시작하면 소리를 지우지 않는다
 const r2 = await open(taskSpace, { seed: { "maple-web-timer-v2": "{oops" }, sounds: ["u9.pre"] });
 await r2.wait(1500);

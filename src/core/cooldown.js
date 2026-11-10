@@ -135,7 +135,7 @@ registerKind('cooldown',{
   },
   events:[
     {key:'pre',label:'곧 사라짐',beep:'buff',group:'pre',msg:t=>`${t.name} ${t.p.leadSec}초 뒤 사라져요`},
-    {key:'ready',label:'다시 쓸 수 있음',beep:'ready',group:null,msg:t=>`${t.name} 다시 쓸 수 있어요`},
+    // “다시 쓸 수 있음” 알림 없음(2026-11-10 사용자 결정). 카드 상태(쓸 수 있음)로만 보인다
     {key:'unread',label:'아이콘 안 보임',beep:'system',group:null,msg:t=>`${t.name} 아이콘이 안 보여요`},
   ],
   detect:(t,source)=>t.tpl&&t.area?cdMeasure(t,source):null,
@@ -153,7 +153,7 @@ registerKind('cooldown',{
     if(!ctx||!ctx.live) return [];                         // 스크린샷 테스트: 상태·측정값만, 알림 없음
     const evs=stepCooldown(S,{durationSec:t.p.durationSec,leadSec:t.p.leadSec},det.state,now);
     st.seen=S.seen;
-    return evs.filter(e=>!(e.ready&&e.ready.silent)).map(e=>e.ready?'ready':e);   // pre를 울린 주기의 ready는 화면만(정책)
+    return evs.filter(e=>!e.ready);   // ready(다시 쓸 수 있음)는 알리지 않는다(2026-11-10 사용자 결정)
   },
   markPre(st){ cdS(st).alertedPre=true; },               // 당겨 알림으로 묶인 주기도 ready 무음
   remainSec(t,st,now){

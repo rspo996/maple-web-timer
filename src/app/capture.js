@@ -1,4 +1,4 @@
-import {Alerts,fireSystem,speak,unlockAudio} from './alerts.js';
+import {Alerts,speak,unlockAudio} from './alerts.js';
 import {resetAllStates} from './detect-run.js';
 import {bump} from './bus.js';
 import {saveUi,ui} from './prefs.js';
@@ -9,8 +9,8 @@ import {KINDS} from '../core/kinds.js';
 import {eunNeun} from '../core/util.js';
 export const EMPTY_DEFAULT='“게임 화면 연결”을 눌러 메이플스토리 창을 공유하세요.';
 export const EMPTY_LOST='화면 연결이 끊겼어요. “게임 화면 연결”을 다시 눌러 주세요.';
-export const STALL_MS=10000, LOST_REMIND_MS=120000, LOST_REMIND_MAX=2;
-export const health={lostAt:null,reminders:0,remindAt:0,badSince:null,badWarned:false,okAt:0};
+export const STALL_MS=10000;   // 이만큼 화면이 안 들어오면 상태줄에 표시(소리 알림은 없음, 2026-11-10 사용자 결정)
+export const health={lostAt:null,badSince:null,badWarned:false,okAt:0};
 /* ----- 화면 소스 ----- */
 export let src=null;            // {type:'stream', video, track, cap} | {type:'image', img}
 export const frame={w:0,h:0};
@@ -64,11 +64,11 @@ export async function connect(){
     const track=stream.getVideoTracks()[0];
     let cap=null; try{ if('ImageCapture' in window) cap=new ImageCapture(track); }catch(e){}
     if(src&&src.track) src.track.stop();   // 다른 창으로 바꾸면 이전 공유를 닫음 (stop()은 ended를 일으키지 않음)
-    // 사용자가 브라우저의 “공유 중지”를 누르거나 게임 창이 닫히면 감시가 멈추므로 소리로 알림. 지금 쓰는 공유일 때만
+    // 사용자가 브라우저의 “공유 중지”를 누르거나 게임 창이 닫히면 감시가 멈춘다. 상태줄에만 표시(소리 알림은 없음, 2026-11-10 사용자 결정). 지금 쓰는 공유일 때만
     track.onended=()=>{
       if(!src||src.track!==track) return;
-      Object.assign(health,{lostAt:Date.now(),reminders:0,remindAt:Date.now(),badSince:null,badWarned:false});
-      teardown(); fireSystem('lost');
+      Object.assign(health,{lostAt:Date.now(),badSince:null,badWarned:false});
+      teardown();
     };
     src={type:'stream',video,track,cap};
     Object.assign(connectBtn,{label:'다른 창 연결',primary:false});

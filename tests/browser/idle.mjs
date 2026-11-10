@@ -68,11 +68,11 @@ await ev(() => __fake.skew(4_000)); await wait(2800);
 const g2 = await st();
 check("암전 뒤 처음부터: 6+6초에는 안 울리고, 다시 10초가 지나야 울림", g1.spoken.length === 0 && g2.spoken.length === 1, { g1: g1.spoken, g2: g2.spoken });
 
-// 8) 영역이 계속 변하면 한 번 말하고 카드·상태줄에 표시
+// 8) 영역이 계속 변하면 카드·상태줄에만 표시(음성은 뺌(2026-11-10 사용자 결정))
 await ev(() => { __fake.reset(); const t = store.targets.find(x => x.kind === "idle"), S = states[t.id].idle; S.recent.length = 0; for (let i = 0; i < 120; i++) S.recent.push({ at: Date.now() - i * 400, px: 99 }); });
 await changeFor(2);
 const b1 = await st();
-check("계속 변함: 음성 한 번, 카드 '영역이 계속 변해요', 상태줄 '영역 확인 필요'", J(b1.spoken) === J(["사냥 멈춤 영역이 계속 변해서 감시할 수 없어요"]) && b1.status === "영역이 계속 변해요" && b1.strip.includes("사냥 멈춤 영역 확인 필요"), b1);
+check("계속 변함: 음성 없음, 카드 '영역이 계속 변해요', 상태줄 '영역 확인 필요'", b1.spoken.length === 0 && b1.status === "영역이 계속 변해요" && b1.strip.includes("사냥 멈춤 영역 확인 필요"), b1);
 await ev(() => { const t = store.targets.find(x => x.kind === "idle"); states[t.id].idle.recent.length = 0; }); await wait(1200);
 
 // 9) 쉬기: 10분 쉬기 → 멈춰도 알림 없음, 상태줄 '쉬는 중' → 쉬기 끝내기

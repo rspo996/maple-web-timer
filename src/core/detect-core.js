@@ -1,14 +1,18 @@
 // 켜짐/꺼짐 판정과 타이머 상태기계 (화면 없이도 테스트 가능하도록 순수 함수)
+// cfg.holdUntil(시각): 그때까지는 연속으로 안 보여도 꺼짐으로 보지 않고 가려진 것(st.held)으로 둔다. 카운트다운이 읽어 둔 남은 시간으로 정한다
+export const HOLD_GRACE_MS=2000;   // 카운트다운: 읽어 둔 끝 시각보다 이만큼 더 기다린 뒤에 꺼짐으로 본다
 export function stepDetector(st, cfg, matched, now){
   const ev=[]; const need = cfg.kind==='buff' ? {on:2,off:4} : {on:2,off:4};
-  if(matched){ st.onStreak++; st.offStreak=0; } else { st.offStreak++; st.onStreak=0; }
+  if(matched){ st.onStreak++; st.offStreak=0; st.held=false; } else { st.offStreak++; st.onStreak=0; }
   if(!st.present && st.onStreak>=need.on){
     st.present=true; st.presentAt=now;
     if(st.armed){ st.appearedAt=now; st.alertedPre=false; st.preMarkRemain=0; ev.push('appear'); }
     else { st.appearedAt=null; ev.push('appear-unknown'); }   // 연결 시점에 이미 켜져 있던 경우
     st.lastRemind=now;
+  } else if(st.present && st.offStreak>=need.off && cfg.holdUntil && now<cfg.holdUntil){
+    st.held=true;      // 화면 위쪽 가운데의 안내 글자·데미지 숫자 등에 잠깐 가려졌을 수 있다(2026-11-10 부스터 꺼짐 오판)
   } else if(st.present && st.offStreak>=need.off){
-    st.present=false;
+    st.present=false; st.held=false;
     if(cfg.kind==='countdown' && !st.alertedPre) ev.push('gone');
     if(cfg.kind==='buff'){
       if(!cfg.durationSec && st.appearedAt){
@@ -29,7 +33,7 @@ export function stepDetector(st, cfg, matched, now){
   }
   return ev;
 }
-export function newState(){ return {present:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,preMarkRemain:0,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
+export function newState(){ return {present:false,held:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,preMarkRemain:0,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
 
 /* ===== 부스터 타이머 숫자 읽기 (7세그먼트) ===== */
 // 노란/흰 7세그먼트 숫자(검은 배경)를 읽어 {value, text} 반환. 못 읽으면 null
@@ -71,7 +75,13 @@ export function stepCountdown(st, cfg, value, now){
   if(!st.present){ st.remain=null; st.cand=null; st.lastReadAt=null; st.ocrWarned=false; return ev; }
   if(st.lastReadAt==null) st.lastReadAt=st.presentAt ?? now;
   if(value==null){
-    if(!st.ocrWarned && now-st.lastReadAt>=UNREAD_MS){ st.ocrWarned=true; ev.push('unread'); }
+    // 글자가 가려진 동안(st.held)은 못 읽는 이유를 알고 읽어 둔 시간으로 세고 있으므로 “못 읽음”을 울리지 않는다(2026-11-10 사용자 결정)
+    if(!st.held && !st.ocrWarned && now-st.lastReadAt>=UNREAD_MS){ st.ocrWarned=true; ev.push('unread'); }
+    // 못 읽는 동안에도 읽어 둔 남은 시간으로 미리 알림(퀘스트 진행 글자가 10초 전 순간을 가려도 울리도록)
+    if(st.remain!=null && !st.alertedPre){
+      const est=st.remain-(now-st.remainAt)/1000;
+      if(est<=cfg.leadSec && est>0){ st.alertedPre=true; st.preMarkRemain=est; ev.push('pre'); }
+    }
     return ev;
   }
   st.lastReadAt=now; st.ocrWarned=false;

@@ -187,20 +187,20 @@ const cdT = (o = {}) => ({ id: 'u5', kind: 'cooldown', name: '설치기 1', pres
 const LIVE = { src: true, live: true, frame: { w: 1280, h: 720 } };
 const det = (state, ncc = 0.95, p50 = 1, nccMasked = 0.99) => ({ state, ncc, score: ncc, gain: { p20: p50, p50, n: 900, nccMasked }, pos: { x: 600, y: 650, w: 32, h: 32 } });
 
-test('KINDS.cooldown: 아이콘 한 번 등록, 알림 3종(pre는 묶기·buff 소리, ready 즉시·ready 소리, unread 시스템)', () => {
+test('KINDS.cooldown: 아이콘 한 번 등록, 알림 2종(pre는 묶기·buff 소리, unread 시스템). “다시 쓸 수 있음”은 없음(2026-11-10 사용자 결정)', () => {
   assert.deepEqual(plain(K.register.steps), ['icon']);
-  assert.deepEqual(plain(K.events.map(e => [e.key, e.beep, e.group])), [['pre', 'buff', 'pre'], ['ready', 'ready', null], ['unread', 'system', null]]);
+  assert.deepEqual(plain(K.events.map(e => [e.key, e.beep, e.group])), [['pre', 'buff', 'pre'], ['unread', 'system', null]]);
   assert.deepEqual([K.menuLabel, K.trackSeen, K.onSkip, K.usesThreshold], ['설치기 쿨타임', true, false, true]);
   const t = cdT();
-  assert.deepEqual(plain(K.events.map(e => e.msg(t, {}))), ['설치기 1 10초 뒤 사라져요', '설치기 1 다시 쓸 수 있어요', '설치기 1 아이콘이 안 보여요']);
+  assert.deepEqual(plain(K.events.map(e => e.msg(t, {}))), ['설치기 1 10초 뒤 사라져요', '설치기 1 아이콘이 안 보여요']);
 });
 
-test('addKindTarget: 설치기 1, 설치기 2 … 기본 기준값 0.7, 슬롯 3개', () => {
+test('addKindTarget: 설치기 1, 설치기 2 … 기본 기준값 0.7, 슬롯 2개(다시 쓸 수 있음은 없음)', () => {
   const s = L.defaultStore();
   const a = L.addKindTarget(s, 'cooldown').target, b = L.addKindTarget(s, 'cooldown').target;
   assert.deepEqual([a.name, a.threshold, b.name, b.id], ['설치기 1', 0.7, '설치기 2', 'u2']);
   const keys = plain(L.slotsOf(s.targets, { manual: false })).map(x => x.key);
-  assert.ok(['u1.pre', 'u1.ready', 'u1.unread'].every(k => keys.includes(k)), keys);
+  assert.ok(['u1.pre', 'u1.unread'].every(k => keys.includes(k)) && !keys.includes('u1.ready'), keys);
 });
 
 test('normalizeTarget: gainHi > gainLo, nccDim < threshold, 지속시간 > 미리 알림을 지킨다', () => {
@@ -208,7 +208,7 @@ test('normalizeTarget: gainHi > gainLo, nccDim < threshold, 지속시간 > 미�
   assert.deepEqual(plain(o.p), { gainHi: 0.85, gainLo: 0.65, nccDim: 0.4, calibrated: false, durationSec: null, leadSec: 10 });
 });
 
-test('step: 측정 상태로 상태기계를 돌리고, 무음 ready는 내지 않는다. 스크린샷 모드는 알리지 않음', () => {
+test('step: 측정 상태로 상태기계를 돌리고, ready(다시 쓸 수 있음)는 알리지 않는다(2026-11-10). 스크린샷 모드는 알리지 않음', () => {
   const t = cdT(), st = L.newState();
   const run = (s, at, ctx = LIVE) => plain(K.step(t, st, det(s, 0.95, s === 'dim' ? 0.4 : 1), null, 1_000_000 + at, ctx));
   run('ready', 0); run('ready', 500);
@@ -218,7 +218,8 @@ test('step: 측정 상태로 상태기계를 돌리고, 무음 ready는 내지 �
   assert.deepEqual(run('dim', 51_000), ['pre']);
   run('ready', 60_000); assert.deepEqual(run('ready', 60_500), []);      // pre를 울린 주기 → ready 무음
   run('dim', 70_000); run('dim', 70_500);
-  run('ready', 80_000); assert.deepEqual(run('ready', 80_500), ['ready']);
+  run('ready', 80_000); assert.deepEqual(run('ready', 80_500), []);    // 미리 알림이 없던 주기도 다시 밝아질 때 알림 없음
+  assert.equal(st.cd.cur, 'ready');
   const s2 = L.newState(), shot = { ...LIVE, live: false };
   for (const [i, s] of ['ready', 'ready', 'dim', 'dim', 'ready', 'ready'].entries()) assert.deepEqual(plain(K.step(t, s2, det(s, 0.95, s === 'dim' ? 0.4 : 1), null, i * 5000, shot)), []);
 });

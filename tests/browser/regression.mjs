@@ -17,10 +17,10 @@ const osc = () => ev(() => J(__fake.osc));
 check("연결: 상태줄", (await txt("#watchState")) === "감시 중");
 check("연결: 탭 제목", (await ev(() => document.title)) === "● 감시 중 · 메이플 재획 알리미");
 const first = await ev(() => ({ cards: ["sol", "booster", "rune"].map(i => document.querySelector(`#card-${i} [data-s=status]`).textContent), spoken: __fake.spoken.slice() }));
-check("연결: 카드 문구(못 찾음은 꺼짐과 구분)", J(first.cards) === J(["아직 못 찾음", "아직 못 찾음", "등록 필요"]), first.cards);
-check("연결: 시작 음성", first.spoken[0] === "감시 시작할게요. 룬은 등록이 필요해요", first.spoken);
+check("연결: 카드 문구(못 찾음은 꺼짐과 구분)", J(first.cards) === J(["아직 못 찾음", "아직 못 찾음", "룬 없음"]), first.cards);  // 룬도 내장 아이콘이 생겨 등록 없이 찾는다(2026-11-10)
+check("연결: 시작 음성(등록할 대상 없음)", first.spoken[0] === "감시 시작할게요", first.spoken);
 const hand = await ev(() => ({ label: document.querySelector("#btnConnect").textContent, primary: document.querySelector("#btnConnect").classList.contains("primary"), strip: [...document.querySelectorAll("#watchTargets button.primary")].map(b => b.textContent) }));
-check("연결 뒤: 연결 버튼은 '다른 창 연결'로 물러나고 등록 버튼이 주된 버튼", hand.label === "다른 창 연결" && !hand.primary && J(hand.strip) === J(["룬 등록하기"]), hand);
+check("연결 뒤: 연결 버튼은 '다른 창 연결'로 물러나고, 등록할 대상이 없으니 상태줄에 등록 버튼 없음", hand.label === "다른 창 연결" && !hand.primary && J(hand.strip) === J([]), hand);
 
 // 2) 부스터 숫자를 못 읽음: 20초 넘게 못 읽으면 알림 한 번(낮은 경고음)
 await ev(() => { __fake.reset(); __fake.image("booster", PRESET_ICONS.booster[0].url, 500, 20, 65, 19); });
@@ -30,7 +30,7 @@ await ev(() => __fake.skew(21000)); await wait(2500);
 const unread = await ev(() => ({ spoken: __fake.spoken.slice(), st: document.querySelector("#card-booster [data-s=status]").textContent, osc: __fake.osc.slice(0, 3) }));
 check("숫자 못 읽음: 음성 한 번 · 상태 문구 · 낮은 톱니파 경고음", J(unread.spoken) === J(["부스터 숫자를 못 읽고 있어요"]) && unread.st === "켜짐 · 숫자를 못 읽음" && J(unread.osc) === J([["sawtooth", 330], ["sawtooth", 330], ["sawtooth", 330]]), unread);
 await ev(() => { __fake.show("booster", false); });
-await wait(3000);                                             // 꺼짐 확정(4틱) 뒤 "부스터 꺼졌어요"가 나간 다음에 다음 단계로
+await wait(3000);                                             // 꺼짐 확정(4틱)까지 기다린다(꺼짐 알림은 없음(2026-11-10 사용자 결정))
 
 // 3) 솔 야누스(내장 아이콘): 켜짐 → 학습 중, 일치도 표시, 캔버스 일치도 라벨
 await ev(() => { __fake.reset(); window.__labels = []; const o = pctx.fillText.bind(pctx); pctx.fillText = (tx, ...a) => { __labels.push(tx); return o(tx, ...a); }; __fake.image("sol", document.querySelector("#card-sol .thumb").src, 1100, 50, 32, 32); });
@@ -44,13 +44,13 @@ await ev(() => { __fake.reset(); __fake.black(true); });
 await wait(3000);
 const blank = await ev(() => ({ present: states.sol.present, spoken: __fake.spoken.slice() }));
 check("검은 프레임: 켜짐 상태 유지, 꺼짐 알림 없음", blank.present === true && blank.spoken.length === 0, blank);
-// 10초 넘게 검으면 화면 안 들어옴 알림(연결 문제 경고음), 화면이 돌아오면 음성만
+// 10초 넘게 검으면 상태줄에 화면 안 들어옴, 화면이 돌아오면 감시 중. 소리 알림은 없음(2026-11-10 사용자 결정)
 await ev(() => __fake.skew(11000)); await wait(1500);
 const stall = await ev(() => ({ spoken: __fake.spoken.slice(), state: document.querySelector("#watchState").textContent }));
-check("화면 안 들어옴: 10초 뒤 알림 · 상태줄", stall.spoken.includes("게임 화면이 들어오지 않아요") && stall.state === "게임 화면이 안 들어와요", stall);
+check("화면 안 들어옴: 10초 뒤 상태줄만(소리 없음)", stall.spoken.length === 0 && stall.state === "게임 화면이 안 들어와요", stall);
 await ev(() => { __fake.reset(); __fake.black(false); }); await wait(2500);
 const back = await ev(() => ({ spoken: __fake.spoken.slice(), state: document.querySelector("#watchState").textContent, osc: __fake.osc.length }));
-check("복구는 음성만(비프 없음)", J(back.spoken) === J(["게임 화면이 다시 들어와요"]) && back.state === "감시 중" && back.osc === 0, back);
+check("복구: 상태줄만(소리 없음)", back.spoken.length === 0 && back.state === "감시 중" && back.osc === 0, back);
 
 // 5) 지속시간 1:00 + 51초 뒤 미리 알림 한 번(딩딩-동), 이후 꺼져도 꺼짐 알림 없음(정책)
 await ev(() => { __fake.reset(); const i = document.querySelector("#card-sol [data-f=durationSec]"); i.value = "1:00"; i.dispatchEvent(new Event("change")); __fake.skew(51000); });
@@ -75,22 +75,22 @@ check("숨은 탭에서도 감시 중(grabFrame)", (await ev(() => watchStatus()
 await ev(() => { src.cap.grabFrame = () => new Promise(() => {}); });   // 새 프레임이 영원히 안 오는 상태
 await wait(3500); await ev(() => __fake.skew(11000)); await wait(3500);
 const hid = await ev(() => ({ spoken: __fake.spoken.slice(), state: watchStatus().state, base: baseTitle() }));
-check("grabFrame 무응답: 감지가 멈추지 않고 화면 안 들어옴 알림 · 탭 제목", hid.spoken.includes("게임 화면이 들어오지 않아요") && hid.state === "게임 화면이 안 들어와요" && hid.base === "⚠ 화면 안 들어옴 · 메이플 재획 알리미", hid);
+check("grabFrame 무응답: 감지가 멈추지 않고 상태줄·탭 제목에 화면 안 들어옴(소리 없음)", !hid.spoken.some(t => t.includes("들어오지 않아요")) && hid.state === "게임 화면이 안 들어와요" && hid.base === "⚠ 화면 안 들어옴 · 메이플 재획 알리미", hid);
 const shown = await ev(() => { delete document.hidden; document.dispatchEvent(new Event("visibilitychange")); return document.querySelector("#watchState").textContent; });
 check("탭이 다시 보이면 숨은 동안 미룬 상태줄을 바로 그린다", shown === "게임 화면이 안 들어와요", shown);
 
-// 8) 연결 끊김: 즉시 1번 + 2분 간격 2번에서 멈춤(총 3번), 낮은 경고음
+// 8) 연결 끊김: 상태줄·탭 제목만. 소리 알림은 없음(2026-11-10 사용자 결정)
 await ev(() => { __fake.reset(); src.track.dispatchEvent(new Event("ended")); });
 await wait(1500);
 const lost = () => ev(() => __fake.spoken.filter(t => t.startsWith("화면 연결이 끊겼어요")).length);
-check("끊김 즉시 1번", (await lost()) === 1, await lost());
+check("끊김: 소리 알림 없음", (await lost()) === 0 && (await ev(() => __fake.spoken.length)) === 0, await ev(() => __fake.spoken.slice()));
 check("끊김 상태줄 · 탭 제목", (await txt("#watchState")) === "연결 끊김 · 알림이 멈췄어요" && (await ev(() => baseTitle())) === "⚠ 연결 끊김 · 메이플 재획 알리미");
 for (let i = 0; i < 3; i++) { await ev(() => __fake.skew(121000)); await wait(1500); }
-check("끊김 재알림은 총 3번에서 멈춤", (await lost()) === 3, await lost());
+check("끊김: 2분이 지나도 다시 알리지 않음", (await lost()) === 0, await lost());
 
 // 9) 화면이 다시 들어오면(화면 안 들어옴 → 복구) 음성만. 새로 연결하면 다시 감시 중
 await ev(() => __fake.reset()); await page.click("#btnConnect"); await wait(3000);
-check("다시 연결: 감시 중 · 시작 음성", (await txt("#watchState")) === "감시 중" && (await ev(() => __fake.spoken[0])) === "감시 시작할게요. 룬은 등록이 필요해요");
+check("다시 연결: 감시 중 · 시작 음성", (await txt("#watchState")) === "감시 중" && (await ev(() => __fake.spoken[0])) === "감시 시작할게요");
 await ev(() => location.reload()); await wait(1500);
 check("연결한 적이 있으면 새로고침 뒤 설명서가 접혀 있음", (await ev(() => document.querySelector("#helpDetails").open)) === false);
 const shownHidden = await ev(() => [...document.querySelectorAll("[hidden]")].filter(e => getComputedStyle(e).display !== "none").map(e => e.id || e.className || e.tagName));

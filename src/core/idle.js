@@ -101,7 +101,7 @@ registerKind('idle',{
   },
   events:[
     {key:'alarm',label:'멈춤 알림',beep:'idle',group:null,msg:(t,i)=>idleText(i&&i.elapsedSec!=null?i.elapsedSec:t.p.idleSec)},
-    {key:'busy',label:'영역이 계속 변함',beep:null,group:null,noSlot:true,msg:t=>`${t.name} 영역이 계속 변해서 감시할 수 없어요`},
+    // “영역이 계속 변함” 음성 없음(2026-11-10 사용자 결정: 경험치 바 한 줄만 보므로). 카드 상태로만 보인다
   ],
   detect:()=>null,                                     // 템플릿을 찾지 않는다. 영역 자르기는 step에서(스펙 17-3)
   step(t,st,det,source,now,ctx){
@@ -122,7 +122,7 @@ registerKind('idle',{
       while(S.recent.length&&now-S.recent[0].at>IDLE_WINDOW) S.recent.shift();
       while(S.confirms.length&&now-S.confirms[0]>IDLE_WINDOW) S.confirms.shift();
       const stats=idleStats(S,now,t.p.minPx);
-      if(!S.busy&&stats.n>=100&&stats.changedRatio>=IDLE_BUSY_ON){ S.busy=true; out.push({key:'busy',info:{}}); }   // 한 번만 말한다
+      if(!S.busy&&stats.n>=100&&stats.changedRatio>=IDLE_BUSY_ON) S.busy=true;
       else if(S.busy&&stats.changedRatio<IDLE_BUSY_OFF) S.busy=false;
       if(S.probeFrom==null) S.probeFrom=now;              // 상태가 새로 시작된 뒤 10초 동안 절반 넘게 변하면 영역이 잘못 잡힌 것
       if(!S.probeDone&&now-S.probeFrom>=IDLE_PROBE_MS){

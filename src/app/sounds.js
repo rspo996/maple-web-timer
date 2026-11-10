@@ -1,5 +1,5 @@
 /* ----- 알림 소리 바꾸기 (내 WAV 등)의 엔진 쪽: 내 소리 보관·재생, 슬롯 목록, 묶기 설정. 화면은 ui/SoundSettings.jsx ----- */
-import {Alerts,SYS_MSG,actx,beepEnd,playDefault,predecodeSounds,setBeepEnd,unlockAudio} from './alerts.js';
+import {Alerts,actx,beepEnd,playDefault,predecodeSounds,setBeepEnd,unlockAudio} from './alerts.js';
 import {bump} from './bus.js';
 import {MANUAL_BEEP,manualPreviewText} from './manual.js';
 import {saveTargets,store,storeStatus,targetById} from './store.js';
@@ -35,7 +35,6 @@ export function soundNote(text, warn){ soundMsg.text=text; soundMsg.warn=!!warn;
 export function previewSlot(s){
   unlockAudio(); if(playCustom(s.key)) return;
   const [id,ev]=s.key.split('.');
-  if(id==='sys'){ playDefault(SYS_MSG[ev],'system'); return; }
   if(id==='grp'){ playDefault(groupText(ev,groupPreviewItems(ev)),'multi'); return; }   // 켜진 버프 앞 두 개의 실제 이름으로
   if(id==='manual'){ playDefault(manualPreviewText(ev),MANUAL_BEEP[ev]); return; }   // 수동 타이머: 실제 타이머 이름 또는 예시 문구
   const t=targetById(id), def=t&&KINDS[t.kind]&&KINDS[t.kind].events.find(e=>e.key===ev);

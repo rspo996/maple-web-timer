@@ -15,7 +15,7 @@ const FULL_V1 = {
 test('기본 저장소: sol, booster, rune 순서의 내장 3개, 묶기 꺼짐', () => {
   const s = plain(defaultStore());
   assert.deepEqual(s.targets.map(t => [t.id, t.kind, t.name, t.preset, t.threshold]),
-    [['sol', 'buff', '솔 야누스', 'sol', 0.75], ['booster', 'countdown', '부스터', 'booster', 0.7], ['rune', 'rune', '룬', null, 0.8]]);
+    [['sol', 'buff', '솔 야누스', 'sol', 0.75], ['booster', 'countdown', '부스터', 'booster', 0.7], ['rune', 'rune', '룬', 'rune', 0.8]]);   // 룬도 내장 아이콘(미니맵 마름모, 2026-11-10)
   assert.deepEqual(s.group, { on: false, windowSec: 10 }); assert.equal(s.seq, 0); assert.equal(s.ver, 2);
 });
 
@@ -49,6 +49,13 @@ test('normalizeTarget: 범위 보정, 알 수 없는 필드 보존, 이름 보�
   assert.equal(plain(normalizeTarget({ id: 'u3', kind: 'buff', name: '가'.repeat(20), p: {} })).name.length, 12);
   assert.equal(plain(normalizeTarget({ id: 'u3', kind: 'buff', name: 'a', threshold: 0.1, p: {} })).threshold, 0.4);
   assert.equal(plain(normalizeTarget({ id: 'rune', kind: 'rune', name: '룬', threshold: 'abc', p: {} })).threshold, 0.8);
+});
+
+test('normalizeTarget: 내장 룬 대상은 예전 저장값(preset 없음)이어도 내장 아이콘을 쓰고, 직접 등록한 아이콘은 그대로 둔다', () => {
+  assert.equal(plain(normalizeTarget({ id: 'rune', kind: 'rune', name: '룬', preset: null, p: {} })).preset, 'rune');
+  const reg = plain(normalizeTarget({ id: 'rune', kind: 'rune', name: '룬', preset: null, tpl: { url: 'data:r', w: 12, h: 12 }, area: { x: 0, y: 0, w: 99, h: 99 }, frameW: 1920, frameH: 1080, p: {} }));
+  assert.deepEqual([reg.preset, reg.tpl.url, reg.frameW], ['rune', 'data:r', 1920]);       // 직접 등록이 우선(카드의 "기본 아이콘으로 되돌리기"로 바꿀 수 있음)
+  assert.equal(plain(normalizeTarget({ id: 'u4', kind: 'rune', name: '룬 2', preset: null, p: {} })).preset, null);   // 추가한 룬 대상은 그대로
 });
 
 test('normalizeTarget: 알 수 없는 kind는 지우지 않고 꺼 둔다', () => {
@@ -129,7 +136,7 @@ test('targetSnapshot: 상태줄·PIP가 같이 쓰는 행', () => {
   targets[0].p.durationSec = 100;
   const rows = plain(targetSnapshot(targets, { sol: st }, { src: true, frame: { w: 1280, h: 720 } }, 31_000));
   assert.deepEqual(rows[0], { id: 'sol', name: '솔 야누스', kind: 'buff', enabled: true, stripState: 'ok', stripText: null, statusText: '남은 시간 01:10', statusCls: 'on', remainSec: 70 });
-  assert.equal(rows[1].stripState, 'unseen'); assert.equal(rows[2].stripState, 'reg');
+  assert.equal(rows[1].stripState, 'unseen'); assert.equal(rows[2].stripState, 'ok');   // 룬은 내장 아이콘이 생겨 등록 없이 정상(2026-11-10)
   assert.deepEqual([rows[3].stripState, rows[3].statusText], ['off', '이 버전에서 지원하지 않는 종류예요']);
 });
 
@@ -137,20 +144,20 @@ test('targetSnapshot: 상태줄·PIP가 같이 쓰는 행', () => {
 const { slotsOf, orphanSlots } = L;
 const keysOf = r => plain(r).map(s => s.key);
 
-test('slotsOf: 대상 순서·이름을 따르고, 묶음·수동 타이머·시스템 슬롯이 뒤에 붙는다', () => {
+test('slotsOf: 대상 순서·이름을 따르고, 묶음·수동 타이머 슬롯이 뒤에 붙는다(꺼짐·연결 문제 알림은 없음, 2026-11-10)', () => {
   const targets = plain(defaultStore()).targets;
   targets.push({ id: 'u1', kind: 'buff', name: '유니온의 힘', p: {} });
   const r = plain(slotsOf(targets));
-  assert.deepEqual(r.map(s => s.key), ['sol.pre', 'sol.gone', 'booster.pre', 'booster.gone', 'booster.unread', 'rune.appear', 'rune.remind', 'u1.pre', 'u1.gone',
-    'grp.pre', 'grp.gone', 'manual.pre', 'manual.end', 'manual.next1', 'manual.next2', 'sys.lost', 'sys.stall']);
-  assert.deepEqual([r[7].group, r[7].label, r[9].group, r[9].label, r[15].group], ['유니온의 힘', '미리 알림', '묶음 알림', '미리 알림', '연결 문제']);
+  assert.deepEqual(r.map(s => s.key), ['sol.pre', 'booster.pre', 'booster.unread', 'rune.appear', 'rune.remind', 'u1.pre',
+    'grp.pre', 'manual.pre', 'manual.end', 'manual.next1', 'manual.next2']);
+  assert.deepEqual([r[5].group, r[5].label, r[6].group, r[6].label], ['유니온의 힘', '미리 알림', '묶음 알림', '미리 알림']);
   targets[3].name = '새 이름';
-  assert.equal(plain(slotsOf(targets))[7].group, '새 이름');
+  assert.equal(plain(slotsOf(targets))[5].group, '새 이름');
 });
 
 test('slotsOf: 수동 타이머 파일이 없는 동안에는 manual 슬롯을 숨길 수 있다, 모르는 kind는 건너뛴다', () => {
   const ks = keysOf(slotsOf([{ id: 'u1', kind: 'future', name: 'x', p: {} }], { manual: false }));
-  assert.deepEqual(ks, ['grp.pre', 'grp.gone', 'sys.lost', 'sys.stall']);
+  assert.deepEqual(ks, ['grp.pre']);
 });
 
 test('orphanSlots: 예약 접두어와 현재 대상은 보존, 대상 없는 id는 삭제', () => {
@@ -281,4 +288,13 @@ test('addKindTarget: 종류 기본 이름, u 번호, 종류별 인스턴스 상�
 test('summarizeStrip: 종류가 준 상태줄 글자를 쓴다', () => {
   const rows = [{ id: 'u1', name: '사냥 멈춤', enabled: true, stripState: 'snooze', stripText: '사냥 멈춤 쉬는 중' }, { id: 'sol', name: '솔 야누스', enabled: true, stripState: 'ok', stripText: null }];
   assert.deepEqual(plain(summarizeStrip(rows, false)).map(i => [i.cls, i.text]), [['snooze', '사냥 멈춤 쉬는 중'], ['', '솔 야누스']]);
+});
+
+// ---- 내장 룬: 찾은 자리의 안쪽 색 확인 (2026-11-10 실제 미니맵에서 잰 색) ----
+import { PRESETS } from '../src/core/targets.js';
+test('PRESETS.rune.fill: 룬 안쪽(분홍빛 보라)만 통과, 미니맵의 다른 표시·배경은 막는다', () => {
+  const f = PRESETS.rune.fill;
+  assert.equal(f(221, 103, 255), true);                              // 룬
+  for (const [r, g, b, what] of [[238, 224, 2, '내 위치(노랑)'], [231, 44, 110, '다른 사람(분홍)'], [109, 222, 9, '포털(초록)'], [34, 51, 170, '맵 배경(파랑)'], [68, 67, 187, '맵 배경(남색)'], [205, 205, 205, '흰 테두리']])
+    assert.equal(f(r, g, b), false, what);
 });

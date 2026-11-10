@@ -145,7 +145,7 @@ test('KINDS.idle: 등록은 영역 한 번, 인스턴스 1개, 감지를 건너�
   assert.deepEqual([K.maxInstances, K.onSkip, K.usesThreshold, K.trackSeen, K.menuLabel], [1, true, false, false, '사냥 멈춤']);
   assert.equal(K.isRegistered(idleT({ area: null })), false); assert.equal(K.isRegistered(idleT()), true);
   assert.equal(K.needsReregister(idleT(), { w: 1920, h: 1080 }), true); assert.equal(K.needsReregister(idleT(), { w: 1280, h: 720 }), false);
-  assert.deepEqual(plain(K.events.map(e => [e.key, e.beep, e.group, !!e.noSlot])), [['alarm', 'idle', null, false], ['busy', null, null, true]]);
+  assert.deepEqual(plain(K.events.map(e => [e.key, e.beep, e.group, !!e.noSlot])), [['alarm', 'idle', null, false]]);   // “영역이 계속 변함” 음성은 없음(2026-11-10 사용자 결정). 카드 상태로만 보인다
 });
 
 test('KINDS.idle.register.validate: 40×6 미만, 높이 8% 초과, 너비 40% 초과는 거절', () => {
@@ -201,7 +201,6 @@ test('KINDS.idle 알림 문구: 경과 시간, 알림 테스트는 설정한 멈
   const t = idleT(), alarm = K.events[0];
   assert.equal(alarm.msg(t, { elapsedSec: 240 }), '경험치가 4분째 그대로예요');
   assert.equal(alarm.msg(t, {}), '경험치가 2분째 그대로예요');
-  assert.equal(K.events[1].msg(t, {}), '사냥 멈춤 영역이 계속 변해서 감시할 수 없어요');
 });
 
 test('쉬기 동작 버튼: 쉬는 중이 아니면 3종, 쉬는 중이면 쉬기 끝내기만', () => {

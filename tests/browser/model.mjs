@@ -26,6 +26,7 @@ check("이전: 부스터는 재설정(등록 비움, 0.7)", m.boosterThr === 0.7
 // 2) 룬 직접 등록(영역 → 아이콘) → 룬이 나왔어요
 ({ page, ev, wait } = await open(taskSpace, { connect: true }));
 await ev(() => { __fake.pattern("rune", 300, 600, 5, 16); __fake.show("rune", false); });
+await page.click("#card-rune [data-a=toggle]"); await wait(200);   // 룬은 내장 아이콘이 있어 카드가 접혀 있다
 await page.click("#card-rune [data-a=register]"); await wait(800);
 check("등록: 배너 안내(영역)", (await ev(() => document.querySelector("#bannerText").textContent)) === "룬 ① 미니맵 영역을 넉넉하게 드래그하세요");
 await drag(page, 100, 500, 500, 700);

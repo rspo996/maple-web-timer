@@ -14,7 +14,6 @@ export const SOUNDS={
   rune:   {wave:'square',  notes:[[880,.12],[1175,.12],[1568,.2]]},              // 올라가는 세 음
   multi:  {wave:'square',  notes:[[1046,.1],[1046,.1],[1046,.1],[1568,.28]]},    // 같은 음 세 번 + 높은 음(묶인 알림)
   timer:  {wave:'square',  notes:[[988,.14],[988,.14]]},                          // 같은 음 두 번(수동 타이머 미리 알림)
-  ready:  {wave:'square',  notes:[[784,.12],[1175,.24]]},                         // 올라가는 두 음(설치기 다시 쓸 수 있음)
   idle:   {wave:'triangle',notes:[[587,.3],[440,.3],[587,.3],[440,.3]],gain:.24},  // 느린 두 음 왕복(사냥 멈춤)
   system: {wave:'sawtooth',notes:[[330,.22],[330,.22],[330,.22]],gain:.13},      // 낮은 경고음
 };
@@ -45,7 +44,6 @@ export function speak(text){
   const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.volume=ttsVolume(volPct()); u.rate=1.1;
   speechSynthesis.speak(u); speakQueuedAt=now;
 }
-export const SYS_MSG={ lost:'화면 연결이 끊겼어요. 다시 연결해 주세요', stall:'게임 화면이 들어오지 않아요', back:'게임 화면이 다시 들어와요' };
 export let toastTimer, titleTimer=null;
 export const toast={text:'',on:false};   // 화면 아래 알림 문구(ui/Toast.jsx). 6초 보인다
 // 기본 소리: 경고음 뒤에 음성. beep가 없으면 음성만
@@ -76,4 +74,3 @@ export const Alerts=Object.assign(createAlerts(browserIO),{
 });
 
 // 화면을 받는 쪽의 문제(끊김·멈춤)는 게임 알림과 다른 소리로 알림. 회복은 음성만
-export function fireSystem(kind){ Alerts.fire({src:'system',id:'sys',event:kind,text:SYS_MSG[kind],beep:'system',slot:'sys.'+kind,mode:kind==='back'?'voice':'full',flash:null}); }
