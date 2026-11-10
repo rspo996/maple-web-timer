@@ -5,7 +5,7 @@ import {manual} from './manual.js';
 import {saveUi,ui} from './prefs.js';
 import {store} from './store.js';
 import {DEFAULT_VOICE,VOICE_SAMPLE,voiceCoverage,voicePhrases} from '../core/voice-phrases.js';
-export const voiceState={manifest:null,status:'loading',clips:new Map(),run:null};   // status: loading|ok|none
+export const voiceState={manifest:null,status:'loading',clips:new Map(),failed:new Set(),run:null};   // status: loading|ok|none
 const base=()=>import.meta.env.BASE_URL||'./';
 export const voiceFileUrl=f=>/^(data:|blob:|https?:)/.test(f)?f:base()+'voice/'+f;
 export const voiceIds=()=>voiceState.manifest?voiceState.manifest.voices.map(v=>v.id):[];
@@ -16,31 +16,32 @@ export function currentVoice(){
   return ids.includes(DEFAULT_VOICE)?DEFAULT_VOICE:(ids[0]||'browser');
 }
 export function setVoiceManifest(m){
-  voiceState.manifest=m&&m.version===1&&Array.isArray(m.voices)&&m.files&&typeof m.files==='object'?m:null;
-  voiceState.status=voiceState.manifest?'ok':'none'; voiceState.clips.clear(); voiceState.run=null; bump(); loadClips();
+  voiceState.manifest=m&&m.version===1&&Array.isArray(m.voices)&&m.voices.every(v=>v&&typeof v.id==='string')&&m.files&&typeof m.files==='object'?m:null;
+  voiceState.status=voiceState.manifest?'ok':'none'; voiceState.clips.clear(); voiceState.failed.clear(); voiceState.run=null; bump(); loadClips();
 }
 export async function initVoice(){
   try{ const r=await fetch(base()+'voice/manifest.json',{cache:'no-cache'}); if(!r.ok) throw new Error('HTTP '+r.status); setVoiceManifest(await r.json()); }
   catch(e){ setVoiceManifest(null); }
 }
-export function setVoiceName(name){ ui.voiceName=name; saveUi(); voiceState.clips.clear(); voiceState.run=null; bump(); loadClips(); }
-async function decode(f){ return actx.decodeAudioData(await (await fetch(voiceFileUrl(f))).arrayBuffer()); }
+export function setVoiceName(name){ ui.voiceName=name; saveUi(); voiceState.clips.clear(); voiceState.failed.clear(); voiceState.run=null; bump(); loadClips(); }
+async function decode(f){ const r=await fetch(voiceFileUrl(f)); if(!r.ok) throw new Error('HTTP '+r.status); return actx.decodeAudioData(await r.arrayBuffer()); }
 // 고른 목소리의 파일만 차례로 받아 푼다. 목소리를 바꾸면 하던 것을 그만둔다. 오디오가 켜지기 전이면 unlockAudio가 다시 부른다
 export async function loadClips(){
   const v=currentVoice(); if(!actx||!voiceState.manifest||v==='browser') return;
-  const run=Symbol(v); voiceState.run=run;
+  if(voiceState.run&&voiceState.run.description===v) return;
+  const run=Symbol(v); voiceState.run=run; let added=0;
   for(const [text,f] of Object.entries(voiceState.manifest.files[v]||{})){
     if(voiceState.run!==run) return;
-    if(voiceState.clips.has(text)) continue;
-    try{ const b=await decode(f); if(voiceState.run===run) voiceState.clips.set(text,b); }catch(e){}   // 못 풀면 그 문구는 브라우저 음성
+    const key=v+'/'+text; if(voiceState.clips.has(text)||voiceState.failed.has(key)) continue;
+    try{ const b=await decode(f); if(voiceState.run===run){ voiceState.clips.set(text,b); added++; } }catch(e){ voiceState.failed.add(key); }   // 못 풀면 그 문구는 브라우저 음성
   }
-  if(voiceState.run===run){ voiceState.run=null; bump(); }
+  if(voiceState.run===run){ voiceState.run=null; if(added) bump(); }
 }
 export const clipFor=text=>currentVoice()==='browser'?null:(voiceState.clips.get(text)||null);
 // 소리 설정의 "듣기": 아직 안 풀렸으면 그 문구만 먼저 풀어서 바로 들려준다
 export async function previewVoice(){
   const v=currentVoice(), f=v!=='browser'&&voiceState.manifest&&(voiceState.manifest.files[v]||{})[VOICE_SAMPLE];
-  if(f&&actx&&!voiceState.clips.has(VOICE_SAMPLE)){ try{ voiceState.clips.set(VOICE_SAMPLE,await decode(f)); }catch(e){} }
+  if(f&&actx&&!voiceState.clips.has(VOICE_SAMPLE)){ try{ const b=await decode(f); if(currentVoice()===v) voiceState.clips.set(VOICE_SAMPLE,b); }catch(e){} }
   spokenAt.delete(VOICE_SAMPLE); speak(VOICE_SAMPLE);
 }
 export function voiceChoices(){

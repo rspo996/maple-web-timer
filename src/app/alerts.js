@@ -39,8 +39,11 @@ export function beep(name){
 // 음성은 끊지 않고 차례로 말함. 같은 문구가 8초 안에 또 오면 건너뛰고, 큐가 15초 넘게 막혀 있으면 비운 뒤 다시 말함
 export const spokenAt=new Map(); export let speakQueuedAt=0;
 // 미리 만든 Gemini 음성(묶음 6)이 있으면 경고음 시간줄(beepEnd) 뒤에 이어서 재생. 처리했으면(재생·중복·음성 끔) true, 그 문구 음성이 없으면 false
+let ttsWait=0;   // 브라우저 음성이 예약됐거나 말하는 중인 수
+const ttsBusy=()=>ttsWait>0||('speechSynthesis' in window&&(speechSynthesis.speaking||speechSynthesis.pending));
 export function speakClip(text){
   const buf=clipFor(text); if(!buf||!actx) return false;
+  if(ttsBusy()) return false;   // 브라우저 음성이 말하는 중이면 클립을 바로 얹지 않는다(두 목소리가 겹침). 그 문구도 음성 대기열로 보낸다
   if(!voiceOn()) return true;
   const now=Date.now(); if(now-(spokenAt.get(text)||0)<8000) return true; spokenAt.set(text,now);
   const n=actx.createBufferSource(); n.buffer=buf; n.connect(Alerts.audioOut());   // 마스터를 지나 음량 0~200%
@@ -53,12 +56,15 @@ export function speak(text){
   const now=Date.now(); if(now-(spokenAt.get(text)||0)<8000) return; spokenAt.set(text,now);
   if((speechSynthesis.speaking||speechSynthesis.pending) && now-speakQueuedAt>15000) speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text); u.lang='ko-KR'; u.volume=ttsVolume(volPct()); u.rate=1.1;
-  speechSynthesis.speak(u); speakQueuedAt=now;
+  const ahead=actx?beepEnd-actx.currentTime:0;   // 시간줄에 이미 예약된 소리(경고음·클립)가 끝난 뒤에 말한다
+  if(ahead>0.05){ ttsWait++; setTimeout(()=>{ ttsWait--; speechSynthesis.speak(u); },Math.round(ahead*1000)); }
+  else speechSynthesis.speak(u);
+  speakQueuedAt=now;
 }
 export let toastTimer, titleTimer=null;
 export const toast={text:'',on:false};   // 화면 아래 알림 문구(ui/Toast.jsx). 6초 보인다
 // 기본 소리: 경고음 뒤에 음성. beep가 없으면 음성만
-export function playDefault(msg, sound){ const wait=sound?beep(sound):0; if(speakClip(msg)) return; setTimeout(()=>speak(msg), Math.round(wait*1000)+150); }
+export function playDefault(msg, sound){ const wait=sound?beep(sound):0; if(speakClip(msg)) return; ttsWait++; setTimeout(()=>{ ttsWait--; speak(msg); }, Math.round(wait*1000)+150); }
 
 export const browserIO={
   now:()=>Date.now(),
