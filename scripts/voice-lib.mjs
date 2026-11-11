@@ -43,7 +43,12 @@ export function encodeMp3(samples,sampleRate,kbps=96){
   return out;
 }
 // 오류 본문의 "retry in 8s" / "retry in 12.5 s"를 밀리초로. 없으면 null
-export function retryAfterMs(body){ const m=/retry\s+in\s+(\d+(?:\.\d+)?)\s*s/i.exec(String(body)); return m?Math.ceil(parseFloat(m[1])*1000):null; }
+// "retry in 8s", "12.5s", "3 s", 하루 한도의 "6h2m30s"·"5m"·"1h"를 밀리초로. 없으면 null
+export function retryAfterMs(body){
+  const m=/retry\s+in\s+((?:\d+(?:\.\d+)?\s*[hms]\s*)+)/i.exec(String(body)); if(!m) return null;
+  let ms=0; for(const [,n,u] of m[1].matchAll(/(\d+(?:\.\d+)?)\s*([hms])/gi)) ms+=parseFloat(n)*{h:3600000,m:60000,s:1000}[u.toLowerCase()];
+  return Math.ceil(ms);
+}
 export function parseEnvKey(text){ const m=/^[ \t]*(?:export[ \t]+)?GEMINI_API_KEY[ \t]*=[ \t]*["']?([^"'\s#]+)/m.exec(String(text)); return m?m[1]:null; }
 export const clipPath=(voice,text)=>`${voice}/${createHash('sha1').update(text).digest('hex').slice(0,12)}.mp3`;
 export function emptyManifest(){ return {version:1,model:VOICE_MODEL,style:VOICE_STYLE,voices:VOICES.map(v=>({...v})),files:{}}; }

@@ -51,6 +51,11 @@ test('retryAfterMs: 오류 본문의 "retry in N s"를 밀리초로', () => {
   assert.equal(retryAfterMs('Please retry in 12.5s'), 12500);
   assert.equal(retryAfterMs('Retry in 3 s'), 3000);
   assert.equal(retryAfterMs('nothing'), null);
+  // 하루 한도(2026-11-11 실제 응답): 시·분·초가 섞인 형식
+  const daily = '{"error":{"message":"Rate limit exceeded for model gemini-3.8-flash-tts (limit: 10 requests per day on Free Tier). Please retry in 6h2m30s or upgrade your tier at https://ai.dev/rate-limit.","code":"too_many_requests"}}';
+  assert.equal(retryAfterMs(daily), ((6 * 60 + 2) * 60 + 30) * 1000);
+  assert.equal(retryAfterMs('retry in 5m'), 300000);
+  assert.equal(retryAfterMs('retry in 1h'), 3600000);
 });
 
 test('parseEnvKey: GEMINI_API_KEY 한 줄, 따옴표·주석·다른 줄 무시', () => {
