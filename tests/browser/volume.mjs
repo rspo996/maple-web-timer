@@ -23,9 +23,12 @@ await ev(() => { __fake.reset(); speak("음량 확인"); });
 await wait(1000);   // 브라우저 음성은 이미 예약된 확인음이 끝난 뒤에 말한다(묶음 6: 두 소리가 겹치지 않게)
 check("150%에서도 음성 음량은 1", J(await ev(() => __fake.volumes.slice())) === J([1]), await ev(() => __fake.volumes.slice()));
 
-// Gemini 음성이면 150%여도 보조 문구(브라우저 음성 전용)는 숨김
+// Gemini 음성이어도 파일이 없는 문구는 브라우저 음성이라 150%에서 보조 문구를 보인다
 await ev(() => { setVoiceManifest({ version: 1, model: "t", style: "t", voices: [{ id: "Erinome", label: "Erinome", gender: "여" }], files: { Erinome: {} } }); setVoiceName("Erinome"); }); await wait(300);
-check("Gemini 음성: 150%여도 보조 문구 숨김", (await ev(() => document.querySelector("#volNote").hidden)) === true);
+check("Gemini 음성(파일 없음): 150%에서 보조 문구 표시", (await ev(() => document.querySelector("#volNote").hidden)) === false);
+// 지금 문구를 모두 덮는 Gemini 음성이면 숨김 (디코딩은 안 하므로 파일 이름은 아무 문자열)
+await ev(async () => { const { voicePhrases } = await import("/src/core/voice-phrases.js"), { manual } = await import("/src/app/manual.js"); const files = {}; for (const p of voicePhrases({ targets: store.targets, group: store.group, manual })) files[p] = "x.mp3"; setVoiceManifest({ version: 1, model: "t", style: "t", voices: [{ id: "Erinome", label: "Erinome", gender: "여" }], files: { Erinome: files } }); setVoiceName("Erinome"); }); await wait(300);
+check("Gemini 음성(문구 모두 있음): 150%에서 보조 문구 숨김", (await ev(() => document.querySelector("#volNote").hidden)) === true);
 await ev(() => setVoiceManifest(null)); await wait(300);
 
 // 100%로 내리면 리미터를 빼고(이전과 같은 크기) 보조 문구를 숨긴다

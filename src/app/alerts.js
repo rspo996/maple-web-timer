@@ -42,7 +42,7 @@ export const spokenAt=new Map(); export let speakQueuedAt=0;
 let ttsWait=0;   // 브라우저 음성이 예약됐거나 말하는 중인 수
 const ttsBusy=()=>ttsWait>0||('speechSynthesis' in window&&(speechSynthesis.speaking||speechSynthesis.pending));
 export function speakClip(text){
-  const buf=clipFor(text); if(!buf||!actx) return false;
+  const buf=clipFor(text); if(!buf||!actx||actx.state!=='running') return false;   // 오디오가 멈춰 있으면 예약해도 안 울린다. 브라우저 음성으로 넘겨 알림이 무음이 되지 않게
   if(ttsBusy()) return false;   // 브라우저 음성이 말하는 중이면 클립을 바로 얹지 않는다(두 목소리가 겹침). 그 문구도 음성 대기열로 보낸다
   if(!voiceOn()) return true;
   const now=Date.now(); if(now-(spokenAt.get(text)||0)<8000) return true; spokenAt.set(text,now);

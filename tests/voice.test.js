@@ -54,6 +54,23 @@ test('voicePhrases: 바꾼 이름·초, 저장된 수동 타이머', () => {
   assert.ok(list.includes('솔 곧 꺼져요')); assert.ok(list.includes('부스 곧 꺼져요')); assert.ok(list.includes('보스 20초 전')); assert.ok(list.includes('보스 끝났어요'));
 });
 
+test('voicePhrases: 미리 알림 0초(끔)이면 수동 "N초 전" 문구가 없고 끝 문구는 남는다', () => {
+  const m = manualEmptyStore(); m.prefs.preSec = 0;
+  m.timers.push({ id: 'm1', kind: 'countdown', label: '보스', phases: [{ name: '보스', sec: 600 }], preSec: 0 });
+  const list = voicePhrases({ manual: m });
+  assert.ok(!list.some(p => /\d+초 전$/.test(p) && !p.includes('곧')), list.filter(p => /초 전$/.test(p)).join('|'));
+  assert.ok(list.includes('보스 끝났어요')); assert.ok(list.includes('사냥 시간이에요') || list.some(p => p.endsWith('시간이에요')));
+  assert.ok(!list.includes('보스 0초 전'));
+});
+
+test('voicePhrases: 저장된 타이머만 preSec 0이면 그 타이머의 미리 알림만 빠진다', () => {
+  const m = manualEmptyStore();
+  m.timers.push({ id: 'm1', kind: 'countdown', label: '보스', phases: [{ name: '보스', sec: 600 }], preSec: 0 });
+  const list = voicePhrases({ manual: m });
+  assert.ok(!list.some(p => p.startsWith('보스 ') && p.endsWith('초 전'))); assert.ok(list.includes('보스 끝났어요'));
+  assert.ok(list.includes('사냥 10초 전') || list.some(p => /^회수 10초 전$|10초 전$/.test(p)));   // 기본 설정(10초)의 문구는 그대로
+});
+
 test('voiceCoverage: 목록에서 음성 파일이 있는 것과 없는 것', () => {
   assert.deepEqual(voiceCoverage(['a', 'b', 'c'], { a: 'x.mp3', c: 'y.mp3' }), { have: 2, missing: ['b'] });
   assert.deepEqual(voiceCoverage(['a'], undefined), { have: 0, missing: ['a'] });

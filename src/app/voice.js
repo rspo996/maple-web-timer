@@ -48,6 +48,11 @@ export function voiceChoices(){
   const vs=voiceState.manifest?voiceState.manifest.voices:[];
   return [...vs.map(v=>({id:v.id,text:`${v.label}${v.id===DEFAULT_VOICE?' (기본)':''} · ${v.gender}`})),{id:'browser',text:'브라우저 기본 음성'}];
 }
+// 브라우저 음성이 한 문구라도 쓰이는가: 브라우저 음성을 골랐거나, 고른 목소리에 파일이 없는 문구가 있을 때
+export function browserVoiceInUse(){
+  const v=currentVoice(); if(v==='browser'||!voiceState.manifest) return true;
+  return voiceCoverage(voicePhrases({targets:store.targets,group:store.group,manual}),voiceState.manifest.files[v]).missing.length>0;
+}
 export function voiceNote(){
   if(voiceState.status==='loading') return 'Gemini 음성 목록을 읽는 중이에요';
   if(voiceState.status==='none') return 'Gemini 음성 파일이 없어서 브라우저 음성으로 말해요';

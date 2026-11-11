@@ -4,7 +4,7 @@ import * as lame from '@breezystack/lamejs';
 import {VOICES,VOICE_MODEL,VOICE_STYLE} from '../src/core/voice-phrases.js';
 
 export const TTS_URL='https://generativelanguage.googleapis.com/v1beta/interactions';
-// 문서(2026-11-10 기준)의 Interactions API 모양. 첫 실제 호출에서 확인한다
+// 문서(2026-11-10 기준)의 Interactions API 모양. 2026-11-11 첫 실제 호출로 확인했다
 export function buildTtsRequest({text,voice,key,model=VOICE_MODEL,style=VOICE_STYLE}){
   const body={model,input:[{type:'user_input',content:[{type:'text',text,annotations:[{type:'speech_metadata',style}]}]}],
     response_format:{type:'audio'},generation_config:{speech_config:[{voice}]}};
@@ -42,7 +42,6 @@ export function encodeMp3(samples,sampleRate,kbps=96){
   for(const p of parts){ out.set(new Uint8Array(p.buffer,p.byteOffset,p.length),o); o+=p.length; }
   return out;
 }
-// 오류 본문의 "retry in 8s" / "retry in 12.5 s"를 밀리초로. 없으면 null
 // "retry in 8s", "12.5s", "3 s", 하루 한도의 "6h2m30s"·"5m"·"1h"를 밀리초로. 없으면 null
 export function retryAfterMs(body){
   const m=/retry\s+in\s+((?:\d+(?:\.\d+)?\s*[hms]\s*)+)/i.exec(String(body)); if(!m) return null;
@@ -67,7 +66,7 @@ export function parseArgs(argv,env){
     let a=argv[i], v;
     const eq=a.indexOf('='); if(a.startsWith('--')&&eq>0&&vals.includes(a.slice(0,eq))){ v=a.slice(eq+1); a=a.slice(0,eq); }
     if(a==='--dry-run'&&v===undefined){ r.dryRun=true; continue; }
-    if(!vals.includes(a)) throw new Error(`모르는 옵션: ${argv[i]} (쓸 수 있는 것: --backup 파일, --voices Erinome,Zephyr, --limit N, --dry-run)`);
+    if(!vals.includes(a)) throw new Error(`모르는 옵션: ${argv[i]} (쓸 수 있는 것: --backup 파일, --voices Erinome, --limit N, --dry-run)`);
     if(v===undefined){ const n=argv[i+1]; if(n===undefined||n.startsWith('--')) throw new Error(`${a} 뒤에 값을 주세요`); v=n; i++; }
     if(v==='') throw new Error(`${a} 뒤에 값을 주세요`);
     if(a==='--backup') r.backup=v;

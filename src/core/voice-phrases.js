@@ -44,9 +44,9 @@ function groupTexts(targets){
 }
 // 수동 타이머: 프리셋으로 시작할 타이머, 기본 사냥·회수 반복, 저장된 타이머
 function manualTexts(m){
-  const pre=(m.prefs&&m.prefs.preSec)||10, out=[];
-  const count=(t,all)=>out.push(manualText(t,{type:'pre',idx:0},all),manualText(t,{type:'end',idx:0},all));
-  const routine=(t,all)=>{ for(let i=0;i<t.phases.length;i++) out.push(manualText(t,{type:'pre',idx:i},all),manualText(t,{type:'switch',idx:i},all)); };
+  const pre=(m.prefs&&m.prefs.preSec)??10, out=[];   // 0은 미리 알림 끔(manualStep이 울리지 않는다)
+  const count=(t,all)=>{ if(t.preSec>0) out.push(manualText(t,{type:'pre',idx:0},all)); out.push(manualText(t,{type:'end',idx:0},all)); };
+  const routine=(t,all)=>{ for(let i=0;i<t.phases.length;i++){ if(t.preSec>0) out.push(manualText(t,{type:'pre',idx:i},all)); out.push(manualText(t,{type:'switch',idx:i},all)); } };
   for(const p of m.presets||[]){ const label=presetTimerName(p), t={kind:'countdown',label,preSec:pre,phases:[{name:label,sec:p.sec}]}; count(t,[t]); }
   const r={kind:'routine',label:'사냥·회수',preSec:pre,phases:[{name:'사냥',sec:60},{name:'회수',sec:60}]}; routine(r,[r]);
   const timers=m.timers||[];
