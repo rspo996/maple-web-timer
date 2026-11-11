@@ -6,7 +6,7 @@ import {eunNeun} from './util.js';
 export const TARGET_MAX=12;
 // 내장 3개: 기존 id를 그대로 써서 내 소리 슬롯 키(sol.pre 등)를 이전 없이 이어간다
 export const BUILTIN={
-  sol:{kind:'buff',name:'솔 야누스',preset:'sol',threshold:0.75},
+  sol:{kind:'buff',name:'솔 야누스',sayName:'야누스',preset:'sol',threshold:0.75},
   booster:{kind:'countdown',name:'부스터',preset:'booster',threshold:0.7},
   rune:{kind:'rune',name:'룬',preset:'rune',threshold:0.8},
 };
@@ -26,9 +26,9 @@ export const ID_RE=/^(sol|booster|rune|u\d+)$/;                  // sys·grp·ma
 export const GROUP_WINDOWS=[5,10,20];
 export const defaultGroup=()=>({on:false,windowSec:10});          // 알림 묶기는 기본 꺼짐(사용자 결정)
 export function newTarget(id,kind,name,extra){
-  return Object.assign({id,kind,name,preset:null,enabled:true,threshold:0.75,area:null,tpl:null,frameW:0,frameH:0,p:KINDS[kind].defaults()},extra||{});
+  return Object.assign({id,kind,name,preset:null,sayName:null,enabled:true,threshold:0.75,area:null,tpl:null,frameW:0,frameH:0,p:KINDS[kind].defaults()},extra||{});
 }
-export function builtinTarget(id){ const b=BUILTIN[id]; return newTarget(id,b.kind,b.name,{preset:b.preset,threshold:b.threshold}); }
+export function builtinTarget(id){ const b=BUILTIN[id]; return newTarget(id,b.kind,b.name,{preset:b.preset,threshold:b.threshold,sayName:b.sayName||null}); }
 export function defaultStore(){ return {ver:2,seq:0,targets:['sol','booster','rune'].map(builtinTarget),group:defaultGroup()}; }
 export const validRect=r=>!!r&&['x','y','w','h'].every(k=>Number.isFinite(+r[k]))&&r.w>0&&r.h>0;
 // v2를 불러올 때마다 각 대상에 적용: 범위 밖 값은 자르고, 모르는 필드는 보존, 모르는 kind는 지우지 않고 끈다
@@ -36,6 +36,7 @@ export function normalizeTarget(t){
   const o=Object.assign({},t); o.id=String(o.id);
   const nm=typeof o.name==='string'?o.name.trim().slice(0,12):'';
   o.name=nm||(BUILTIN[o.id]&&BUILTIN[o.id].name)||o.id;
+  o.sayName=(typeof o.sayName==='string'&&o.sayName.trim())?o.sayName.trim().slice(0,12):((BUILTIN[o.id]&&BUILTIN[o.id].sayName)||null);   // 음성으로만 부르는 이름
   o.enabled=typeof o.enabled==='boolean'?o.enabled:true;
   const th=+o.threshold; o.threshold=Number.isFinite(th)?Math.min(0.98,Math.max(0.4,th)):(BUILTIN[o.id]?BUILTIN[o.id].threshold:0.75);
   o.preset=PRESETS[o.preset]?o.preset:null;

@@ -9,7 +9,7 @@ export const voiceState={manifest:null,status:'loading',clips:new Map(),failed:n
 const base=()=>import.meta.env.BASE_URL||'./';
 export const voiceFileUrl=f=>/^(data:|blob:|https?:)/.test(f)?f:base()+'voice/'+f;
 export const voiceIds=()=>voiceState.manifest?voiceState.manifest.voices.map(v=>v.id):[];
-// 고른 목소리. 'browser'는 브라우저 기본 음성. 목록에 없으면 기본(Kore), 목록이 없으면 브라우저
+// 고른 목소리. 'browser'는 브라우저 기본 음성. 목록에 없으면 기본(Erinome), 목록이 없으면 브라우저
 export function currentVoice(){
   if(ui.voiceName==='browser') return 'browser';
   const ids=voiceIds(); if(ids.includes(ui.voiceName)) return ui.voiceName;

@@ -7,7 +7,7 @@ import {store,targetById} from './store.js';
 import {pulse,renderWatch,setNote} from './watch.js';
 import {planGroup} from '../core/alerts-core.js';
 import {newState,ocrSevenSeg} from '../core/detect-core.js';
-import {KINDS,isPresetMode} from '../core/kinds.js';
+import {KINDS,isPresetMode,sayName} from '../core/kinds.js';
 import {bandMask,diamondMask,matchTemplate,prepTemplate,toGray} from '../core/match.js';
 import {scratch} from '../core/scratch.js';
 import {createSlowWatch} from '../core/slow-watch.js';
@@ -109,7 +109,7 @@ export function collectEvents(t,evs,out){
 }
 export function reqFor(t,def,info,rank){
   return {src:'target',id:t.id,event:def.key,text:def.msg(t,info||{}),beep:def.beep,slot:def.noSlot?null:`${t.id}.${def.key}`,mode:'full',flash:'card-'+t.id,
-    group:def.group?{cls:def.group,label:t.name,rank:rank==null?(t.p.leadSec||0):rank,order:store.targets.indexOf(t)}:null};
+    group:def.group?{cls:def.group,label:sayName(t),rank:rank==null?(t.p.leadSec||0):rank,order:store.targets.indexOf(t)}:null};
 }
 // 이번 틱의 이벤트를 알림으로 보낸다. 묶기가 켜져 있으면 미리 알림이 난 틱에 곧 끝나는 다른 대상을 같이 묶는다(당겨 알림)
 export function dispatchEvents(list,now){

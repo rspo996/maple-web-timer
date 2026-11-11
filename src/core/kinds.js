@@ -5,6 +5,7 @@ import {hooks} from './hooks.js';
 import {checkDurLead,clampInt,fmt,parseDur} from './util.js';
 export const KINDS={};
 export const isPresetMode=t=>!t.tpl&&!!t.preset;                    // 직접 등록한 아이콘이 없고 내장 아이콘을 쓰는 중
+export const sayName=t=>t.sayName||t.name;                           // 음성으로만 부르는 이름(카드에는 name을 그대로 보인다)
 export const cfgView=t=>({kind:t.kind,...t.p});                      // 기존 순수 상태기계(stepDetector 등)에 넘기는 설정 모양
 export function unionRect(a,i){ const x0=Math.min(a.x,i.x),y0=Math.min(a.y,i.y),x1=Math.max(a.x+a.w,i.x+i.w),y1=Math.max(a.y+a.h,i.y+i.h); return {x:x0,y:y0,w:x1-x0,h:y1-y0}; }
 // 영역 → 아이콘으로 드래그한 결과를 저장. 아이콘이 영역 밖으로 나가면 영역을 넓힌다
@@ -67,7 +68,7 @@ registerKind('buff',{
   normalizeP:p=>{ const lead=clampInt(p.leadSec,1,120,10), d=p.durationSec; return {...p,leadSec:lead,durationSec:(typeof d==='number'&&Number.isFinite(d)&&d>lead)?Math.round(d):null}; },
   labels:t=>({area:'버프창 영역',icon:`${t.name} 아이콘`}),
   events:[
-    {key:'pre',label:'미리 알림',beep:'buff',group:'pre',msg:t=>`${t.name} ${t.p.leadSec}초 전`},
+    {key:'pre',label:'미리 알림',beep:'buff',group:'pre',msg:t=>`${sayName(t)} 곧 꺼져요`},
   ],   // 꺼짐 알림 없음(2026-11-10 사용자 결정). stepDetector의 gone은 감지 루프(collectEvents)가 버린다
   step(t,st,det,source,now){ const evs=stepDetector(st,cfgView(t),det.score>=t.threshold,now); if(st.present) st.seen=true; return mapLearn(evs); },
   remainSec(t,st,now){
@@ -108,7 +109,7 @@ registerKind('countdown',{
   normalizeP:p=>({...p,leadSec:clampInt(p.leadSec,1,120,10)}),
   labels:()=>({area:'남은시간 타이머 주변',icon:'“◷ 남은시간” 글자'}),
   events:[
-    {key:'pre',label:'미리 알림',beep:'booster',group:'pre',msg:t=>`${t.name} ${t.p.leadSec}초 전`},
+    {key:'pre',label:'미리 알림',beep:'booster',group:'pre',msg:t=>`${sayName(t)} 곧 꺼져요`},
     // 꺼짐 알림 없음(2026-11-10 사용자 결정)
     {key:'unread',label:'숫자 못 읽음',beep:'system',group:null,msg:t=>`${t.name} 숫자를 못 읽고 있어요`},
   ],

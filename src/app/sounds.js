@@ -4,7 +4,7 @@ import {bump} from './bus.js';
 import {MANUAL_BEEP,manualPreviewText} from './manual.js';
 import {saveTargets,store,storeStatus,targetById} from './store.js';
 import {groupText} from '../core/alerts-core.js';
-import {KINDS} from '../core/kinds.js';
+import {KINDS,sayName} from '../core/kinds.js';
 import {orphanSlots,slotsOf} from '../core/targets.js';
 import {eulReul} from '../core/util.js';
 export let SLOTS=[];   // 소리 설정 화면의 행. 대상 목록에서 계산한다(targets.js의 slotsOf)
@@ -63,7 +63,7 @@ export function renderSounds(){ bump(); }
 export function initSounds(){ refreshSlots(); loadSounds(); Alerts.configure(store.group); bump(); }
 // 묶음 알림 미리듣기에 쓸 이름: 해당 묶음 종류의 이벤트가 있는 켜진 대상 앞 두 개. 없으면 예시 이름
 export function groupPreviewItems(cls){
-  const names=store.targets.filter(t=>t.enabled&&KINDS[t.kind]&&KINDS[t.kind].events.some(e=>e.group===cls)).slice(0,2).map(t=>t.name);
+  const names=store.targets.filter(t=>t.enabled&&KINDS[t.kind]&&KINDS[t.kind].events.some(e=>e.group===cls)).slice(0,2).map(sayName);
   return (names.length===2?names:['유니온의 힘','유니온의 부']).map((label,i)=>({label,rank:i,order:i}));
 }
 // 가까운 알림 묶기 설정: 끔(0) | 5초 | 10초 | 20초(기본 끔). 바꾸는 즉시 저장하고 Alerts에 알린다

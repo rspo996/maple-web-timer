@@ -5,7 +5,7 @@ import { load } from './load.js';
 // 전역 순서는 index.html과 같게. targets.js는 아직 예전 DEFS를 만들므로 아이콘 데이터는 빈 배열로 대신한다.
 const L = await load(['util', 'detect-core', 'targets', 'kinds']);
 const KINDS = L.get('KINDS'), BUILTIN = L.get('BUILTIN');
-const { newState, cardStatus, unionRect, registerKind } = L;
+const { newState, cardStatus, unionRect, registerKind, sayName } = L;
 const mk = (kind, over = {}) => ({ id: 'u1', kind, name: '유니온의 힘', preset: null, enabled: true, threshold: 0.75, area: null, tpl: null, frameW: 0, frameH: 0, p: KINDS[kind].defaults(), ...over });
 const ctx = { src: true, frame: { w: 1280, h: 720 } };
 const REG = { tpl: { url: 'x', w: 8, h: 8 }, frameW: 1280, frameH: 720 };   // 등록을 마친 대상
@@ -20,7 +20,11 @@ test('종류 등록부: 세 종류와 이벤트 키·묶음 종류', () => {
 
 test('문구: 기존 MSG와 같다', () => {
   const t = mk('buff', { name: '솔 야누스' }), msg = (k, key, t, info) => KINDS[k].events.find(e => e.key === key).msg(t, info || {});
-  assert.equal(msg('buff', 'pre', t), '솔 야누스 10초 전');
+  const sol = mk('buff', { name: '솔 야누스', sayName: '야누스' });
+  assert.equal(msg('buff', 'pre', sol), '야누스 곧 꺼져요');                       // 2026-11-11: 부를 이름 + 곧 꺼져요
+  assert.equal(msg('buff', 'pre', mk('buff', { name: '유니온의 힘' })), '유니온의 힘 곧 꺼져요');
+  assert.equal(msg('countdown', 'pre', mk('countdown', { name: '부스터' })), '부스터 곧 꺼져요');
+  assert.equal(sayName(sol), '야누스'); assert.equal(sayName(t), '솔 야누스'); assert.equal(sayName({ name: 'A', sayName: null }), 'A');
   assert.equal(msg('countdown', 'unread', mk('countdown', { name: '부스터' })), '부스터 숫자를 못 읽고 있어요');
   assert.equal(msg('rune', 'appear', mk('rune')), '룬이 나왔어요');
   assert.equal(msg('rune', 'remind', mk('rune')), '룬 아직 있어요');

@@ -16,7 +16,7 @@ export function planGroup(fired,targets,states,kinds,now,windowSec){
 }
 // 묶인 알림의 음성·토스트 문구. 이름 뒤 조사를 쓰지 않고 초는 말하지 않는다(멤버마다 남은 시간이 달라 한 숫자가 틀림)
 export function groupText(cls,items){
-  const sorted=[...items].sort((a,b)=>a.rank-b.rank||a.order-b.order), tail=cls==='pre'?'곧 끝나요':'꺼졌어요';
+  const sorted=[...items].sort((a,b)=>a.rank-b.rank||a.order-b.order), tail=cls==='pre'?'곧 꺼져요':'꺼졌어요';
   return sorted.length>=4?`${sorted.length}개 ${tail}`:`${sorted.map(i=>i.label).join(', ')} ${tail}`;
 }
 

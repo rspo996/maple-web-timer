@@ -43,7 +43,7 @@ check("등록 뒤 룬 감지: 룬 있음 + 나왔어요 음성 + 올라가는 �
 // 3) 알림 테스트 버튼은 개별 알림
 await ev(() => __fake.reset());
 await page.click("#card-sol [data-a=toggle]"); await page.click("#card-sol [data-a=test]"); await wait(2500);
-check("알림 테스트: 솔 야누스 10초 전", JSON.stringify(await ev(() => __fake.spoken)) === JSON.stringify(["솔 야누스 10초 전"]));
+check("알림 테스트: 야누스 곧 꺼져요", JSON.stringify(await ev(() => __fake.spoken)) === JSON.stringify(["야누스 곧 꺼져요"]));
 
 // 4) 해상도 변경 → 다시 등록 필요
 await ev(() => __fake.resize(1920, 1080)); await wait(1500);

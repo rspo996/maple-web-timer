@@ -58,6 +58,16 @@ test('normalizeTarget: 내장 룬 대상은 예전 저장값(preset 없음)이�
   assert.equal(plain(normalizeTarget({ id: 'u4', kind: 'rune', name: '룬 2', preset: null, p: {} })).preset, null);   // 추가한 룬 대상은 그대로
 });
 
+test('sayName: 내장 솔 야누스만 "야누스", 부스터·룬은 null, 정리 규칙', () => {
+  const s = plain(defaultStore());
+  assert.deepEqual(s.targets.map(t => t.sayName), ['야누스', null, null]);
+  const n = o => plain(normalizeTarget({ id: 'u1', kind: 'buff', name: 'A', p: {}, ...o })).sayName;
+  assert.equal(n({ sayName: '  하나 ' }), '하나'); assert.equal(n({ sayName: '가'.repeat(15) }), '가'.repeat(12));
+  assert.equal(n({}), null); assert.equal(n({ sayName: '' }), null); assert.equal(n({ sayName: 5 }), null);
+  const sol = o => plain(normalizeTarget({ id: 'sol', kind: 'buff', name: '솔 야누스', p: {}, ...o })).sayName;
+  assert.equal(sol({}), '야누스'); assert.equal(sol({ sayName: '' }), '야누스'); assert.equal(sol({ sayName: 3 }), '야누스'); assert.equal(sol({ sayName: '솔' }), '솔');
+});
+
 test('normalizeTarget: 알 수 없는 kind는 지우지 않고 꺼 둔다', () => {
   const t = plain(normalizeTarget({ id: 'u9', kind: 'future', name: '미래', enabled: true, p: { z: 1 } }));
   assert.deepEqual([t.kind, t.enabled, t.p], ['future', false, { z: 1 }]);

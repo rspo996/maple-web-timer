@@ -62,8 +62,8 @@ test('묶기를 켜면 pre는 flush에서 한 번에: 묶음 슬롯·multi 소�
   A.fire(pre('a', 10, 0)); A.fire(pre('b', 4, 1));
   assert.deepEqual(log, []);                                              // 틱이 끝나기 전에는 아무것도 울리지 않는다
   A.flush(1000);
-  assert.deepEqual(log, [['play', 'grp', 'pre', 'grp.pre', 'multi', 'b, a 곧 끝나요'], ['ui', 'b, a 곧 끝나요', 'grp.pre'], ['flash', ['card-a', 'card-b']]]);
-  assert.deepEqual(recs, [{ at: 1000, src: 'target', ids: ['a', 'b'], event: 'pre', text: 'b, a 곧 끝나요', grouped: true, custom: false }]);
+  assert.deepEqual(log, [['play', 'grp', 'pre', 'grp.pre', 'multi', 'b, a 곧 꺼져요'], ['ui', 'b, a 곧 꺼져요', 'grp.pre'], ['flash', ['card-a', 'card-b']]]);
+  assert.deepEqual(recs, [{ at: 1000, src: 'target', ids: ['a', 'b'], event: 'pre', text: 'b, a 곧 꺼져요', grouped: true, custom: false }]);
   A.flush(1000); assert.equal(log.length, 3);                             // 비운 뒤에는 다시 울리지 않는다
 });
 

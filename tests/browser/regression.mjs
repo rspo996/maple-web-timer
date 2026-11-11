@@ -56,7 +56,7 @@ check("복구: 상태줄만(소리 없음)", back.spoken.length === 0 && back.st
 await ev(() => { __fake.reset(); const i = document.querySelector("#card-sol [data-f=durationSec]"); i.value = "1:00"; i.dispatchEvent(new Event("change")); __fake.skew(51000); });
 await wait(3500);
 const pre = await ev(() => ({ spoken: __fake.spoken.slice(), osc: __fake.osc.slice() }));
-check("미리 알림: 음성 한 번 + 딩딩-동", J(pre.spoken) === J(["솔 야누스 10초 전"]) && J(pre.osc) === J([["square", 1046], ["square", 1046], ["square", 784]]), pre);
+check("미리 알림: 음성 한 번 + 딩딩-동", J(pre.spoken) === J(["야누스 곧 꺼져요"]) && J(pre.osc) === J([["square", 1046], ["square", 1046], ["square", 784]]), pre);
 await ev(() => { __fake.reset(); __fake.show("sol", false); });
 await wait(3500);
 const off = await ev(() => ({ spoken: __fake.spoken.slice(), st: document.querySelector("#card-sol [data-s=status]").textContent }));
@@ -66,7 +66,7 @@ check("미리 알림 뒤 꺼짐 알림 없음", off.spoken.length === 0 && off.s
 await ev(() => { __fake.skew(9000); __fake.reset(); testAlert(targetById("sol")); testAlert(targetById("sol")); testAlert(targetById("booster")); });   // 앞 알림과 8초 넘게 띄워 중복 억제에 걸리지 않게
 await wait(3500);
 const said = await ev(() => __fake.spoken.slice());
-check("음성: 같은 문구는 한 번만, 다른 문구는 이어서", J(said) === J(["솔 야누스 10초 전", "부스터 10초 전"]), said);
+check("음성: 같은 문구는 한 번만, 다른 문구는 이어서", J(said) === J(["야누스 곧 꺼져요", "부스터 곧 꺼져요"]), said);
 
 // 7) 숨은 탭: grabFrame으로 감시, 응답이 없으면 1.5초 뒤 포기하고 10초 넘으면 화면 안 들어옴
 await ev(() => { __fake.reset(); Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); });

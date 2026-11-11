@@ -51,10 +51,10 @@ test('planGroup: 룬은 당기지 않는다, 부스터는 읽은 남은 시간�
 
 test('groupText: 1·2·3개는 이름 나열, 4개부터는 개수. 남은 시간이 짧은 순(같으면 목록 순서)', () => {
   const it = (label, rank, order) => ({ label, rank, order });
-  assert.equal(groupText('pre', [it('A', 10, 0)]), 'A 곧 끝나요');
-  assert.equal(groupText('pre', [it('A', 10, 0), it('B', 4, 1)]), 'B, A 곧 끝나요');
-  assert.equal(groupText('pre', [it('A', 10, 2), it('B', 10, 1), it('C', 12, 0)]), 'B, A, C 곧 끝나요');
-  assert.equal(groupText('pre', [it('A', 1, 0), it('B', 2, 1), it('C', 3, 2), it('D', 4, 3)]), '4개 곧 끝나요');
+  assert.equal(groupText('pre', [it('A', 10, 0)]), 'A 곧 꺼져요');
+  assert.equal(groupText('pre', [it('A', 10, 0), it('B', 4, 1)]), 'B, A 곧 꺼져요');
+  assert.equal(groupText('pre', [it('A', 10, 2), it('B', 10, 1), it('C', 12, 0)]), 'B, A, C 곧 꺼져요');
+  assert.equal(groupText('pre', [it('A', 1, 0), it('B', 2, 1), it('C', 3, 2), it('D', 4, 3)]), '4개 곧 꺼져요');
   assert.equal(groupText('gone', [it('A', 0, 0), it('B', 0, 1)]), 'A, B 꺼졌어요');
   assert.equal(groupText('gone', [it('A', 0, 0), it('B', 0, 1), it('C', 0, 2), it('D', 0, 3), it('E', 0, 4)]), '5개 꺼졌어요');
 });

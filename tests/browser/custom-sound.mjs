@@ -29,7 +29,7 @@ await wait(1500);
 const play = await ev(() => ({ spoken: __fake.spoken.slice(), osc: __fake.osc.length, recs: __recs.map(x => [x.event, x.custom]) }));
 check("내 소리가 있으면 기본 비프·음성 대신 재생", play.spoken.length === 0 && play.osc === 0 && J(play.recs) === J([["pre", true]]), play);
 await ev(() => { __fake.reset(); testAlert(targetById("booster")); }); await wait(2500);
-check("다른 알림은 기본 소리 그대로(비프 + 음성)", (await ev(() => __fake.osc.length)) === 4 && J(await ev(() => __fake.spoken)) === J(["부스터 10초 전"]));
+check("다른 알림은 기본 소리 그대로(비프 + 음성)", (await ev(() => __fake.osc.length)) === 4 && J(await ev(() => __fake.spoken)) === J(["부스터 곧 꺼져요"]));
 
 // 새로고침해도 유지(IndexedDB), 기본으로 되돌리기
 await ev(() => location.reload()); await wait(2000);

@@ -2,20 +2,17 @@
 import {groupText} from './alerts-core.js';
 import './cooldown.js';                                   // 설치기 종류 등록
 import {IDLE_ALERTS} from './idle.js';                    // 사냥 멈춤 종류 등록 + 알림 횟수
-import {KINDS} from './kinds.js';
+import {KINDS,sayName} from './kinds.js';
 import {manualEmptyStore,manualText,presetTimerName} from './manual-core.js';
 import {defaultStore} from './targets.js';
 
 // 성별은 Google 문서에 없어 기억에 기댄 분류 [추정]. 들어 보고 틀리면 표시만 고친다
-export const VOICES=[
-  {id:'Kore',label:'Kore',gender:'여'},{id:'Zephyr',label:'Zephyr',gender:'여'},{id:'Leda',label:'Leda',gender:'여'},
-  {id:'Sulafat',label:'Sulafat',gender:'여'},{id:'Charon',label:'Charon',gender:'남'},{id:'Puck',label:'Puck',gender:'남'},
-];
-export const DEFAULT_VOICE='Kore';                         // 사용자 결정(2026-11-10): 기본은 여자 목소리 하나
+export const VOICES=['Erinome','Zephyr','Autonoe','Leda','Laomedeia','Aoede','Despina'].map(id=>({id,label:id,gender:'여'}));
+export const DEFAULT_VOICE='Erinome';                        // 사용자 결정(2026-11-11): 기본은 Erinome, 목소리는 모두 여자
 export const VOICE_MODEL='gemini-3.8-flash-tts';
-export const VOICE_STYLE='Clear, calm Korean alert announcer. Slightly fast pace. No extra words.';   // 한국어 대본이어도 말투 지시는 영어가 좋다(문서)
+export const VOICE_STYLE='Friendly, bright and natural young Korean woman, like a cheerful game guide. Warm smile in the voice. Say only the given text.';   // 한국어 대본이어도 말투 지시는 영어가 좋다(문서)
 export const WATCH_START='감시 시작할게요';
-export const VOICE_SAMPLE='솔 야누스 10초 전';             // 소리 설정의 "듣기"
+export const VOICE_SAMPLE='야누스 곧 꺼져요';             // 소리 설정의 "듣기"
 
 const perms=(arr,k)=>k===0?[[]]:arr.flatMap((x,i)=>perms([...arr.slice(0,i),...arr.slice(i+1)],k-1).map(p=>[x,...p]));
 const preOf=t=>KINDS[t.kind]&&KINDS[t.kind].events.find(e=>e.group==='pre');
@@ -35,9 +32,9 @@ function targetTexts(t){
   }
   return out;
 }
-// 묶음 미리 알림: 실행 중 남은 시간에 따라 순서가 바뀌므로 모든 순서를 만든다. 4개 이상이면 "N개 곧 끝나요"
+// 묶음 미리 알림: 실행 중 남은 시간에 따라 순서가 바뀌므로 모든 순서를 만든다. 4개 이상이면 "N개 곧 꺼져요"
 function groupTexts(targets){
-  const names=targets.filter(hasPre).map(t=>t.name), out=[];
+  const names=targets.filter(hasPre).map(sayName), out=[];
   const say=arr=>groupText('pre',arr.map((label,i)=>({label,rank:i,order:i})));
   for(const p of perms(names,2)) out.push(say(p));
   if(names.length<=3) for(const p of perms(names,3)) out.push(say(p));

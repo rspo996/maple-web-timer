@@ -32,8 +32,8 @@ async function twoBuffs(gap, group) {
 let T = await twoBuffs(3000, { on: true, windowSec: 10 });
 await T.ev(() => __fake.skew(46500)); await T.wait(3500);   // A의 미리 알림 시각(켜진 지 50초) 직후. B는 켜진 지 약 47초 → 남은 약 13초(<=20)
 const g1 = await T.ev(() => ({ spoken: __fake.spoken.slice(), toast: document.querySelector("#toast").textContent, flashed: [...document.querySelectorAll(".card.flash")].map(c => c.id).sort(), alerted: Object.fromEntries(store.targets.map(t => [t.name, states[t.id].alertedPre])) }));
-check("묶기 켬 + 3초 차이: 묶인 음성 한 번", J(g1.spoken) === J(["버프A, 버프B 곧 끝나요"]), g1);
-check("묶인 알림: 토스트 한 줄, 두 카드 깜빡임, 둘 다 미리 알림 처리", g1.toast === "버프A, 버프B 곧 끝나요" && J(g1.flashed) === J(["card-" + T.a, "card-" + T.b]) && g1.alerted["버프A"] && g1.alerted["버프B"], g1);
+check("묶기 켬 + 3초 차이: 묶인 음성 한 번", J(g1.spoken) === J(["버프A, 버프B 곧 꺼져요"]), g1);
+check("묶인 알림: 토스트 한 줄, 두 카드 깜빡임, 둘 다 미리 알림 처리", g1.toast === "버프A, 버프B 곧 꺼져요" && J(g1.flashed) === J(["card-" + T.a, "card-" + T.b]) && g1.alerted["버프A"] && g1.alerted["버프B"], g1);
 await T.ev(() => { __fake.reset(); __fake.skew(20000); }); await T.wait(2500);
 check("당겨진 버프는 자기 미리 알림·꺼짐 알림을 다시 울리지 않음", J(await T.ev(() => __fake.spoken)) === J([]));
 
