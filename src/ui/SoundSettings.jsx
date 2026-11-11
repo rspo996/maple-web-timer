@@ -46,6 +46,7 @@ export function SoundSettings() {
           {' '}
           <button data-a="voice-play" type="button" onClick={() => { unlockAudio(); previewVoice(); }}>듣기</button>
           <p id="voiceNote" className="sub">{voiceNote()}</p>
+          <p id="voiceHint" className="sub">다른 목소리로 바꾸려면 아래에서 알림마다 음성 파일(WAV·MP3, 10초·5MB 이하)을 고르세요. 고른 파일은 경고음과 음성을 함께 대신해요.</p>
         </fieldset>
         <p className="sub">파일을 고르면 그 알림은 기본 경고음과 음성 대신 고른 소리로 울려요. 10초 이하, 5MB 이하 소리만 쓸 수 있고, 파일은 이 브라우저에만 저장돼요.</p>
         <fieldset id="groupCtl">

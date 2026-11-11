@@ -73,7 +73,7 @@ test('clipPath: 목소리 폴더 + 문구 sha1 앞 12자', () => {
 });
 
 test('manifest: 새로 만들기, 넣고 꺼내기, 모델·말투가 같을 때만 이어서', () => {
-  const m = emptyManifest(); assert.equal(m.version, 1); assert.equal(m.voices.length, 7);
+  const m = emptyManifest(); assert.equal(m.version, 1); assert.equal(m.voices.length, 1);
   manifestSet(m, 'Kore', 'a', 'Kore/1.mp3'); assert.equal(manifestGet(m, 'Kore', 'a'), 'Kore/1.mp3'); assert.equal(manifestGet(m, 'Puck', 'a'), null);
   assert.deepEqual(adoptManifest(JSON.parse(JSON.stringify(m))).files, m.files);
   assert.deepEqual(adoptManifest({ ...m, style: '다른 말투' }).files, {});

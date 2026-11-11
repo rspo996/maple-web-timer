@@ -8,8 +8,8 @@ import { manualEmptyStore } from '../src/core/manual-core.js';
 const PRESETS = ['5분', '10분', '15분', '20분', '30분', '1시간', '2시간'].flatMap(l => [`${l} 타이머 10초 전`, `${l} 타이머 끝났어요`]);
 const ROUTINE = ['회수 10초 전', '사냥 10초 전', '사냥 시간이에요', '회수 시간이에요'];
 
-test('목소리 7개, 기본은 Erinome', () => {
-  assert.deepEqual(VOICES.map(v => v.id), ['Erinome', 'Zephyr', 'Autonoe', 'Leda', 'Laomedeia', 'Aoede', 'Despina']);
+test('목소리는 기본 Erinome 하나', () => {
+  assert.deepEqual(VOICES.map(v => v.id), ['Erinome']);
   assert.equal(DEFAULT_VOICE, 'Erinome'); assert.ok(VOICES.every(v => v.label === v.id && v.gender === '여'));
   assert.equal(WATCH_START, '감시 시작할게요'); assert.equal(VOICE_SAMPLE, '야누스 곧 꺼져요');
 });

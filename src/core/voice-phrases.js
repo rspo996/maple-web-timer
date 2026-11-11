@@ -6,8 +6,9 @@ import {KINDS,sayName} from './kinds.js';
 import {manualEmptyStore,manualText,presetTimerName} from './manual-core.js';
 import {defaultStore} from './targets.js';
 
-// 성별은 Google 문서에 없어 기억에 기댄 분류 [추정]. 들어 보고 틀리면 표시만 고친다
-export const VOICES=['Erinome','Zephyr','Autonoe','Leda','Laomedeia','Aoede','Despina'].map(id=>({id,label:id,gender:'여'}));
+// 무료 키는 이 모델에서 하루 10개라(2026-11-11 확인) 기본 목소리만 만든다.
+// 다른 목소리는 소리 설정의 '알림 소리 바꾸기'에서 알림마다 음성 파일을 골라 쓴다(사용자 결정)
+export const VOICES=[{id:'Erinome',label:'Erinome',gender:'여'}];
 export const DEFAULT_VOICE='Erinome';                        // 사용자 결정(2026-11-11): 기본은 Erinome, 목소리는 모두 여자
 export const VOICE_MODEL='gemini-3.8-flash-tts';
 export const VOICE_STYLE='Friendly, bright and natural young Korean woman, like a cheerful game guide. Warm smile in the voice. Say only the given text.';   // 한국어 대본이어도 말투 지시는 영어가 좋다(문서)
