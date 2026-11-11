@@ -25,7 +25,7 @@
 - [확인] 내 소리 파일은 `src/app/sounds.js`가 WebAudio로 경고음과 같은 시간줄(`beepEnd`)에 이어서 재생한다. 마스터 출력(`Alerts.audioOut()`)을 지나 음량 0~200%가 적용된다.
 - [확인] ffmpeg는 이 PC에 없다. `@breezystack/lamejs` 1.2.7(순수 JS MP3 인코더, 2025-01 갱신)이 npm에 있다.
 - [문서] 모델 `gemini-3.8-flash-tts`, 한국어 지원, 무료 등급 있음(가격표 요약 기준). 결과는 WAV(RIFF, 24kHz, 모노, 16비트). 목소리 30개(성별 표기 없음).
-- [문서] 요청: `POST https://generativelanguage.googleapis.com/v1beta/interactions`, 헤더 `x-goog-api-key`, 본문 `{model, input:[{type:'user_input', content:[{type:'text', text, annotations:[{type:'speech_metadata', style}]}]}], response_format:{type:'audio'}, generation_config:{speech_config:[{voice}]}}`. 오디오는 `steps[]`(type `model_output`)의 `content[]`(type `audio`)의 `data`(base64). 한국어 대본이어도 말투 지시는 영어가 좋다고 적혀 있다.
+- [확인, 2026-11-11 첫 실제 호출] 요청: `POST https://generativelanguage.googleapis.com/v1beta/interactions`, 헤더 `x-goog-api-key`, 본문 `{model, input:[{type:'user_input', content:[{type:'text', text, annotations:[{type:'speech_metadata', style}]}]}], response_format:{type:'audio'}, generation_config:{speech_config:[{voice}]}}`. 오디오는 `steps[]`(type `model_output`)의 `content[]`(type `audio`)의 `data`(base64). 한국어 대본이어도 말투 지시는 영어가 좋다고 적혀 있다. 실제 응답: `steps[0].type="model_output"`, `content[0]={type:"audio", mime_type:"audio/wav", data}`. WAV는 RIFF·24kHz·모노·16비트이고, data 덩어리 뒤에 C2PA(콘텐츠 출처 표시, `jumb`) 덩어리가 붙어 있다(소리가 아니므로 data 길이만큼만 읽는다). 무료 키 한도는 분당 3번(429 응답 문구 "limit: 3 requests per minute on Free Tier … retry in 8s").
 - [추정] 무료 키의 TTS 하루 한도는 문서에 숫자가 없다. 300번 안팎의 요청이 하루에 다 안 될 수 있다.
 - [문서] 무료 등급은 보낸 내용이 Google 제품 개선에 쓰일 수 있다. 보내는 것은 알림 문구뿐이고 게임 화면은 보내지 않는다.
 
