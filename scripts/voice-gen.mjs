@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateBackup} from '../src/core/backup-core.js';
 import {VOICES,voicePhrases} from '../src/core/voice-phrases.js';
-import {parseArgs,adoptManifest,buildTtsRequest,clipPath,encodeMp3,extractAudioBase64,manifestGet,manifestSet,parseEnvKey,pcmFromAudio} from './voice-lib.mjs';
+import {parseArgs,adoptManifest,buildTtsRequest,clipPath,encodeMp3,extractAudioBase64,manifestGet,manifestSet,parseEnvKey,pcmFromAudio,retryAfterMs} from './voice-lib.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), OUT=path.join(ROOT,'public','voice'), MANIFEST=path.join(OUT,'manifest.json');
 let a; try{ a=parseArgs(process.argv.slice(2),process.env); }catch(e){ console.error(e.message); process.exit(1); }
@@ -40,8 +40,13 @@ if(a.dryRun){ for(const p of phrases) console.log('  '+p); process.exit(0); }
 const envFile=path.join(ROOT,'.env.gemini'), key=fs.existsSync(envFile)?parseEnvKey(fs.readFileSync(envFile,'utf8')):null;
 if(!key){ console.error('API 키가 없어요. https://aistudio.google.com/apikey 에서 키를 만들어 저장소 맨 위 .env.gemini 파일에 GEMINI_API_KEY=키 한 줄로 넣어 주세요'); process.exit(1); }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const MIN_GAP_MS=21000;   // 무료 키는 이 모델에서 분당 3번(2026-11-11 429 응답 문구로 확인)
+let lastReqAt=0;
+console.log(`요청 사이를 21초씩 띄워요(무료 한도 분당 3번). 예상 약 ${Math.ceil(todo.length*21/60)}분`);
 async function synth(text,voice){
   for(let attempt=0;;attempt++){
+    const gap=lastReqAt+MIN_GAP_MS-Date.now(); if(gap>0) await sleep(gap);
+    lastReqAt=Date.now();
     const {url,init}=buildTtsRequest({text,voice,key});   // init에는 API 키가 들어 있으니 출력하지 않는다. init이나 key를 어디에도 로그로 남기지 말 것
     let res;
     try{ res=await fetch(url,init); }
@@ -52,6 +57,10 @@ async function synth(text,voice){
     }
     if(res.ok) return extractAudioBase64(await res.json());
     const body=await res.text();
+    if(res.status===429&&attempt<5){
+      const ra=retryAfterMs(body);
+      if(ra!==null){ const wait=Math.max(ra+1000,lastReqAt+MIN_GAP_MS-Date.now()); console.log(`  HTTP 429, ${Math.ceil(wait/1000)}초 뒤 다시`); await sleep(wait); continue; }
+    }
     if((res.status===429||res.status>=500)&&attempt<5){ console.log(`  HTTP ${res.status}, ${2*2**attempt}초 뒤 다시`); await sleep(2000*2**attempt); continue; }
     const e=new Error(`HTTP ${res.status}: ${body.slice(0,500)}`); e.status=res.status; throw e;
   }
@@ -63,7 +72,7 @@ for(const {voice,text} of todo){
     const pcm=pcmFromAudio(Buffer.from(await synth(text,voice),'base64'));
     if(pcm.samples.length<pcm.sampleRate*0.2) throw new Error(`음성이 너무 짧아요(${(pcm.samples.length/pcm.sampleRate).toFixed(2)}초)`);
     const rel=clipPath(voice,text); fs.mkdirSync(path.join(OUT,voice),{recursive:true});
-    fs.writeFileSync(path.join(OUT,rel),encodeMp3(pcm.samples,pcm.sampleRate));
+    fs.writeFileSync(path.join(OUT,rel),encodeMp3(pcm.samples,pcm.sampleRate,96));
     manifestSet(manifest,voice,text,rel); saveManifest();   // 하나 만들 때마다 저장(중간에 멈춰도 이어서)
     done++; console.log(`[${done}/${todo.length}] ${voice} · ${text} · ${(pcm.samples.length/pcm.sampleRate).toFixed(1)}초`);
   }catch(e){

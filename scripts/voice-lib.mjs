@@ -33,15 +33,17 @@ export function pcmFromAudio(buf){
   }
   return {sampleRate:24000,samples:int16At(u,0,u.length)};
 }
-// 모노 MP3(48kbps). 1152샘플씩 넣는다
-export function encodeMp3(samples,sampleRate){
-  const enc=new lame.Mp3Encoder(1,sampleRate,48), parts=[];
+// 모노 MP3 96kbps 기본. 48kbps에서 ㅅ·ㅊ·ㅈ 고음이 지지직거린다는 보고(2026-11-11). 1152샘플씩 넣는다
+export function encodeMp3(samples,sampleRate,kbps=96){
+  const enc=new lame.Mp3Encoder(1,sampleRate,kbps), parts=[];
   for(let i=0;i<samples.length;i+=1152){ const b=enc.encodeBuffer(samples.subarray(i,i+1152)); if(b.length) parts.push(b); }
   const end=enc.flush(); if(end.length) parts.push(end);
   const out=new Uint8Array(parts.reduce((n,p)=>n+p.length,0)); let o=0;
   for(const p of parts){ out.set(new Uint8Array(p.buffer,p.byteOffset,p.length),o); o+=p.length; }
   return out;
 }
+// 오류 본문의 "retry in 8s" / "retry in 12.5 s"를 밀리초로. 없으면 null
+export function retryAfterMs(body){ const m=/retry\s+in\s+(\d+(?:\.\d+)?)\s*s/i.exec(String(body)); return m?Math.ceil(parseFloat(m[1])*1000):null; }
 export function parseEnvKey(text){ const m=/^[ \t]*(?:export[ \t]+)?GEMINI_API_KEY[ \t]*=[ \t]*["']?([^"'\s#]+)/m.exec(String(text)); return m?m[1]:null; }
 export const clipPath=(voice,text)=>`${voice}/${createHash('sha1').update(text).digest('hex').slice(0,12)}.mp3`;
 export function emptyManifest(){ return {version:1,model:VOICE_MODEL,style:VOICE_STYLE,voices:VOICES.map(v=>({...v})),files:{}}; }

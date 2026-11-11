@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TTS_URL, adoptManifest, buildTtsRequest, clipPath, emptyManifest, encodeMp3, extractAudioBase64, manifestGet, manifestSet, parseArgs, parseEnvKey, pcmFromAudio } from '../scripts/voice-lib.mjs';
+import { TTS_URL, adoptManifest, buildTtsRequest, clipPath, emptyManifest, encodeMp3, extractAudioBase64, manifestGet, manifestSet, parseArgs, parseEnvKey, pcmFromAudio, retryAfterMs } from '../scripts/voice-lib.mjs';
 import { VOICE_MODEL, VOICE_STYLE } from '../src/core/voice-phrases.js';
 
 function wav(samples, rate = 24000) {   // 모노 16비트 WAV
@@ -34,6 +34,23 @@ test('encodeMp3: MPEG 프레임으로 시작하는 MP3', () => {
   const s = new Int16Array(4800).map((_, i) => Math.round(Math.sin(i / 8) * 8000));
   const mp3 = encodeMp3(s, 24000);
   assert.ok(mp3.length > 100); assert.equal(mp3[0], 0xff); assert.equal(mp3[1] & 0xe0, 0xe0);
+});
+
+test('encodeMp3: 96kbps가 기본, 48kbps보다 크고 프레임 헤더의 비트레이트 번호가 맞다', () => {
+  const s = new Int16Array(24000).map((_, i) => Math.round(Math.sin(i / 8) * 8000));
+  const lo = encodeMp3(s, 24000, 48), hi = encodeMp3(s, 24000), hi2 = encodeMp3(s, 24000, 96);
+  for (const m of [lo, hi]) { assert.equal(m[0], 0xff); assert.equal(m[1] & 0xe0, 0xe0); }
+  assert.ok(hi.length > lo.length); assert.equal(hi.length, hi2.length);
+  assert.equal(lo[2] >> 4, 6);    // MPEG-2 Layer III 표: 48kbps = 6번
+  assert.equal(hi[2] >> 4, 10);   // 96kbps = 10번
+});
+
+test('retryAfterMs: 오류 본문의 "retry in N s"를 밀리초로', () => {
+  const body = '{"error":{"message":"Rate limit exceeded for model gemini-3.8-flash-tts (limit: 3 requests per minute on Free Tier). Please retry in 8s or upgrade your tier at https://ai.dev/rate-limit.","code":429}}';
+  assert.equal(retryAfterMs(body), 8000);
+  assert.equal(retryAfterMs('Please retry in 12.5s'), 12500);
+  assert.equal(retryAfterMs('Retry in 3 s'), 3000);
+  assert.equal(retryAfterMs('nothing'), null);
 });
 
 test('parseEnvKey: GEMINI_API_KEY 한 줄, 따옴표·주석·다른 줄 무시', () => {
