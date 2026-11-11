@@ -36,7 +36,7 @@ export function normalizeTarget(t){
   const o=Object.assign({},t); o.id=String(o.id);
   const nm=typeof o.name==='string'?o.name.trim().slice(0,12):'';
   o.name=nm||(BUILTIN[o.id]&&BUILTIN[o.id].name)||o.id;
-  o.sayName=(typeof o.sayName==='string'&&o.sayName.trim())?o.sayName.trim().slice(0,12):((BUILTIN[o.id]&&BUILTIN[o.id].sayName)||null);   // 음성으로만 부르는 이름
+  o.sayName=(typeof o.sayName==='string'&&o.sayName.trim())?o.sayName.trim().slice(0,12):((BUILTIN[o.id]&&o.name===BUILTIN[o.id].name&&BUILTIN[o.id].sayName)||null);   // 부를 이름: 음성과 알림 문구(토스트·탭 제목·브라우저 알림)에 쓰고, 카드·작은 창·소리 설정에는 name을 보인다. 내장 기본값은 내장 이름일 때만
   o.enabled=typeof o.enabled==='boolean'?o.enabled:true;
   const th=+o.threshold; o.threshold=Number.isFinite(th)?Math.min(0.98,Math.max(0.4,th)):(BUILTIN[o.id]?BUILTIN[o.id].threshold:0.75);
   o.preset=PRESETS[o.preset]?o.preset:null;
@@ -151,7 +151,9 @@ export function addKindTarget(store,kind){
 export function renameTarget(store,id,raw){
   const t=store.targets.find(x=>x.id===id); if(!t) return {ok:false,msg:'대상을 찾을 수 없어요'};
   const c=checkName(raw,store.targets,id); if(!c.ok) return {ok:false,msg:c.msg};
-  t.name=c.name; return {ok:true,msg:''};            // id·내 소리 슬롯은 그대로
+  t.name=c.name;
+  if(BUILTIN[t.id]) t.sayName=(c.name===BUILTIN[t.id].name)?(BUILTIN[t.id].sayName||null):null;   // 내장 부를 이름은 내장 이름일 때만
+  return {ok:true,msg:''};            // id·내 소리 슬롯은 그대로
 }
 // delta -1(위)·+1(아래). 바뀐 새 위치를 돌려주고, 끝이라 못 움직이면 -1
 export function moveTarget(store,id,delta){

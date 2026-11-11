@@ -18,7 +18,7 @@ test('종류 등록부: 세 종류와 이벤트 키·묶음 종류', () => {
   assert.deepEqual(ev('rune'), [['appear', null, 'rune'], ['remind', null, 'rune']]);
 });
 
-test('문구: 기존 MSG와 같다', () => {
+test('문구: 버프·부스터 미리 알림은 부를 이름 + 곧 꺼져요, 나머지는 그대로', () => {
   const t = mk('buff', { name: '솔 야누스' }), msg = (k, key, t, info) => KINDS[k].events.find(e => e.key === key).msg(t, info || {});
   const sol = mk('buff', { name: '솔 야누스', sayName: '야누스' });
   assert.equal(msg('buff', 'pre', sol), '야누스 곧 꺼져요');                       // 2026-11-11: 부를 이름 + 곧 꺼져요

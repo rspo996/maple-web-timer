@@ -60,7 +60,7 @@ export function parseArgs(argv,env){
     let a=argv[i], v;
     const eq=a.indexOf('='); if(a.startsWith('--')&&eq>0&&vals.includes(a.slice(0,eq))){ v=a.slice(eq+1); a=a.slice(0,eq); }
     if(a==='--dry-run'&&v===undefined){ r.dryRun=true; continue; }
-    if(!vals.includes(a)) throw new Error(`모르는 옵션: ${argv[i]} (쓸 수 있는 것: --backup 파일, --voices Kore,Zephyr, --limit N, --dry-run)`);
+    if(!vals.includes(a)) throw new Error(`모르는 옵션: ${argv[i]} (쓸 수 있는 것: --backup 파일, --voices Erinome,Zephyr, --limit N, --dry-run)`);
     if(v===undefined){ const n=argv[i+1]; if(n===undefined||n.startsWith('--')) throw new Error(`${a} 뒤에 값을 주세요`); v=n; i++; }
     if(v==='') throw new Error(`${a} 뒤에 값을 주세요`);
     if(a==='--backup') r.backup=v;

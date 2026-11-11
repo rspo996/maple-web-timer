@@ -1,5 +1,5 @@
 /* ===== 묶음 6: 알림 문구를 Gemini 음성(MP3)으로 미리 만든다
-   사용: npm run voice -- [--backup 설정백업.json] [--voices Kore,Zephyr] [--limit N] [--dry-run]
+   사용: npm run voice -- [--backup 설정백업.json] [--voices Erinome,Zephyr] [--limit N] [--dry-run]
    API 키: 저장소 맨 위 .env.gemini 의 GEMINI_API_KEY=… (git에서 빠져 있다). 키는 출력하지 않는다 ===== */
 import fs from 'node:fs';
 import path from 'node:path';

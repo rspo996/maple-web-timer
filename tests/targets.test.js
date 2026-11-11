@@ -68,6 +68,16 @@ test('sayName: 내장 솔 야누스만 "야누스", 부스터·룬은 null, 정�
   assert.equal(sol({}), '야누스'); assert.equal(sol({ sayName: '' }), '야누스'); assert.equal(sol({ sayName: 3 }), '야누스'); assert.equal(sol({ sayName: '솔' }), '솔');
 });
 
+test('sayName: 내장 이름일 때만 따라간다(이름을 바꾸면 새 이름으로 말한다)', () => {
+  const s = defaultStore(), sol = s.targets[0], say = L.sayName, pre = () => L.KINDS.buff.events[0].msg(sol, {});
+  assert.equal(pre(), '야누스 곧 꺼져요');
+  assert.equal(renameTarget(s, 'sol', '유니온의 힘').ok, true); assert.equal(sol.sayName, null); assert.equal(say(sol), '유니온의 힘'); assert.equal(pre(), '유니온의 힘 곧 꺼져요');
+  assert.equal(renameTarget(s, 'sol', '솔 야누스').ok, true); assert.equal(sol.sayName, '야누스'); assert.equal(pre(), '야누스 곧 꺼져요');
+  const n = name => plain(normalizeTarget({ id: 'sol', kind: 'buff', name, p: {} })).sayName;
+  assert.equal(n('솔 야누스'), '야누스'); assert.equal(n('보스 버프'), null);
+  assert.equal(plain(normalizeTarget({ id: 'sol', kind: 'buff', name: '보스 버프', sayName: '보스', p: {} })).sayName, '보스');
+});
+
 test('normalizeTarget: 알 수 없는 kind는 지우지 않고 꺼 둔다', () => {
   const t = plain(normalizeTarget({ id: 'u9', kind: 'future', name: '미래', enabled: true, p: { z: 1 } }));
   assert.deepEqual([t.kind, t.enabled, t.p], ['future', false, { z: 1 }]);

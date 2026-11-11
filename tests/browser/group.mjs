@@ -43,13 +43,13 @@ await T.ev(() => __fake.skew(34500)); await T.wait(3000);   // A 켜진 지 약 
 const g2a = await T.ev(() => __fake.spoken.slice());
 await T.ev(() => __fake.skew(16000)); await T.wait(3000);
 const g2b = await T.ev(() => __fake.spoken.slice());
-check("묶기 켬 + 11초 차이: 개별 알림 두 번", J(g2a) === J(["버프A 10초 전"]) && J(g2b) === J(["버프A 10초 전", "버프B 10초 전"]), { g2a, g2b });
+check("묶기 켬 + 11초 차이: 개별 알림 두 번", J(g2a) === J(["버프A 곧 꺼져요"]) && J(g2b) === J(["버프A 곧 꺼져요", "버프B 곧 꺼져요"]), { g2a, g2b });
 
 // ---- 묶기 끔: 3초 차이라도 개별 ----
 T = await twoBuffs(3000, { on: false, windowSec: 10 });
 await T.ev(() => __fake.skew(48000)); await T.wait(5000);
 const g3 = await T.ev(() => __fake.spoken.slice());
-check("묶기 끔: 개별 알림 두 번", J(g3) === J(["버프A 10초 전", "버프B 10초 전"]), g3);
+check("묶기 끔: 개별 알림 두 번", J(g3) === J(["버프A 곧 꺼져요", "버프B 곧 꺼져요"]), g3);
 
 // ---- grp.pre 내 소리가 있으면 그 소리만(비프·음성 없음) ----
 T = await (async () => { const t = await open(taskSpace, { seed: { "maple-web-timer-v2": V2({ on: true, windowSec: 10 }) }, sounds: ["grp.pre"], connect: true }); return t; })();

@@ -5,7 +5,7 @@ import {hooks} from './hooks.js';
 import {checkDurLead,clampInt,fmt,parseDur} from './util.js';
 export const KINDS={};
 export const isPresetMode=t=>!t.tpl&&!!t.preset;                    // 직접 등록한 아이콘이 없고 내장 아이콘을 쓰는 중
-export const sayName=t=>t.sayName||t.name;                           // 음성으로만 부르는 이름(카드에는 name을 그대로 보인다)
+export const sayName=t=>t.sayName||t.name;                           // 부를 이름: 음성과 알림 문구(토스트·탭 제목·브라우저 알림)에 쓴다. 카드·작은 창·소리 설정에는 name을 그대로 보인다
 export const cfgView=t=>({kind:t.kind,...t.p});                      // 기존 순수 상태기계(stepDetector 등)에 넘기는 설정 모양
 export function unionRect(a,i){ const x0=Math.min(a.x,i.x),y0=Math.min(a.y,i.y),x1=Math.max(a.x+a.w,i.x+i.w),y1=Math.max(a.y+a.h,i.y+i.h); return {x:x0,y:y0,w:x1-x0,h:y1-y0}; }
 // 영역 → 아이콘으로 드래그한 결과를 저장. 아이콘이 영역 밖으로 나가면 영역을 넓힌다

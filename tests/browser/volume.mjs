@@ -5,6 +5,7 @@ const fs = await import("node:fs/promises");
 const harness = await fs.readFile("__ROOT__/tests/browser/fake-screen.js", "utf8");
 const J = JSON.stringify;
 const { page, ev, wait } = await open(taskSpace, {});
+await ev(() => setVoiceManifest(null));   // 이 시나리오는 브라우저 음성 기준: Gemini 음성 파일이 있어도 없는 상태로 시험
 const s0 = await ev(() => { const v = document.querySelector("#vol"); return { min: v.min, max: v.max, step: v.step, value: v.value, pct: document.querySelector("#volPct").textContent, note: document.querySelector("#volNote").hidden, tick: document.querySelector("#volTicks option").value }; });
 check("슬라이더: 0~200, 5단위, 기본 80, 80%, 100 눈금, 보조 문구 숨김", J(s0) === J({ min: "0", max: "200", step: "5", value: "80", pct: "80%", note: true, tick: "100" }), s0);
 
@@ -21,6 +22,11 @@ check("마스터 체인: 오디오 running, audioOut이 마스터, 게인 1.5, 1
 await ev(() => { __fake.reset(); speak("음량 확인"); });
 await wait(1000);   // 브라우저 음성은 이미 예약된 확인음이 끝난 뒤에 말한다(묶음 6: 두 소리가 겹치지 않게)
 check("150%에서도 음성 음량은 1", J(await ev(() => __fake.volumes.slice())) === J([1]), await ev(() => __fake.volumes.slice()));
+
+// Gemini 음성이면 150%여도 보조 문구(브라우저 음성 전용)는 숨김
+await ev(() => { setVoiceManifest({ version: 1, model: "t", style: "t", voices: [{ id: "Erinome", label: "Erinome", gender: "여" }], files: { Erinome: {} } }); setVoiceName("Erinome"); }); await wait(300);
+check("Gemini 음성: 150%여도 보조 문구 숨김", (await ev(() => document.querySelector("#volNote").hidden)) === true);
+await ev(() => setVoiceManifest(null)); await wait(300);
 
 // 100%로 내리면 리미터를 빼고(이전과 같은 크기) 보조 문구를 숨긴다
 await page.fill("#vol", "100"); await ev(() => { const v = document.querySelector("#vol"); v.dispatchEvent(new Event("input")); v.dispatchEvent(new Event("change")); });

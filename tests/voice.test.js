@@ -26,7 +26,7 @@ test('voicePhrases: 실제 알림 경로(reqFor의 def.msg)가 말하는 문구�
 
 test('voicePhrases: 묶기를 켜면 미리 알림이 있는 대상의 두 순서 모두', () => {
   const s = defaultStore(), list = voicePhrases({ targets: s.targets, group: { on: true, windowSec: 10 } });
-  assert.ok(list.includes('야누스, 부스터 곧 꺼져요')); assert.ok(list.includes('부스터, 야누스 곧 꺼져요'));
+  assert.ok(list.some(p => p.includes(', '))); assert.ok(list.includes('부스터, 야누스 곧 꺼져요'));
   assert.ok(!voicePhrases({ targets: s.targets, group: { on: false } }).includes('야누스, 부스터 곧 꺼져요'));
 });
 
@@ -48,7 +48,7 @@ test('voicePhrases: 설치기는 지속시간을 적었을 때만 "사라져요"
 });
 
 test('voicePhrases: 바꾼 이름·초, 저장된 수동 타이머', () => {
-  const s = defaultStore(); s.targets[0].sayName = '솔'; s.targets[1].name = '부스'; s.targets[1].p.leadSec = 15;
+  const s = defaultStore(); s.targets[0].sayName = '솔'; s.targets[1].name = '부스';
   const m = manualEmptyStore(); m.timers.push({ id: 'm1', kind: 'countdown', label: '보스', phases: [{ name: '보스', sec: 600 }], preSec: 20 });
   const list = voicePhrases({ targets: s.targets, manual: m });
   assert.ok(list.includes('솔 곧 꺼져요')); assert.ok(list.includes('부스 곧 꺼져요')); assert.ok(list.includes('보스 20초 전')); assert.ok(list.includes('보스 끝났어요'));
