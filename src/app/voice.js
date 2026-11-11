@@ -53,5 +53,5 @@ export function voiceNote(){
   if(voiceState.status==='none') return 'Gemini 음성 파일이 없어서 브라우저 음성으로 말해요';
   const v=currentVoice(); if(v==='browser') return '브라우저 기본 음성으로 말해요';
   const c=voiceCoverage(voicePhrases({targets:store.targets,group:store.group,manual}),voiceState.manifest.files[v]);
-  return `Gemini 음성 ${c.have}개 · 브라우저 음성 ${c.missing.length}개`+(c.missing.length?' · 설정을 바꿔서 없는 문구는 브라우저 음성으로 나와요':'');
+  return `Gemini 음성 ${c.have}개 · 브라우저 음성 ${c.missing.length}개`+(c.missing.length?' · 음성 파일이 아직 없는 문구는 브라우저 음성으로 나와요':'');
 }
