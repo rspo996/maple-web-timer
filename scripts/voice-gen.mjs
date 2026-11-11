@@ -61,6 +61,7 @@ async function synth(text,voice){
       const ra=retryAfterMs(body);
       if(ra!==null&&ra>120000){ const e=new Error(`하루 한도로 보여요(${Math.ceil(ra/60000)}분 뒤에 다시 하라고 함)`); e.status=429; throw e; }   // 몇 시간씩 잠들지 않고 멈춘다. 다시 돌리면 이어서 만든다
       if(ra!==null){ const wait=Math.max(ra+1000,lastReqAt+MIN_GAP_MS-Date.now()); console.log(`  HTTP 429, ${Math.ceil(wait/1000)}초 뒤 다시`); await sleep(wait); continue; }
+      console.log('  HTTP 429(기다릴 시간 안내 없음), 60초 뒤 다시'); await sleep(60000); continue;   // 짧게 몇 번 다시 하면 금방 포기하게 된다(2026-11-11 9개에서 멈춤, 직후 요청은 성공)
     }
     if((res.status===429||res.status>=500)&&attempt<5){ console.log(`  HTTP ${res.status}, ${2*2**attempt}초 뒤 다시`); await sleep(2000*2**attempt); continue; }
     const e=new Error(`HTTP ${res.status}: ${body.slice(0,500)}`); e.status=res.status; throw e;
@@ -77,7 +78,7 @@ for(const {voice,text} of todo){
     manifestSet(manifest,voice,text,rel); saveManifest();   // 하나 만들 때마다 저장(중간에 멈춰도 이어서)
     done++; console.log(`[${done}/${todo.length}] ${voice} · ${text} · ${(pcm.samples.length/pcm.sampleRate).toFixed(1)}초`);
   }catch(e){
-    if(e.status===429){ console.error(`한도에 걸렸어요(${done}개 만듦). 나중에 다시 돌리면 이어서 만들어요.`); process.exit(2); }
+    if(e.status===429){ console.error(`한도에 걸렸어요(${done}개 만듦): ${e.message.slice(0,300)}\n나중에 다시 돌리면 이어서 만들어요.`); process.exit(2); }
     console.error(`${voice} · ${text}: ${e.message}`); process.exit(1);
   }
 }
