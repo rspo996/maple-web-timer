@@ -1,0 +1,28 @@
+{
+ "version": 1,
+ "model": "gemini-3.8-flash-tts",
+ "style": "Friendly, bright and natural young Korean woman, like a cheerful game guide. Warm smile in the voice. Say only the given text.",
+ "voices": [
+  {
+   "id": "Erinome",
+   "label": "Erinome",
+   "gender": "여"
+  }
+ ],
+ "files": {
+  "Erinome": {
+   "10분 타이머 10초 전": "Erinome/77c9d41af4fa.mp3",
+   "10분 타이머 끝났어요": "Erinome/2ccd91136bac.mp3",
+   "15분 타이머 10초 전": "Erinome/401e111290d3.mp3",
+   "15분 타이머 끝났어요": "Erinome/df903217291e.mp3",
+   "1시간 타이머 10초 전": "Erinome/6b20715eaeaa.mp3",
+   "1시간 타이머 끝났어요": "Erinome/553aa8a1d881.mp3",
+   "20분 타이머 10초 전": "Erinome/925a3605bff9.mp3",
+   "20분 타이머 끝났어요": "Erinome/fa172ec62c2b.mp3",
+   "2시간 타이머 10초 전": "Erinome/6f9ed0478283.mp3",
+   "2시간 타이머 끝났어요": "Erinome/02b5812e4c91.mp3",
+   "30분 타이머 10초 전": "Erinome/d60d3c4bc7fd.mp3",
+   "30분 타이머 끝났어요": "Erinome/24328ea3f498.mp3"
+  }
+ }
+}

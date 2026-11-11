@@ -33,9 +33,12 @@ if(old&&countFiles(old)>0&&countFiles(manifest)===0) console.log(`모델·말투
 const saveManifest=()=>{ fs.writeFileSync(MANIFEST+'.tmp',JSON.stringify(manifest,null,1)); fs.renameSync(MANIFEST+'.tmp',MANIFEST); };
 let todo=[];
 for(const voice of ids) for(const text of phrases){ const rel=manifestGet(manifest,voice,text); if(!rel||!fs.existsSync(path.join(OUT,rel))) todo.push({voice,text}); }
+// 무료 키는 하루 10개라 감지 대상 알림(야누스·부스터·룬 등)과 시작·사냥·회수 문구를 먼저, 수동 타이머 프리셋 문구는 나중에 만든다
+const first=new Set(voicePhrases({targets:input.targets,group:input.group,manual:{prefs:input.manual&&input.manual.prefs,presets:[],timers:[]}}));
+todo.sort((x,y)=>ids.indexOf(x.voice)-ids.indexOf(y.voice)||(first.has(y.text)-first.has(x.text)));
 if(a.limit) todo=todo.slice(0,a.limit);
 console.log(`문구 ${phrases.length}개 × 목소리 ${ids.length}개 · 새로 만들 것 ${todo.length}개`);
-if(a.dryRun){ for(const p of phrases) console.log('  '+p); process.exit(0); }
+if(a.dryRun){ for(const p of phrases) console.log('  '+p); if(todo.length) console.log('만들 순서: '+todo.map(t=>t.text).join(' · ')); process.exit(0); }
 
 const envFile=path.join(ROOT,'.env.gemini'), key=fs.existsSync(envFile)?parseEnvKey(fs.readFileSync(envFile,'utf8')):null;
 if(!key){ console.error('API 키가 없어요. https://aistudio.google.com/apikey 에서 키를 만들어 저장소 맨 위 .env.gemini 파일에 GEMINI_API_KEY=키 한 줄로 넣어 주세요'); process.exit(1); }
