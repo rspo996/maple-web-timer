@@ -796,3 +796,22 @@ Gemini 음성 [코드, 2026-11-10 추가]: 알림 음성은 미리 만든 Gemini
 - [ ] **Step 3: 설계 문서 2절** — Task 5에서 확인한 실제 요청·응답 모양을 [확인]으로 고쳐 적는다.
 
 - [ ] **Step 4: 사용자에게 보고** — 만든 개수, 한도로 못 만든 것, 시험 결과, 커밋 여부를 묻는다.
+
+---
+
+## 추가 작업 (2026-11-11, 설계 문서 0절의 바뀐 결정)
+
+### Task 11: 부를 이름과 "곧 꺼져요" 대사, 목소리 목록
+- `src/core/kinds.js`: `export const sayName=t=>t.sayName||t.name;` 버프·부스터 `pre` 문구를 `` `${sayName(t)} 곧 꺼져요` ``로.
+- `src/core/targets.js`: `BUILTIN.sol.sayName='야누스'`, `builtinTarget`이 넘김, `newTarget` 기본 `sayName:null`, `normalizeTarget`이 문자열(앞뒤 공백 제거, 12자)만 받고 없으면 내장 기본값 또는 null.
+- `src/core/alerts-core.js` `groupText`: `pre` 꼬리 `곧 끝나요` → `곧 꺼져요`.
+- `src/app/detect-run.js` `reqFor`와 `src/app/sounds.js` `groupPreviewItems`: 묶음 라벨을 `sayName(t)`로.
+- `src/core/voice-phrases.js`: 묶음 이름을 `sayName`으로, `VOICES`·`DEFAULT_VOICE`·`VOICE_STYLE`·`VOICE_SAMPLE`을 0절대로.
+- 시험(node·브라우저)의 옛 문구 기대값을 새 문구로.
+
+### Task 12: 생성 스크립트 96kbps·한도 간격
+- `encodeMp3(samples, sampleRate, kbps=96)`.
+- `voice-gen.mjs`: 요청 시작 사이 최소 21초(무료 분당 3번), 429 응답의 "retry in Ns"를 읽어 그만큼(+1초) 기다림.
+
+### Task 13: 다시 생성·청취·기록
+- `public/voice`를 지우고 `npm run voice`(약 1시간). 사용자 청취. Task 10(실제 앱 확인·PRODUCT.md·설계 문서 [확인] 갱신).
