@@ -67,24 +67,32 @@ export function ocrSevenSeg(rgba, W, H, litMin=110){
   if(!/^\d+(\.\d+)?$/.test(text)) return null;
   return {value:parseFloat(text), text};
 }
-/* ===== 버프 아이콘의 남은 시간 숫자 읽기 (2026-11-11) =====
+/* ===== 버프 아이콘의 남은 시간 숫자 읽기 (2026-11-11, 2026-11-12 실제 화면 공유에 맞춤) =====
    메이플은 버프 아이콘 가운데에 남은 시간을 검은 테두리의 노란 픽셀 글꼴(높이 9px)로 찍는다. 1분 미만은 "38", 1분 이상은 "2:07".
-   글자 모양은 2026-11-11 실제 화면에서 뽑았다. 같은 숫자도 찍힌 자리에 따라 1px씩 달라 여러 모양을 둔다.
-   4는 실제 표본이 아직 없어 모양을 넣지 않았다: 4가 들어간 값은 못 읽음(null)이고, 그동안은 읽어 둔 시간으로 센다 */
+   글자 모양은 실제 화면에서 뽑았다(2026-11-11 스크린샷, 2026-11-12 화면 공유: 4와 1·6·9의 변형). 같은 숫자도 찍힌 자리에 따라 1px씩 달라 여러 모양을 둔다.
+   브라우저 화면 공유는 밝기는 그대로 두고 색만 2×2 픽셀 단위로 줄여 넘긴다(2026-11-12 확인: 같은 글자의 밝기가 스크린샷과 같고 색만 다름).
+   그래서 검은 테두리에 닿은 글자 가장자리와 콜론 점은 색이 바래 흰색에 가깝다. 픽셀마다 노란색인지 보면 글자가 끊겨 "59"를 "9"로 읽었다.
+   밝기로 글자 픽셀을 고르고, 노란색인지는 덩어리 전체로 본다 */
 export const BUFF_GLYPHS={
   '0':['.####. ##..## #....# #....# #....# #....# #....# ##..## .####.'],
-  '1':['..## #### ...# ...# ...# ...# ...# ...# ...#'],
+  '1':['..## #### ...# ...# ...# ...# ...# ...# ...#','..## #### ..## ..## ..## ..## ...# ...# ...#','..## #### ...# ..## ..## ...# ...# ...# ...#','..## #### ..## ..## ..## ..## ..## ..## ...#'],
   '2':['##### ....# ....# ....# ...## ..##. .##.. ##... #####','#####. ....#. ....#. ....#. ...##. ..##.. .##... ##.... ######'],
   '3':['##### ...## ....# ...## .###. ...## ....# ...## ####.','##### ...## ....# ...## ####. ...## ....# ...## ####.'],
+  '4':['...##. ...##. ..###. .##.#. .#..#. ##.##. ###### ....#. ....#.','...##. ...##. ..###. ..#.#. .#..#. ##.##. ###### ....#. ....#.'],
   '5':['##### #.... #.... ##... ##### ...## ....# ...## ####.','##### #.... #.... ##... ####. ...## ....# ...## ####.'],
-  '6':['.##### ##.... #..... #..... #####. ##..## #....# ##..## .####.'],
+  '6':['.##### ##.... #..... #..... #####. ##..## #....# ##..## .####.','.##### ##.... #..... #..... #####. #...## #....# ##..## .####.','.##### ##.... #..... #..... ###### #...## #....# ##..## .####.'],
   '7':['###### ....## ....#. ...##. ...#.. ..##.. ..#... .##... .##...','###### ....## ....#. ...##. ...#.. ..##.. ..#... ..#... .#....'],
   '8':['.####. ##..## #....# ##..## .####. ##..## #....# ##..## .####.'],
-  '9':['.####. ##..## #....# ##..## ###### .....# .....# ....## #####.'],
+  '9':['.####. ##..## #....# ##..## ###### .....# .....# ....## #####.','.####. ##..## #....# ##..## .##### .....# .....# ....## #####.'],
 };
-// 비교 격자와 받아들일 최대 거리(칸마다 덮인 비율 차의 합). 실제 화면 글자를 1·1.25·1.5배로 늘려 재면 같은 숫자는 최대 10.9,
-// 4를 추측해 그린 모양은 가장 가까운 숫자와도 14.1이었다(2026-11-11). 그 사이로 둔다
+// 비교 격자와 받아들일 최대 거리(칸마다 덮인 비율 차의 합). 실제 화면 글자(스크린샷·화면 공유)를 1·1.25·1.5배로 늘려 재면
+// 맞게 읽은 글자는 대부분 11 이하, 숫자가 아닌 모양(꽉 찬 덩어리, H)은 가장 가까운 숫자와도 18이었다(2026-11-12)
 const BG_W=6, BG_H=9, BG_MAX_DIST=12;
+// 글자 픽셀의 밝기 하한. 글자 획은 밝은 픽셀(약 210)과 어두운 반쪽(약 120~150)으로, 그 옆 번짐은 약 90~110이다(2026-11-12 실제 화면)
+const BUFF_LUMA=125;
+const isBuffTint=(r,g,b)=>r-b>=40&&g<=r+10&&r-g<=45;   // 노란빛(흰색·보라·초록·주황이 아님)
+const BUFF_YELLOW_SHARE=0.4;                             // 숫자 덩어리는 픽셀의 이만큼 이상이 노란빛(가장자리는 색이 바랜다)
+const BUFF_CENTER_TOL=0.09;   // 숫자 묶음 가운데가 아이콘 가운데에서 벗어나도 되는 폭 비율. 맞게 읽은 실제 표본은 최대 0.042, 두 자리 중 하나를 놓치면 약 0.12
 // w×h 글자(get(x,y)가 켜짐)를 BG_W×BG_H 격자로: 칸마다 글자 픽셀이 덮은 비율(배율이 1.25처럼 고르지 않아도 모양이 덜 흔들린다)
 function glyphGrid(get,w,h){ const o=new Float32Array(BG_W*BG_H);
   for(let gy=0;gy<BG_H;gy++) for(let gx=0;gx<BG_W;gx++){ const x0=gx*w/BG_W, x1=(gx+1)*w/BG_W, y0=gy*h/BG_H, y1=(gy+1)*h/BG_H; let s=0;
@@ -92,18 +100,17 @@ function glyphGrid(get,w,h){ const o=new Float32Array(BG_W*BG_H);
     o[gy*BG_W+gx]=s/((x1-x0)*(y1-y0)); }
   return o; }
 const BUFF_GRIDS=Object.entries(BUFF_GLYPHS).flatMap(([ch,list])=>list.map(s=>{ const rows=s.split(' '); return {ch,g:glyphGrid((x,y)=>rows[y][x]==='#',rows[0].length,rows.length)}; }));
-const isBuffYellow=(r,g,b)=>r>=150&&g>=130&&b<=100&&Math.abs(r-g)<=45;
 // 아이콘 상자(RGBA, W×H)에서 남은 시간을 읽어 {value(초), text} 반환. 큰 노란 숫자가 없거나 못 읽으면 null
 export function ocrBuffTimer(rgba,W,H){
-  const on=new Uint8Array(W*H), lab=new Int32Array(W*H).fill(-1), comps=[];
-  for(let i=0,j=0;i<W*H;i++,j+=4) on[i]=isBuffYellow(rgba[j],rgba[j+1],rgba[j+2])?1:0;
+  const on=new Uint8Array(W*H), tint=new Uint8Array(W*H), lab=new Int32Array(W*H).fill(-1), comps=[];
+  for(let i=0,j=0;i<W*H;i++,j+=4){ const r=rgba[j], g=rgba[j+1], b=rgba[j+2]; on[i]=0.299*r+0.587*g+0.114*b>=BUFF_LUMA?1:0; tint[i]=isBuffTint(r,g,b)?1:0; }
   for(let i=0;i<W*H;i++){ if(!on[i]||lab[i]>=0) continue;                       // 8-연결 덩어리
-    const c={l:W,r:-1,t:H,b:-1,px:[]}, st=[i]; lab[i]=comps.length;
-    while(st.length){ const k=st.pop(), x=k%W, y=(k-x)/W; c.px.push(k); if(x<c.l)c.l=x; if(x>c.r)c.r=x; if(y<c.t)c.t=y; if(y>c.b)c.b=y;
+    const c={l:W,r:-1,t:H,b:-1,px:[],ty:0}, st=[i]; lab[i]=comps.length;
+    while(st.length){ const k=st.pop(), x=k%W, y=(k-x)/W; c.px.push(k); c.ty+=tint[k]; if(x<c.l)c.l=x; if(x>c.r)c.r=x; if(y<c.t)c.t=y; if(y>c.b)c.b=y;
       for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const nx=x+dx, ny=y+dy; if(nx<0||ny<0||nx>=W||ny>=H) continue; const n=ny*W+nx; if(on[n]&&lab[n]<0){ lab[n]=comps.length; st.push(n); } } }
-    c.w=c.r-c.l+1; c.h=c.b-c.t+1; comps.push(c); }
-  // 숫자 후보: 아이콘 높이의 0.18~0.45, 세로로 긴 덩어리. 한 값의 숫자들은 위·아래 끝이 같다 → 가장 많이 줄 맞는 묶음(같으면 아이콘 가운데에 가까운 쪽)
-  const cand=comps.filter(c=>c.h>=Math.max(5,0.18*H)&&c.h<=0.45*H&&c.w<=c.h);
+    c.w=c.r-c.l+1; c.h=c.b-c.t+1; c.yellow=c.ty/c.px.length>=BUFF_YELLOW_SHARE; comps.push(c); }
+  // 숫자 후보: 노란 덩어리 중 아이콘 높이의 0.18~0.45, 세로로 긴 것. 한 값의 숫자들은 위·아래 끝이 같다 → 가장 많이 줄 맞는 묶음(같으면 아이콘 가운데에 가까운 쪽)
+  const cand=comps.filter(c=>c.yellow&&c.h>=Math.max(5,0.18*H)&&c.h<=0.45*H&&c.w<=c.h);
   let digits=null;
   for(const a of cand){ const g=cand.filter(c=>Math.abs(c.t-a.t)<=1&&Math.abs(c.b-a.b)<=1);
     const off=Math.abs((a.t+a.b)/2-H/2);
@@ -114,12 +121,21 @@ export function ocrBuffTimer(rgba,W,H){
   for(const c of ds){
     const set=new Set(c.px), g=glyphGrid((x,y)=>set.has((c.t+y)*W+c.l+x),c.w,c.h);
     let best=null; for(const t of BUFF_GRIDS){ let d=0; for(let i=0;i<g.length;i++) d+=Math.abs(g[i]-t.g[i]); if(!best||d<best.d) best={d,ch:t.ch}; }
-    if(best.d>BG_MAX_DIST) return null;                                          // 모르는 모양(4 등)
+    if(best.d>BG_MAX_DIST) return null;                                          // 숫자가 아닌 모양
     tokens.push({x:c.l,ch:best.ch});
   }
-  // 콜론: 숫자 사이, 숫자 높이 안에서 위아래로 겹친 작은 점 두 개. 숫자 바로 위의 아이콘 장식 점은 숫자 높이 밖이라 뺀다(2026-11-11 초록 아이콘)
-  const dots=comps.filter(c=>c.h<=0.4*hd&&c.w<=0.4*hd&&c.t>=top&&c.b<=bot&&c.l>ds[0].r&&c.r<ds[ds.length-1].l);
-  for(const a of dots) if(dots.some(b=>b.t>a.b&&Math.abs(b.l-a.l)<=1)&&!tokens.some(t=>t.ch===':'&&Math.abs(t.x-a.l)<=1)) tokens.push({x:a.l,ch:':'});
+  // 콜론: 숫자 사이, 숫자 높이 안에서 위아래로 겹친 작은 점 두 개. 숫자 바로 위의 아이콘 장식 점은 숫자 높이 밖이라 뺀다(2026-11-11 초록 아이콘).
+  // 점이 작아 화면 공유에서는 색이 거의 다 바래므로 색은 보지 않는다
+  const dots=comps.filter(c=>c.h<=0.4*hd&&c.w<=0.4*hd&&c.t>=top&&c.b<=bot&&c.l>ds[0].r&&c.r<ds[ds.length-1].l), used=new Set(ds);
+  for(const a of dots){
+    if(dots.some(b=>b.b<a.t&&Math.abs(b.l-a.l)<=1)) used.add(a);                 // 아래 점
+    if(!dots.some(b=>b.t>a.b&&Math.abs(b.l-a.l)<=1)) continue;                   // 위 점
+    used.add(a); if(!tokens.some(t=>t.ch===':'&&Math.abs(t.x-a.l)<=1)) tokens.push({x:a.l,ch:':'});
+  }
+  // 숫자 일부만 읽은 경우는 버린다(2026-11-12 실제 화면: "59"의 5가 끊겨 "9"만, "52"를 "5"로 읽어 남은 시간을 틀리게 받아들임).
+  // ① 숫자 띠 안에 숫자·콜론으로 설명되지 않는 숫자 크기의 노란 조각이 남았거나 ② 묶음이 아이콘 가운데에서 치우쳤으면 null
+  if(comps.some(c=>!used.has(c)&&c.yellow&&c.px.length>=5&&c.h>=0.3*hd&&c.w<=hd&&c.h<=hd+1&&c.t>=top-1&&c.b<=bot+1&&c.r>=ds[0].l-0.6*hd&&c.l<=ds[ds.length-1].r+0.6*hd)) return null;
+  if(Math.abs((ds[0].l+ds[ds.length-1].r+1)/2-W/2)>BUFF_CENTER_TOL*W) return null;
   const text=tokens.sort((p,q)=>p.x-q.x).map(t=>t.ch).join('');
   let m=/^(\d{1,2}):([0-5]\d)$/.exec(text); if(m) return {value:+m[1]*60+(+m[2]),text};
   m=/^\d{1,2}$/.exec(text); if(m&&+text<60) return {value:+text,text};      // 메이플은 60초 이상을 분:초로 쓴다

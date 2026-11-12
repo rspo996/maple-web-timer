@@ -8,13 +8,11 @@
   const icons = new Map();                                 // name -> {x,y,w,h,seed|img,on}
   const cells = seed => { let s = seed * 9301 + 49297; const a = []; for (let i = 0; i < 16; i++) { s = (s * 9301 + 49297) % 233280; a.push(s / 233280); } return a; };
   let black = false;
-  // 버프 아이콘 가운데의 남은 시간 숫자(검은 테두리의 노란 픽셀 글꼴). 글자 모양은 앱의 BUFF_GLYPHS(실제 화면에서 뽑음)를 쓴다.
-  // 4는 실제 표본이 없어 추측한 모양으로 그린다: 앱은 이 모양을 못 읽음(null)으로 처리해야 한다
-  const FOUR = ['...##', '..###', '.##.#', '##..#', '#####', '....#', '....#', '....#', '....#'];
+  // 버프 아이콘 가운데의 남은 시간 숫자(검은 테두리의 노란 픽셀 글꼴). 글자 모양은 앱의 BUFF_GLYPHS(실제 화면에서 뽑음)를 쓴다
   const timerText = s => s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : String(s);
   function drawTimer(ic) {
     const rem = Math.ceil((ic.endAt - Date.now()) / 1000); if (rem <= 0) return;          // 끝나면 숫자 없음
-    const rows = [...timerText(rem)].map(ch => ch === ':' ? [...'..##..##.'] :ch === '4' ? FOUR : BUFF_GLYPHS[ch][0].split(' '));
+    const rows = [...timerText(rem)].map(ch => ch === ':' ? [...'..##..##.'] : BUFF_GLYPHS[ch][0].split(' '));
     const W = rows.reduce((a, r) => a + r[0].length, 0) + 2 * (rows.length - 1), x0 = Math.round(ic.x + (ic.w - W) / 2), y0 = Math.round(ic.y + (ic.h - 9) / 2);
     const lit = []; let x = x0;
     for (const r of rows) { r.forEach((row, y) => [...row].forEach((c, i) => { if (c === '#') lit.push([x + i, y0 + y]); })); x += r[0].length + 2; }
