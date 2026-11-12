@@ -13,6 +13,7 @@ import {ui} from './prefs.js';
 import {initRegister} from './register.js';
 import {initSounds} from './sounds.js';
 import {initVoice} from './voice.js';
+import {initVersion} from './version.js';
 import {initTargets,store} from './store.js';
 import {onTargetChanged} from './cards.js';
 import {renderWatch,setNote} from './watch.js';
@@ -28,7 +29,7 @@ export function boot(){
   // 순수 계산 쪽(core)이 부르는 화면·캡처 기능
   setHooks({setNote,onTargetChanged,detectTemplate,readTimer,readBuffTimer,loadTpl,hasSource:()=>!!src});
   initTargets(); initCapture(); initRegister(); initSounds();
-  manualInit(); audioInit(); pipInit(); initVoice();
+  manualInit(); audioInit(); pipInit(); initVoice(); initVersion();
   renderWatch();
   document.getElementById('helpDetails').open = !(ui.connectedOnce || store.targets.some(t=>t.tpl));   // 설명서는 처음에만 펼친다
   try{

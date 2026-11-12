@@ -6,6 +6,7 @@ import { manualStripText, manualWake, soundLocked } from '../app/manual.js';
 import { startRegister, startRegisterQueue } from '../app/register.js';
 import { targetById } from '../app/store.js';
 import { beatText, note, stripItems, toggleStripOpen, watchStatus } from '../app/watch.js';
+import { reloadForUpdate, versionState } from '../app/version.js';
 
 // 상태줄 항목 하나. 연결 뒤 다음에 할 일(등록)이 주된 버튼이 되도록 primary로 강조
 function StripItem({ it }) {
@@ -45,6 +46,12 @@ export function WatchBar() {
         <button id="soundLockBtn" type="button" onClick={manualWake}>소리 켜기</button>
       </span>
       <div className="end">
+        {/* 새 배포가 있으면 감시 중에도 조용히 안내(소리 없음). 새로고침은 사용자가 누를 때만 */}
+        <span id="verNote" hidden={!versionState.found}>
+          <span className="note info">새 버전이 있어요</span>
+          {' '}
+          <button id="btnReload" type="button" onClick={reloadForUpdate}>새로고침</button>
+        </span>
         <span id="watchBeat" className="sub">{beatText()}</span>
         {' '}
         <button id="btnStop" type="button" hidden={!src} onClick={stopWatching}>{src && src.type === 'image' ? '테스트 끝내기' : '감시 끝내기'}</button>

@@ -72,10 +72,9 @@
 
 **언제 확인하나**
 - 확인 계기는 둘이고, 둘 다 같은 `maybeCheck(gap)`을 지난다:
-  - `setInterval` 5분마다 `maybeCheck(5분)`
+  - `setInterval` 1분마다 `maybeCheck(5분)`(타이머를 5분으로 두면 몇 ms 일찍 불릴 때 `now - lastAt < 5분`이 되어 한 번씩 건너뛰므로, 1분마다 묻는다. 구현 중 수정)
   - 탭이 다시 보일 때(`visibilitychange`) `maybeCheck(60초)`
-- `maybeCheck`는 `shouldCheck({ dev, hidden, found, now, lastAt, gap })`가 참일 때만 받는다. 거짓인 경우:
-  - 개발 서버(`id==='dev'`)
+- `maybeCheck`는 `shouldCheck({ hidden, found, now, lastAt, gap })`가 참일 때만 받는다. 개발 서버는 아래처럼 자동 확인 자체를 걸지 않는다(`shouldCheck`에 `dev`를 두면 dev 서버의 브라우저 시험이 연결 경로를 시험할 수 없어서 뺐다. 구현 중 수정). 거짓인 경우:
   - 탭이 숨었을 때(안내는 탭이 보일 때만 의미가 있다)
   - 이미 새 버전을 찾았을 때
   - `now - lastAt < gap`일 때(탭을 자주 오가도 요청이 몰리지 않는다)
@@ -100,8 +99,8 @@
 | 파일 | 할 일 |
 |---|---|
 | `vite.config.js` | 3절의 버전 값, `define.__APP_VERSION__`, 빌드에서만 `version.json`을 내보내는 플러그인 |
-| `src/core/version-core.js` (새) | 순수 함수: `versionLabel(v)`(표시 문구), `isOtherVersion(cur, remote)`(5절 판정), `shouldCheck({ dev, hidden, found, now, lastAt, gap })`(5절 시점). 값은 모두 인자로 받고 `__APP_VERSION__`을 직접 읽지 않는다(노드 시험이 그대로 불러올 수 있게) |
-| `src/app/version.js` (새) | 상태 `versionState = { cur, found, lastAt }`, `initVersion()`, `startVersionWatch()`(5분 타이머·`visibilitychange` 연결), `checkVersion()`(받아서 판정, 찾으면 `bump()`), `reloadForUpdate()`(4절 확인 창). `__APP_VERSION__`이 없으면 `dev`로 본다. 개발 서버에서는 `dev-globals.js`가 export를 `window`에 올리는데, `bus.js`가 이미 `version`을 export하므로 `version`·`state`·`cur` 같은 짧은 이름은 export하지 않는다 |
+| `src/core/version-core.js` (새) | 순수 함수: `versionLabel(v)`(표시 문구), `isOtherVersion(cur, remote)`(5절 판정), `shouldCheck({ hidden, found, now, lastAt, gap })`(5절 시점). 값은 모두 인자로 받고 `__APP_VERSION__`을 직접 읽지 않는다(노드 시험이 그대로 불러올 수 있게) |
+| `src/app/version.js` (새) | 상태 `versionState = { cur, found, lastAt }`, `initVersion()`, `startVersionWatch()`(1분 타이머·`visibilitychange` 연결), `checkVersion()`(받아서 판정, 찾으면 `bump()`), `reloadForUpdate()`(4절 확인 창). `__APP_VERSION__`이 없으면 `dev`로 본다. 개발 서버에서는 `dev-globals.js`가 export를 `window`에 올리는데, `bus.js`가 이미 `version`을 export하므로 `version`·`state`·`cur` 같은 짧은 이름은 export하지 않는다 |
 | `src/app/boot.js` | `initVersion()` 호출 |
 | `src/ui/Masthead.jsx` | 제목 옆 버전 표시 |
 | `src/ui/WatchBar.jsx` | 새 버전 안내와 `[새로고침]` |
@@ -123,7 +122,6 @@
   - 다른 `id`면 새 버전.
   - `null`·`{}`·`{id:''}`·`{id:3}`·문자열 응답이면 아님.
 - `shouldCheck`:
-  - `dev`면 늘 아님.
   - 숨었으면 아님.
   - 이미 찾았으면 아님.
   - `now - lastAt`이 `gap`보다 작으면 아님, `gap` 이상이면 확인(`gap` 5분·60초 각각).

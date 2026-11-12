@@ -6,6 +6,8 @@ import { commitVolume, previewVolume, setVoice, vol, voiceOn } from '../app/audi
 import { connect, connectBtn, loadImageFile, notifyBtn, requestNotify } from '../app/capture.js';
 import { browserVoiceInUse, currentVoice } from '../app/voice.js';
 import { pipIsOpen, pipSupported, togglePip } from '../app/pip.js';
+import { versionState } from '../app/version.js';
+import { versionLabel } from '../core/version-core.js';
 
 export function Masthead() {
   useBus();
@@ -20,6 +22,7 @@ export function Masthead() {
           <circle className="crest-clapper" cx="20" cy="33" r="2.6" />
         </svg>
         <h1>메이플 재획 알리미</h1>
+        <span id="verLabel" className="sub">{versionLabel(versionState.cur)}</span>
       </div>
       <div className="tools">
         <button id="btnConnect" type="button" className={connectBtn.primary ? 'primary' : ''} onClick={connect}>{connectBtn.label}</button>
