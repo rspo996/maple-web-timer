@@ -2,7 +2,7 @@
 const ROOT = "file://__ROOT__/tests/browser/";
 const { open, check, done, drag } = await import(ROOT + "prelude.mjs");
 
-// 1) v1 → v2 이전: 지속시간·룬 반복·부스터 재설정, v1은 그대로
+// 1) v1 → v2 이전: 미리 알림·룬 반복·부스터 재설정(지속시간은 버림, 2026-11-11), v1은 그대로
 const V1 = JSON.stringify({
   sol: { enabled: true, threshold: 0.8, durationSec: 1800, leadSec: 15 },
   booster: { enabled: true, threshold: 0.55, area: { x: 1, y: 1, w: 50, h: 20 }, tpl: { url: "data:x", w: 5, h: 5 }, frameW: 1280, frameH: 720, leadSec: 12 },
@@ -12,14 +12,14 @@ let { page, ev, wait } = await open(taskSpace, { seed: { "maple-web-timer-v1": V
 const m = await ev(() => ({
   cards: [...document.querySelectorAll(".card")].map(c => c.id),
   sub: document.querySelector("#subtitle").textContent,
-  dur: document.querySelector("#card-sol [data-f=durationSec]").value, lead: document.querySelector("#card-sol [data-f=leadSec]").value,
+  dur: !!document.querySelector("#card-sol [data-f=durationSec]"), lead: document.querySelector("#card-sol [data-f=leadSec]").value,
   rep: document.querySelector("#card-rune [data-f=repeatSec]").value, thr: document.querySelector("#card-sol [data-k=threshold]").value,
   v2: JSON.parse(localStorage.getItem("maple-web-timer-v2")), v1same: localStorage.getItem("maple-web-timer-v1") === JSON.stringify(JSON.parse(localStorage.getItem("maple-web-timer-v1"))),
   boosterThr: store.targets[1].threshold, boosterTpl: store.targets[1].tpl,
 }));
 check("이전: 카드 3장", JSON.stringify(m.cards) === JSON.stringify(["card-sol", "card-booster", "card-rune"]), m.cards);
 check("이전: 부제", m.sub === "감지 대상 3개", m.sub);
-check("이전: 지속시간 30:00 · 미리 알림 15 · 룬 반복 30 · 기준값 0.8", m.dur === "30:00" && m.lead === "15" && m.rep === "30" && m.thr === "0.8", m);
+check("이전: 지속시간 칸 없음(값은 버림) · 미리 알림 15 · 룬 반복 30 · 기준값 0.8", m.dur === false && !("durationSec" in m.v2.targets[0].p) && m.lead === "15" && m.rep === "30" && m.thr === "0.8", m);
 check("이전: v2 저장, 룬 leadSec 버림", m.v2 && m.v2.ver === 2 && m.v2.targets.length === 3 && !("leadSec" in m.v2.targets[2].p), m.v2);
 check("이전: 부스터는 재설정(등록 비움, 0.7)", m.boosterThr === 0.7 && m.boosterTpl === null, m);
 

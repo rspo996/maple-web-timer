@@ -32,10 +32,10 @@ check("숫자 못 읽음: 음성 한 번 · 상태 문구 · 낮은 톱니파 �
 await ev(() => { __fake.show("booster", false); });
 await wait(3000);                                             // 꺼짐 확정(4틱)까지 기다린다(꺼짐 알림은 없음(2026-11-10 사용자 결정))
 
-// 3) 솔 야누스(내장 아이콘): 켜짐 → 학습 중, 일치도 표시, 캔버스 일치도 라벨
+// 3) 솔 야누스(내장 아이콘): 켜짐(남은 시간 숫자는 아직 없음), 일치도 표시, 캔버스 일치도 라벨
 await ev(() => { __fake.reset(); window.__labels = []; const o = pctx.fillText.bind(pctx); pctx.fillText = (tx, ...a) => { __labels.push(tx); return o(tx, ...a); }; __fake.image("sol", document.querySelector("#card-sol .thumb").src, 1100, 50, 32, 32); });
 await wait(2500);
-check("솔 야누스 켜짐 · 학습 중", (await txt("#card-sol [data-s=status]")) === "켜짐 · 학습 중");
+check("솔 야누스 켜짐(숫자 없음): 지속시간 칸·방금 켰어요 없이 미리 알림 칸만", J(await ev(() => [document.querySelector("#card-sol [data-s=status]").textContent, [...document.querySelectorAll("#card-sol [data-f]")].map(e => e.dataset.f), document.querySelectorAll("#card-sol [data-act]").length])) === J(["켜짐", ["leadSec"], 0]));
 check("일치도 표시(카드)", (await txt("#card-sol [data-s=score]")).startsWith("1.00 ✔"));
 check("캔버스 일치도/기준값 라벨", (await ev(() => __labels.includes("솔 야누스 1.00 / 0.75"))) === true);
 
@@ -52,8 +52,11 @@ await ev(() => { __fake.reset(); __fake.black(false); }); await wait(2500);
 const back = await ev(() => ({ spoken: __fake.spoken.slice(), state: document.querySelector("#watchState").textContent, osc: __fake.osc.length }));
 check("복구: 상태줄만(소리 없음)", back.spoken.length === 0 && back.state === "감시 중" && back.osc === 0, back);
 
-// 5) 지속시간 1:00 + 51초 뒤 미리 알림 한 번(딩딩-동), 이후 꺼져도 꺼짐 알림 없음(정책)
-await ev(() => { __fake.reset(); const i = document.querySelector("#card-sol [data-f=durationSec]"); i.value = "1:00"; i.dispatchEvent(new Event("change")); __fake.skew(51000); });
+// 5) 아이콘에 남은 시간 숫자 1:00이 찍히고 51초 뒤 미리 알림 한 번(딩딩-동), 이후 꺼져도 꺼짐 알림 없음(정책). 지속시간 칸 대신 숫자를 읽는다(2026-11-11)
+await ev(() => { __fake.reset(); __fake.timer("sol", 60); });
+await wait(2500);
+check("야누스 숫자 읽기: 남은 시간 표시", /^남은 시간 00:5\d$/.test(await txt("#card-sol [data-s=status]")), await txt("#card-sol [data-s=status]"));
+await ev(() => __fake.skew(51000));
 await wait(3500);
 const pre = await ev(() => ({ spoken: __fake.spoken.slice(), osc: __fake.osc.slice() }));
 check("미리 알림: 음성 한 번 + 딩딩-동", J(pre.spoken) === J(["야누스 곧 꺼져요"]) && J(pre.osc) === J([["square", 1046], ["square", 1046], ["square", 784]]), pre);

@@ -8,7 +8,7 @@ function run(st, cfg, seq, start = 1_000_000) {
   for (const c of seq) { for (const ev of stepDetector(st, cfg, c === 'x', now)) out.push({ t: now, ev }); now += 500; }
   return out;
 }
-const buff = (o = {}) => ({ kind: 'buff', durationSec: null, leadSec: 10, ...o });
+const buff = (o = {}) => ({ kind: 'buff', leadSec: 10, ...o });
 const names = evs => evs.map(e => (typeof e.ev === 'string' ? e.ev : Object.keys(e.ev)[0]));
 
 test('켜짐은 연속 2번 일치해야 인정, 이미 켜져 있던 것은 appear-unknown', () => {
@@ -29,7 +29,7 @@ test('꺼진 것을 4틱 본 뒤(armed)에는 appear와 켜진 시각을 기록'
 });
 
 test('꺼짐은 연속 4번 불일치, 중간에 한 번 일치하면 세기가 처음부터', () => {
-  const st = newState(), c = buff({ durationSec: 600 });
+  const st = newState(), c = buff();
   run(st, c, '....xx', 1_000_000);
   assert.deepEqual(names(run(st, c, '...x...', 1_010_000)), []);   // 4번 연속이 아니므로 켜짐 유지
   assert.equal(st.present, true);
@@ -37,33 +37,15 @@ test('꺼짐은 연속 4번 불일치, 중간에 한 번 일치하면 세기가 
   assert.equal(st.present, false);
 });
 
-test('지속시간 학습: 15초 이상일 때만 {learn}, 15초 미만은 학습하지 않음', () => {
-  let st = newState(), c = buff();
+test('버프: stepDetector는 켜짐·꺼짐만 판정하고 지속시간 학습·미리 알림을 내지 않는다(남은 시간은 아이콘 숫자로 센다, 2026-11-11)', () => {
+  const st = newState(), c = buff({ durationSec: 60 });   // 예전 설정에 지속시간이 남아 있어도 쓰지 않는다
   run(st, c, '....'); run(st, c, 'xx', 2_000_000);      // 켜짐 2_000_500
-  const long = run(st, c, '.'.repeat(4), 2_000_500 + 60_000);
-  const learn = long.find(e => e.ev.learn);
-  assert.ok(learn, '학습 이벤트');
-  assert.equal(learn.ev.learn, Math.round((2_000_500 + 60_000 + 1500 - 2_000_500) / 1000 - 2));   // 꺼짐 확정 시각은 4번째 불일치(+1.5초)
-  st = newState(); run(st, c, '....'); run(st, c, 'xx', 3_000_000);
-  const short = run(st, c, '....', 3_000_500 + 8_000);
-  assert.equal(short.find(e => e.ev.learn), undefined);
-});
-
-test('미리 알림은 끝나기 leadSec 전에 한 번, 이후 꺼져도 꺼짐 알림 없음(정책)', () => {
-  const st = newState(), c = buff({ durationSec: 60, leadSec: 10 });
-  run(st, c, '....'); run(st, c, 'xx', 5_000_000);       // appearedAt 5_000_500
-  const before = stepDetector(st, c, true, 5_000_500 + 49_900);
-  assert.deepEqual(before, []);
-  const at = stepDetector(st, c, true, 5_000_500 + 50_000);
-  assert.deepEqual(at, ['pre']);
-  assert.deepEqual(stepDetector(st, c, true, 5_000_500 + 55_000), []);
-  const off = run(st, c, '....', 5_000_500 + 70_000);
-  assert.deepEqual(names(off), []);
-  assert.equal(st.alertedPre, false);                    // 다음 주기를 위해 초기화
+  assert.deepEqual(names(run(st, c, 'x'.repeat(200), 2_001_000)), []);   // 100초 동안 켜져 있어도 pre 없음
+  assert.deepEqual(names(run(st, c, '....', 2_101_000)), ['gone']);       // 꺼짐은 내부 이벤트(알림 아님), {learn} 없음
 });
 
 test('미리 알림 전에 꺼지면 꺼짐 알림 한 번', () => {
-  const st = newState(), c = buff({ durationSec: 600 });
+  const st = newState(), c = buff();
   run(st, c, '....'); run(st, c, 'xx', 6_000_000);
   assert.deepEqual(names(run(st, c, '....', 6_020_000)), ['gone']);
 });

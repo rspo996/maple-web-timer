@@ -9,7 +9,7 @@ const WAV64 = Buffer.from('RIFF....WAVEfmt ').toString('base64');
 function sample() {
   const store = L.defaultStore();
   store.targets[0].tpl = { url: PNG, w: 32, h: 32 }; store.targets[0].area = { x: 1, y: 2, w: 40, h: 40 }; store.targets[0].frameW = 1280; store.targets[0].frameH = 720;
-  const u = L.addBuff(store, '유니온의 힘').target; u.p.durationSec = 1800;
+  const u = L.addBuff(store, '유니온의 힘').target; u.p.leadSec = 30;
   store.group = { on: true, windowSec: 5 };
   const ms = L.manualEmptyStore(); ms.timers.push(L.manualStart(L.manualNew(ms, 'countdown', '경쿠', [{ name: '경쿠', sec: 1800 }], 10), 1000));
   return { store, ms };
@@ -77,7 +77,7 @@ test('validateBackup: 대상이 v1 모양이면 옮겨서 검사, 수동 타이�
     manualTimers: { v: 7, timers: [] },
     ui: { volumePct: 999, voice: 'yes', connectedOnce: true, open: { sol: true }, pip: { w: 50, h: 5000 } } } };
   const v = plain(validateBackup(obj));
-  assert.equal(v.groups.targets.targets[0].p.durationSec, 1800);
+  assert.deepEqual(v.groups.targets.targets[0].p, { leadSec: 15 });   // 예전 지속시간은 버린다(2026-11-11)
   assert.equal(v.groups.manualTimers, undefined);
   assert.deepEqual(v.warnings, ['수동 타이머 설정이 깨져 있어서 건너뛰어요']);
   assert.deepEqual(v.groups.ui, { volumePct: 200, pip: { w: 160, h: 1200 } });

@@ -6,7 +6,7 @@ import {drawPreview,reg} from './register.js';
 import {store,targetById} from './store.js';
 import {pulse,renderWatch,setNote} from './watch.js';
 import {planGroup} from '../core/alerts-core.js';
-import {newState,ocrSevenSeg} from '../core/detect-core.js';
+import {newState,ocrBuffTimer,ocrSevenSeg} from '../core/detect-core.js';
 import {KINDS,isPresetMode,sayName} from '../core/kinds.js';
 import {bandMask,diamondMask,matchTemplate,prepTemplate,toGray} from '../core/match.js';
 import {scratch} from '../core/scratch.js';
@@ -89,6 +89,13 @@ export function readTimer(source, p){
   const W=Math.min(x1,frame.w)-x0, H=Math.min(y1,frame.h)-y0; if(W<10||H<8||x0<0||y0<0) return null;
   const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,x0,y0,W,H,0,0,W,H);
   return {rect:{x:x0,y:y0,w:W,h:H}, read:ocrSevenSeg(wctx.getImageData(0,0,W,H).data,W,H)};
+}
+// 버프 아이콘 상자(찾은 자리 p)를 원본 해상도로 잘라 가운데 노란 남은 시간 숫자 읽기(2026-11-11)
+export function readBuffTimer(source, p){
+  const x0=Math.max(0,Math.round(p.x)), y0=Math.max(0,Math.round(p.y)), W=Math.min(Math.round(p.x+p.w),frame.w)-x0, H=Math.min(Math.round(p.y+p.h),frame.h)-y0;
+  if(W<8||H<8) return null;
+  const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,x0,y0,W,H,0,0,W,H);
+  return {rect:{x:x0,y:y0,w:W,h:H}, read:ocrBuffTimer(wctx.getImageData(0,0,W,H).data,W,H)};
 }
 // 거의 검은 프레임(맵 이동 중 암전, 창 최소화 등)인지. 이때 감지하면 버프가 꺼진 것으로 오판하므로 건너뜀
 export function isBlank(s){

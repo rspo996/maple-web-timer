@@ -65,6 +65,30 @@ test('ocrSevenSeg: 글씨가 없거나 너무 작으면 null', () => {
   assert.equal(ocrSevenSeg(blank, 40, 20), null);
 });
 
+// ---- 실제 화면의 부스터 숫자(2026-11-11): 숫자 바로 아래에 퀘스트 진행 글자가 붙어 있으면 못 읽던 문제 ----
+import { BOOSTER_TIMER, grayOf as boosterGray } from './fixtures/booster-timer.js';
+// 회색조 조각에서 원래 화면 좌표의 사각형을 RGBA로 잘라 낸다(회색값 = 밝기)
+function boosterCrop(x0, y0, w, h) {
+  const f = BOOSTER_TIMER.frame, g = boosterGray(f), px = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const v = g[(y0 - f.y + y) * f.w + (x0 - f.x + x)], k = (y * w + x) * 4; px[k] = px[k + 1] = px[k + 2] = v; px[k + 3] = 255; }
+  return px;
+}
+// detect-run.js readTimer와 같은 영역: 글자 상자 p 오른쪽, 위쪽은 글자 위 끝부터 글자 높이의 2배
+const timerRect = p => { const x0 = Math.round(p.x + p.w * 1.05), y0 = Math.round(p.y); return { x0, y0, w: Math.round(p.x + p.w * 2.75) - x0, h: Math.round(p.y + p.h * 2.0) - y0 }; };
+
+test('실제 화면: 숫자 바로 아래에 퀘스트 글자가 붙어 있어도 앱이 자르는 영역에서 27.48을 읽는다', () => {
+  const r = timerRect(BOOSTER_TIMER.label), out = ocrSevenSeg(boosterCrop(r.x0, r.y0, r.w, r.h), r.w, r.h);
+  assert.ok(out, '읽기 실패(퀘스트 글자 윗부분이 영역에 들어감)');
+  assert.equal(out.text, BOOSTER_TIMER.text);
+});
+
+test('실제 화면: 글자 자리가 위아래로 어긋나 위쪽 테두리나 아래 퀘스트 글자가 더 들어와도 27.48을 읽는다', () => {
+  for (let dy = -6; dy <= 2; dy++) {
+    const r = timerRect({ ...BOOSTER_TIMER.label, y: BOOSTER_TIMER.label.y + dy }), out = ocrSevenSeg(boosterCrop(r.x0, r.y0, r.w, r.h), r.w, r.h);
+    assert.equal(out && out.text, BOOSTER_TIMER.text, 'dy ' + dy);
+  }
+});
+
 // ---- 버퍼 재사용 (스펙 9.3 ④): 결과는 그대로, 크기가 같거나 작으면 적분 배열을 새로 만들지 않는다 ----
 import { matchStats } from '../src/core/match.js';
 function matchRef(img, W, H, tpl) {          // 분리 전 원본 알고리즘(호출마다 새 배열)

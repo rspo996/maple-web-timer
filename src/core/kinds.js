@@ -2,7 +2,7 @@
    묶음 3(idle)·4(cooldown)는 registerKind(이름, 정의)로 종류를 더한다. 이 파일은 정의만 하고 DOM은 호출 시점에만 건드린다. 화면·캡처 쪽 기능은 hooks로 부른다. ===== */
 import {HOLD_GRACE_MS,UNREAD_MS,stepCountdown,stepDetector} from './detect-core.js';
 import {hooks} from './hooks.js';
-import {checkDurLead,clampInt,fmt,parseDur} from './util.js';
+import {checkDurLead,clampInt,fmt} from './util.js';
 export const KINDS={};
 export const isPresetMode=t=>!t.tpl&&!!t.preset;                    // 직접 등록한 아이콘이 없고 내장 아이콘을 쓰는 중
 export const sayName=t=>t.sayName||t.name;                           // 부를 이름: 음성과 알림 문구(토스트·탭 제목·브라우저 알림)에 쓴다. 카드·작은 창·소리 설정에는 name을 그대로 보인다
@@ -54,7 +54,13 @@ export function cardStatus(t,st,now,ctx){
     :'기본 아이콘으로 화면 오른쪽 위를 자동 검색 중 · 잘 안 잡히면 “등록”으로 직접 지정';
   return r;
 }
-export const mapLearn=evs=>evs.map(e=>e&&e.learn!=null?{effect:'learn',durationSec:e.learn}:e);
+// 읽은 숫자로 세는 남은 시간(버프·부스터 공용). 숫자를 아직 못 읽었거나 이미 알렸거나 끝났으면 null
+export function remainOf(st,now){
+  if(!st.present||st.alertedPre||st.remain==null) return null;
+  const r=st.remain-(now-st.remainAt)/1000; return r>0?r:null;
+}
+// 묶기로 미리 당겨 알렸거나 자체 pre를 울린 주기를 표시. 그때의 남은 시간을 기억해, 그보다 훨씬 큰 값을 읽어야 새 주기로 본다(stepCountdown)
+export function markPreRemain(st,now){ st.alertedPre=true; st.preMarkRemain=st.remain!=null?Math.max(0,st.remain-(now-st.remainAt)/1000):0; }
 export const leadField={key:'leadSec',label:'미리 알림',type:'number',min:1,max:120,suffix:'초 전',
   get:t=>t.p.leadSec,
   set:(t,raw)=>{ const v=clampInt(raw,1,120,10); const m=checkDurLead(t.p.durationSec,v,'lead'); if(m) return {revert:true,msg:m}; t.p.leadSec=v; return {}; }};
@@ -64,43 +70,32 @@ registerKind('buff',{
   // 메이플은 남은 시간이 짧아진 버프 아이콘을 어둡게 덮고 가운데에 노란 숫자(예: 2:54, 23)를 찍는다. 숫자가 매초 바뀌므로 그 띠를 빼고 비교한다.
   // 실제 화면(2026-11-10 스크린샷)에서 숫자는 아이콘(가장자리 2px 뺀 28px) 높이의 약 0.29~0.75. 위아래로 조금 여유를 둔다
   timerBand:[0.27,0.78],
-  defaults:()=>({durationSec:null,leadSec:10}),
-  normalizeP:p=>{ const lead=clampInt(p.leadSec,1,120,10), d=p.durationSec; return {...p,leadSec:lead,durationSec:(typeof d==='number'&&Number.isFinite(d)&&d>lead)?Math.round(d):null}; },
+  // 지속시간 칸·자동 학습·"방금 켰어요"를 없앴다(2026-11-11 사용자 결정: 지속시간은 사람마다 다르고, 학습 중 맵 이동 등으로 짧게 배우면 계속 일찍 울렸다).
+  // 대신 아이콘에 찍힌 남은 시간 숫자를 읽어 부스터와 같은 방식(stepCountdown)으로 센다. 예전 설정의 지속시간은 불러올 때 버린다
+  defaults:()=>({leadSec:10}),
+  normalizeP:p=>{ const {durationSec,...rest}=p; return {...rest,leadSec:clampInt(p.leadSec,1,120,10)}; },
   labels:t=>({area:'버프창 영역',icon:`${t.name} 아이콘`}),
   events:[
     {key:'pre',label:'미리 알림',beep:'buff',group:'pre',msg:t=>`${sayName(t)} 곧 꺼져요`},
   ],   // 꺼짐 알림 없음(2026-11-10 사용자 결정). stepDetector의 gone은 감지 루프(collectEvents)가 버린다
-  step(t,st,det,source,now){ const evs=stepDetector(st,cfgView(t),det.score>=t.threshold,now); if(st.present) st.seen=true; return mapLearn(evs); },
-  remainSec(t,st,now){
-    if(!st.present||st.alertedPre||!st.appearedAt||!t.p.durationSec) return null;
-    const r=(st.appearedAt+t.p.durationSec*1000-now)/1000; return r>0?r:null;
+  step(t,st,det,source,now){
+    const hit=det.score>=t.threshold, evs=stepDetector(st,cfgView(t),hit,now); if(st.present) st.seen=true;
+    const o=st.present&&hit?hooks.readBuffTimer(source,det.pos):null; if(o&&o.read) st.lastText=o.read.text;
+    // 30분짜리처럼 긴 버프는 끝나기 몇 분 전까지 큰 숫자가 없으므로 '숫자 못 읽음'은 버프에 쓰지 않는다
+    evs.push(...stepCountdown(st,cfgView(t),o&&o.read?o.read.value:null,now).filter(e=>e!=='unread'));
+    return evs;
   },
-  gauge(t,st,now){   // remainSec와 달리 미리 알림 뒤에도 끝날 때까지 줄어든다(화면 표시용)
-    if(!st.present||!st.appearedAt||!t.p.durationSec) return null;
-    const r=(st.appearedAt+t.p.durationSec*1000-now)/1000; return r>0?{frac:Math.min(1,r/t.p.durationSec),low:r<=t.p.leadSec}:null;
-  },
-  applyEffect(t,ev){
-    if(ev.effect!=='learn'||ev.durationSec<=t.p.leadSec) return;      // 미리 알림 이하로 학습하면 켜지자마자 알림이 울리므로 버린다
-    t.p.durationSec=ev.durationSec;
-    hooks.onTargetChanged(t,'durationSec');
-    hooks.setNote(`학습한 시간 ${fmt(ev.durationSec)} · 맞지 않으면 직접 고치세요`,'info');
-  },
+  markPre:markPreRemain,
+  remainSec:(t,st,now)=>remainOf(st,now),
   status(t,st,now,ctx){
     const c=commonStatus(KINDS.buff,t,ctx); if(c) return c;
     if(!st.present&&!st.seen) return NOT_SEEN;
     if(!st.present) return {text:'꺼져 있음',cls:'off',sub:''};
-    if(!st.appearedAt) return {text:'켜짐',cls:'on',sub:'켜진 시점을 몰라요 · 다음 사용부터 계산 (또는 “방금 켰어요”)'};
-    if(!t.p.durationSec) return {text:'켜짐 · 학습 중',cls:'on',sub:`${fmt((now-st.appearedAt)/1000)} 경과 · 꺼지면 지속시간을 기억합니다`};
-    const rem=(st.appearedAt+t.p.durationSec*1000-now)/1000;
-    return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',sub:''};
+    if(st.remain==null) return {text:'켜짐',cls:'on',sub:'아이콘에 남은 시간 숫자가 보이면 그 숫자로 미리 알려요'};
+    const rem=st.remain-(now-st.remainAt)/1000;
+    return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',sub:'아이콘 숫자 '+st.lastText};
   },
-  cardFields:()=>[
-    {key:'durationSec',label:'지속시간',type:'text',placeholder:'자동 학습',suffix:'분:초',
-     get:t=>t.p.durationSec?fmt(t.p.durationSec):'',
-     set:(t,raw)=>{ const v=parseDur(raw); if(v===undefined) return {revert:true}; const m=checkDurLead(v,t.p.leadSec,'duration'); if(m) return {revert:true,msg:m}; t.p.durationSec=v||null; return {}; }},
-    leadField,
-  ],
-  actions:[{key:'restart',label:'방금 켰어요',run(t,st,now){ Object.assign(st,{appearedAt:now,alertedPre:false,preMarkRemain:0,present:true,seen:true,onStreak:2,offStreak:0,armed:true}); }}],
+  cardFields:()=>[leadField],
 });
 
 registerKind('countdown',{
@@ -121,11 +116,8 @@ registerKind('countdown',{
     evs.push(...stepCountdown(st,cfgView(t),o&&o.read?o.read.value:null,now));
     return evs;
   },
-  markPre(st,now){ st.alertedPre=true; st.preMarkRemain=st.remain!=null?Math.max(0,st.remain-(now-st.remainAt)/1000):0; },
-  remainSec(t,st,now){
-    if(!st.present||st.alertedPre||st.remain==null) return null;
-    const r=st.remain-(now-st.remainAt)/1000; return r>0?r:null;
-  },
+  markPre:markPreRemain,
+  remainSec:(t,st,now)=>remainOf(st,now),
   status(t,st,now,ctx){
     const c=commonStatus(KINDS.countdown,t,ctx); if(c) return c;
     if(!st.present&&!st.seen) return NOT_SEEN;

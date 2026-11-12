@@ -6,9 +6,9 @@ import { planGroup, groupText } from '../src/core/alerts-core.js';
 const L = await load(['util', 'detect-core', 'targets', 'kinds']);
 const KINDS = L.get('KINDS'), newState = L.newState, plain = L.plain;
 const NOW = 1_000_000;
-const buff = (id, over = {}) => ({ id, kind: 'buff', name: id, enabled: true, p: { durationSec: 600, leadSec: 10 }, ...over });
-// 켜진 지 elapsed초 지난 버프 상태(지속시간 600초 → 남은 시간 600-elapsed)
-const on = (remain, over = {}) => Object.assign(newState(), { present: true, appearedAt: NOW - (600 - remain) * 1000 }, over);
+const buff = (id, over = {}) => ({ id, kind: 'buff', name: id, enabled: true, p: { leadSec: 10 }, ...over });
+// 아이콘 숫자로 남은 시간 remain초를 지금 읽어 둔 버프 상태(2026-11-11부터 버프도 숫자를 읽는다)
+const on = (remain, over = {}) => Object.assign(newState(), { present: true, remain, remainAt: NOW }, over);
 const ids = r => plain(r.members.map(m => m.id));
 
 test('planGroup: 미리 알림이 하나도 없으면 묶을 것이 없다', () => {
@@ -35,9 +35,9 @@ test('planGroup: windowSec에 따라 한계가 달라진다(5초·20초)', () =>
   assert.deepEqual(ids(planGroup(['a'], ts, { ...st, b: on(29) }, KINDS, NOW, 20)), ['a', 'b']);   // 한계 30
 });
 
-test('planGroup: 켜진 시점을 모르거나, 지속시간이 없거나, 이미 미리 알림을 했거나, 꺼진/비활성 대상은 당기지 않는다', () => {
-  const ts = [buff('a'), buff('b'), buff('c'), buff('d', { p: { durationSec: null, leadSec: 10 } }), buff('e', { enabled: false }), buff('f')];
-  const st = { a: on(10, { alertedPre: true }), b: on(15, { appearedAt: null }), c: on(15, { alertedPre: true }), d: on(15), e: on(15), f: on(15, { present: false }) };
+test('planGroup: 남은 시간을 아직 못 읽었거나, 이미 미리 알림을 했거나, 꺼진/비활성 대상은 당기지 않는다', () => {
+  const ts = [buff('a'), buff('b'), buff('c'), buff('e', { enabled: false }), buff('f')];
+  const st = { a: on(10, { alertedPre: true }), b: on(15, { remain: null }), c: on(15, { alertedPre: true }), e: on(15), f: on(15, { present: false }) };
   assert.deepEqual(ids(planGroup(['a'], ts, st, KINDS, NOW, 10)), ['a']);
 });
 

@@ -5,7 +5,7 @@ import './dev-globals.js';
 import {setHooks} from '../core/hooks.js';
 import {Alerts} from './alerts.js';
 import {initCapture,src} from './capture.js';
-import {detectTemplate,loadTpl,readTimer,tick} from './detect-run.js';
+import {detectTemplate,loadTpl,readBuffTimer,readTimer,tick} from './detect-run.js';
 import {manualInit,manualTick} from './manual.js';
 import {audioInit} from './audio.js';
 import {pipInit} from './pip.js';
@@ -26,7 +26,7 @@ let booted=false;
 export function boot(){
   if(booted) return; booted=true;
   // 순수 계산 쪽(core)이 부르는 화면·캡처 기능
-  setHooks({setNote,onTargetChanged,detectTemplate,readTimer,loadTpl,hasSource:()=>!!src});
+  setHooks({setNote,onTargetChanged,detectTemplate,readTimer,readBuffTimer,loadTpl,hasSource:()=>!!src});
   initTargets(); initCapture(); initRegister(); initSounds();
   manualInit(); audioInit(); pipInit(); initVoice();
   renderWatch();

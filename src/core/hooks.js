@@ -5,6 +5,7 @@ export const hooks={
   onTargetChanged:()=>{},         // 종류가 학습 같은 효과로 대상 값을 바꿨을 때 (t, key)
   detectTemplate:()=>null,        // 템플릿 매칭 (t, source) → {score,pos}|null
   readTimer:()=>null,             // 부스터 숫자 읽기 (source, pos)
+  readBuffTimer:()=>null,         // 버프 아이콘의 남은 시간 숫자 읽기 (source, pos) → {rect, read:{value,text}|null}
   loadTpl:()=>null,               // 템플릿 이미지 준비 (tpl) → 준비 안 됐으면 null
   hasSource:()=>true,             // 게임 화면이 연결돼 있는지
 };

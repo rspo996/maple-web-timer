@@ -74,7 +74,7 @@ export function migrateV1(v1){
     const m=Object.assign({},t,{enabled:typeof o.enabled==='boolean'?o.enabled:true,area:o.area||null,tpl:o.tpl||null,frameW:o.frameW,frameH:o.frameH});
     if(Number.isFinite(+o.threshold)&&o.threshold!=null) m.threshold=+o.threshold;
     const p=Object.assign({},t.p);
-    if(t.id==='sol'){ p.durationSec=o.durationSec||null; if(o.leadSec!=null) p.leadSec=o.leadSec; }
+    if(t.id==='sol'&&o.leadSec!=null) p.leadSec=o.leadSec;   // v1의 지속시간은 옮기지 않는다(버프 지속시간 칸을 없앰, 2026-11-11)
     if(t.id==='booster'&&o.leadSec!=null) p.leadSec=o.leadSec;
     if(t.id==='rune'&&o.repeatSec!=null) p.repeatSec=o.repeatSec;
     m.p=p; return normalizeTarget(m);

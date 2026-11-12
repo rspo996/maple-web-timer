@@ -31,24 +31,27 @@ test('문구: 버프·부스터 미리 알림은 부를 이름 + 곧 꺼져요, 
 });
 
 test('기본값과 p 보정(normalizeP)', () => {
-  assert.deepEqual(L.plain(KINDS.buff.defaults()), { durationSec: null, leadSec: 10 });
+  assert.deepEqual(L.plain(KINDS.buff.defaults()), { leadSec: 10 });   // 지속시간 칸을 없앰(2026-11-11 사용자 결정)
   assert.deepEqual(L.plain(KINDS.countdown.defaults()), { leadSec: 10 });
   assert.deepEqual(L.plain(KINDS.rune.defaults()), { repeatSec: 60 });
-  assert.deepEqual(L.plain(KINDS.buff.normalizeP({ leadSec: 999, durationSec: 5 })), { leadSec: 120, durationSec: null });   // 지속시간 <= 미리 알림은 버림
-  assert.deepEqual(L.plain(KINDS.buff.normalizeP({ leadSec: 10, durationSec: 600.4 })), { leadSec: 10, durationSec: 600 });
+  assert.deepEqual(L.plain(KINDS.buff.normalizeP({ leadSec: 999, durationSec: 5 })), { leadSec: 120 });   // 예전 지속시간은 버린다
+  assert.deepEqual(L.plain(KINDS.buff.normalizeP({ leadSec: 10, durationSec: 600.4 })), { leadSec: 10 });
   assert.deepEqual(L.plain(KINDS.rune.normalizeP({ repeatSec: -3 })), { repeatSec: 60 });
   assert.deepEqual(L.plain(KINDS.rune.normalizeP({ repeatSec: 0 })), { repeatSec: 0 });
 });
 
-test('buff.step: 기존 stepDetector와 같은 이벤트, {learn}은 effect로 바뀐다', () => {
-  const t = mk('buff'), st = newState();
-  const step = (m, now) => L.plain(KINDS.buff.step(t, st, { score: m ? 0.9 : 0.1, pos: null }, null, now));
-  for (let i = 0; i < 4; i++) step(false, 1000 + i * 500);           // armed
-  step(true, 5000); assert.deepEqual(step(true, 5500), ['appear']);
-  assert.equal(st.seen, true);
-  let out = []; for (let i = 0; i < 4; i++) out.push(...step(false, 5500 + 60_000 + i * 500));
-  assert.deepEqual(out.map(e => e.effect || e), ['learn', 'gone']);
-  assert.equal(out[0].durationSec, Math.round((65_500 + 1500 - 5500) / 1000 - 2));
+test('buff.step: 아이콘 숫자로 남은 시간을 세고 미리 알림 이하에서 pre 한 번. 지속시간 학습·숫자 못 읽음 알림은 없다(2026-11-11)', () => {
+  const t = mk('buff'), st = newState(); let now = 1000, val = null;
+  setHooks({ readBuffTimer: () => ({ rect: null, read: val == null ? null : { value: val, text: String(val) } }) });
+  try {
+    const step = m => { const out = L.plain(KINDS.buff.step(t, st, { score: m ? 0.9 : 0.1, pos: { x: 0, y: 0, w: 32, h: 32 } }, null, now)); now += 500; return out.filter(e => e === 'pre' || e === 'unread' || (e && e.effect)); };
+    for (let i = 0; i < 4; i++) step(false);                       // armed
+    const evs = [];
+    for (let i = 0; i < 60; i++) evs.push(...step(true));         // 긴 버프: 30초 동안 큰 숫자가 없어도 '숫자 못 읽음'이나 학습 없음
+    assert.deepEqual(evs, []); assert.equal(st.seen, true); assert.equal(st.remain, null);
+    const t0 = now; for (let i = 0; i < 12; i++) { val = Math.ceil(13 - (now - t0) / 1000); evs.push(...step(true)); }   // 13초부터 실제 시간대로 줄어드는 숫자
+    assert.deepEqual(evs, ['pre']);
+  } finally { setHooks({ readBuffTimer: () => null }); }
 });
 
 test('rune.step: appear-unknown도 appear로', () => {
@@ -57,21 +60,21 @@ test('rune.step: appear-unknown도 appear로', () => {
   step(1000); assert.deepEqual(step(1500), ['appear']);
 });
 
-test('markPre: 버프는 alertedPre, 부스터는 현재 남은 시간도 기록', () => {
-  const b = newState(); KINDS.buff.markPre(b, 0); assert.equal(b.alertedPre, true);
+test('markPre: 버프·부스터 모두 현재 남은 시간도 기록(묶기로 당겨 알린 뒤 다시 울리지 않게)', () => {
+  const b = newState(); b.present = true; b.remain = 40; b.remainAt = 0;
+  KINDS.buff.markPre(b, 22_000); assert.equal(b.alertedPre, true); assert.equal(b.preMarkRemain, 18);
   const c = newState(); c.present = true; c.remain = 30; c.remainAt = 1000;
   KINDS.countdown.markPre(c, 11_000); assert.equal(c.alertedPre, true); assert.equal(c.preMarkRemain, 20);
 });
 
-test('remainSec: 켜진 시각·지속시간을 모르거나 이미 알렸거나 끝났으면 null', () => {
-  const t = mk('buff', { p: { durationSec: 60, leadSec: 10 } }), st = newState();
+test('remainSec: 남은 시간을 아직 못 읽었거나 이미 알렸거나 끝났으면 null', () => {
+  const t = mk('buff'), st = newState();
   assert.equal(KINDS.buff.remainSec(t, st, 0), null);                     // 꺼져 있음
-  st.present = true; st.appearedAt = 1000;
+  st.present = true; assert.equal(KINDS.buff.remainSec(t, st, 0), null);  // 켜졌지만 숫자를 아직 못 읽음
+  st.remain = 60; st.remainAt = 1000;
   assert.equal(KINDS.buff.remainSec(t, st, 21_000), 40);
   assert.equal(KINDS.buff.remainSec(t, st, 61_000), null);               // 끝남
   st.alertedPre = true; assert.equal(KINDS.buff.remainSec(t, st, 21_000), null);
-  st.alertedPre = false; st.appearedAt = null; assert.equal(KINDS.buff.remainSec(t, st, 21_000), null);
-  assert.equal(KINDS.buff.remainSec(mk('buff'), Object.assign(newState(), { present: true, appearedAt: 1 }), 5), null);   // 지속시간 없음
   const c = newState(); c.present = true; c.remain = 30; c.remainAt = 1000;
   assert.equal(KINDS.countdown.remainSec(mk('countdown'), c, 11_000), 20);
   assert.equal(KINDS.rune.remainSec(mk('rune'), newState(), 0), null);
@@ -87,11 +90,11 @@ test('상태 문구: 기존 renderCard 분기와 같다', () => {
   assert.equal(re.text, '다시 등록 필요'); assert.equal(re.cls, 'alert'); assert.equal(re.sub, '등록 당시 화면 1280×720, 지금 1920×1080');
   assert.equal(s(mk('buff', REG)).text, '아직 못 찾음');
   assert.equal(s(mk('buff', REG), { seen: true }).text, '꺼져 있음');
-  assert.equal(s(mk('buff', REG), { present: true, appearedAt: null }).text, '켜짐');
-  assert.equal(s(mk('buff', REG), { present: true, appearedAt: 40_000 }).text, '켜짐 · 학습 중');
-  const on = s(mk('buff', { ...REG, p: { durationSec: 120, leadSec: 10 } }), { present: true, appearedAt: 40_000 });
-  assert.equal(on.text, '남은 시간 01:00'); assert.equal(on.cls, 'on');
-  const soon = s(mk('buff', { ...REG, p: { durationSec: 60, leadSec: 10 } }), { present: true, appearedAt: 50_000 });
+  const wait = s(mk('buff', REG), { present: true, remain: null });
+  assert.deepEqual([wait.text, wait.cls, wait.sub], ['켜짐', 'on', '아이콘에 남은 시간 숫자가 보이면 그 숫자로 미리 알려요']);
+  const on = s(mk('buff', REG), { present: true, remain: 70, remainAt: 90_000, lastText: '1:10' });
+  assert.deepEqual([on.text, on.cls, on.sub], ['남은 시간 01:00', 'on', '아이콘 숫자 1:10']);
+  const soon = s(mk('buff', REG), { present: true, remain: 15, remainAt: 90_000, lastText: '15' });
   assert.equal(soon.cls, 'alert');
   assert.equal(s(mk('rune', REG), { present: false }).text, '룬 없음');
   assert.equal(s(mk('rune', REG), { present: true }).text, '룬 있음!');
@@ -119,31 +122,19 @@ test('stripState: 꺼둠 > 등록 필요 > 다시 등록 > 아직 못 찾음 > �
   assert.equal(ss(mk('rune', REG)), 'ok');
 });
 
-test('입력 칸(cardFields): 버프 지속시간·미리 알림 검사', () => {
-  const t = mk('buff'), f = Object.fromEntries(KINDS.buff.cardFields(t).map(x => [x.key, x]));
-  assert.equal(f.durationSec.get(t), '');
-  assert.deepEqual(L.plain(f.durationSec.set(t, '1:00')), {}); assert.equal(t.p.durationSec, 60); assert.equal(f.durationSec.get(t), '01:00');
-  const bad = f.durationSec.set(t, 'abc'); assert.equal(bad.revert, true); assert.equal(t.p.durationSec, 60);
-  const low = f.durationSec.set(t, '0:05'); assert.equal(low.revert, true); assert.equal(low.msg, '미리 알림(10초)보다 길게 입력해 주세요');
-  assert.deepEqual(L.plain(f.durationSec.set(t, '')), {}); assert.equal(t.p.durationSec, null);
-  f.durationSec.set(t, '1:00');
-  const lead = f.leadSec.set(t, '60'); assert.equal(lead.revert, true); assert.equal(t.p.leadSec, 10);
-  assert.deepEqual(L.plain(f.leadSec.set(t, '30')), {}); assert.equal(t.p.leadSec, 30);
-  assert.equal(f.leadSec.set(t, '999').revert, true); assert.equal(t.p.leadSec, 30);   // 120으로 잘린 값도 지속시간(60초) 이상이라 거절
+test('입력 칸(cardFields): 버프는 미리 알림만(지속시간 칸 없음, 2026-11-11)', () => {
+  const t = mk('buff'), fields = KINDS.buff.cardFields(t), f = Object.fromEntries(fields.map(x => [x.key, x]));
+  assert.deepEqual(fields.map(x => x.key), ['leadSec']);
+  assert.deepEqual(L.plain(f.leadSec.set(t, '60')), {}); assert.equal(t.p.leadSec, 60);
+  assert.deepEqual(L.plain(f.leadSec.set(t, '999')), {}); assert.equal(t.p.leadSec, 120);   // 1~120으로 자른다
   const r = mk('rune'), rf = KINDS.rune.cardFields(r)[0];
   rf.set(r, '999'); assert.equal(r.p.repeatSec, 600); rf.set(r, '0'); assert.equal(r.p.repeatSec, 0);
 });
 
-test('학습 결과(applyEffect): 지속시간 저장, 미리 알림 이하의 값은 버림', () => {
+test('버프는 지속시간을 배우지 않고 "방금 켰어요" 버튼도 없다(2026-11-11)', () => {
   const t = mk('buff');
-  KINDS.buff.applyEffect(t, { effect: 'learn', durationSec: 5 }); assert.equal(t.p.durationSec, null);
-  KINDS.buff.applyEffect(t, { effect: 'learn', durationSec: 720 }); assert.equal(t.p.durationSec, 720);
-});
-
-test('"방금 켰어요" 동작', () => {
-  const t = mk('buff'), st = newState(); st.alertedPre = true; st.preMarkRemain = 5;
-  KINDS.buff.actions[0].run(t, st, 7000);
-  assert.deepEqual(L.plain({ p: st.present, a: st.appearedAt, ap: st.alertedPre, pm: st.preMarkRemain, arm: st.armed, on: st.onStreak }), { p: true, a: 7000, ap: false, pm: 0, arm: true, on: 2 });
+  KINDS.buff.applyEffect(t, { effect: 'learn', durationSec: 720 }); assert.equal(t.p.durationSec, undefined);
+  assert.deepEqual(KINDS.buff.actions, []);
 });
 
 test('등록 도우미: 영역과 아이콘의 합집합, 라벨', () => {
@@ -164,15 +155,9 @@ test('registerKind: 묶음 3·4가 종류를 더할 때 쓰는 기본값', () =>
   assert.equal(k.isRegistered({ tpl: null, preset: null }), false);
 });
 
-test('게이지: 지속시간을 아는 버프만, 미리 알림 뒤에도 끝날 때까지 줄어듦', () => {
-  const t = mk('buff', REG); t.p.durationSec = 100; t.p.leadSec = 10;
-  const T0 = 1_000_000, on = (over = {}) => Object.assign(newState(), { present: true, seen: true, appearedAt: T0 }, over);
-  assert.deepEqual(L.plain(KINDS.buff.gauge(t, on(), T0 + 25000)), { frac: 0.75, low: false });
-  assert.deepEqual(L.plain(KINDS.buff.gauge(t, on({ alertedPre: true }), T0 + 95000)), { frac: 0.05, low: true });
-  assert.equal(KINDS.buff.gauge(t, on(), T0 + 100000), null);                     // 끝남
-  assert.equal(KINDS.buff.gauge(t, on({ present: false }), T0 + 25000), null);    // 꺼짐
-  assert.equal(KINDS.buff.gauge(t, on({ appearedAt: null }), T0 + 25000), null);  // 켜진 시점 모름
-  t.p.durationSec = null; assert.equal(KINDS.buff.gauge(t, on(), T0 + 25000), null);   // 학습 전
+test('게이지: 전체 길이를 모르는 버프·부스터·룬은 그리지 않는다', () => {
+  const on = (over = {}) => Object.assign(newState(), { present: true, seen: true }, over);
+  assert.equal(KINDS.buff.gauge(mk('buff', REG), on({ remain: 30, remainAt: 0 }), 0), null);   // 지속시간 칸을 없애 전체 길이를 모름(2026-11-11)
   assert.equal(KINDS.countdown.gauge(mk('countdown'), on({ remain: 30, remainAt: 0 }), 0), null);   // 부스터는 전체 길이를 몰라 그리지 않음
   assert.equal(KINDS.rune.gauge(mk('rune'), on(), 0), null);
 });

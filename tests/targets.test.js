@@ -21,7 +21,7 @@ test('기본 저장소: sol, booster, rune 순서의 내장 3개, 묶기 꺼짐'
 
 test('migrateV1: 모든 필드를 스펙 4.2 표대로 옮긴다', () => {
   const s = plain(migrateV1(FULL_V1)), [sol, booster, rune] = s.targets;
-  assert.deepEqual([sol.id, sol.enabled, sol.threshold, sol.area, sol.tpl, sol.frameW, sol.p], ['sol', false, 0.8, { x: 1, y: 2, w: 300, h: 80 }, { url: 'data:sol', w: 30, h: 30 }, 1920, { durationSec: 1800, leadSec: 15 }]);
+  assert.deepEqual([sol.id, sol.enabled, sol.threshold, sol.area, sol.tpl, sol.frameW, sol.p], ['sol', false, 0.8, { x: 1, y: 2, w: 300, h: 80 }, { url: 'data:sol', w: 30, h: 30 }, 1920, { leadSec: 15 }]);   // v1 지속시간은 버린다(지속시간 칸을 없앰, 2026-11-11)
   assert.deepEqual([booster.threshold, booster.p, booster.tpl.url], [0.66, { leadSec: 20 }, 'data:b']);   // ver:2 이므로 재설정 없음
   assert.deepEqual([rune.p, rune.threshold], [{ repeatSec: 30 }, 0.85]);                                // 룬의 leadSec는 버림
   assert.equal('kind' in sol && sol.kind, 'buff');                                                      // v1에 저장된 kind(x)는 무시
@@ -37,14 +37,14 @@ test('migrateV1: 부스터 ver이 없거나 1이면 등록·기준값을 초기�
 test('migrateV1: 비었거나 객체가 아니면 기본 목록, 값이 없으면 기본값, 두 번 돌려도 같다', () => {
   for (const bad of [null, [], 'x', 5, {}]) assert.deepEqual(plain(migrateV1(bad)).targets.map(t => t.id), ['sol', 'booster', 'rune']);
   const partial = plain(migrateV1({ sol: { tpl: { url: 'u', w: 5, h: 5 } } })).targets[0];
-  assert.deepEqual([partial.enabled, partial.threshold, partial.p], [true, 0.75, { durationSec: null, leadSec: 10 }]);
+  assert.deepEqual([partial.enabled, partial.threshold, partial.p], [true, 0.75, { leadSec: 10 }]);
   const once = plain(migrateV1(FULL_V1));
   assert.deepEqual(plain(migrateV1(FULL_V1)), once);
 });
 
 test('normalizeTarget: 범위 보정, 알 수 없는 필드 보존, 이름 보정', () => {
-  const t = plain(normalizeTarget({ id: 'u3', kind: 'buff', name: '  유니온의 힘  ', threshold: 5, enabled: true, preset: 'nope', frameW: -4, area: { x: 0, y: 0, w: 0, h: 5 }, tpl: { url: 7 }, p: { leadSec: 500, durationSec: 5 }, extra: 'keep' }));
-  assert.deepEqual([t.name, t.threshold, t.preset, t.frameW, t.area, t.tpl, t.p, t.extra], ['유니온의 힘', 0.98, null, 0, null, null, { leadSec: 120, durationSec: null }, 'keep']);
+  const t = plain(normalizeTarget({ id: 'u3', kind: 'buff', name: '  유니온의 힘  ', threshold: 5, enabled: true, preset: 'nope', frameW: -4, area: { x: 0, y: 0, w: 0, h: 5 }, tpl: { url: 7 }, p: { leadSec: 500, durationSec: 5 }, extra: 'keep' }));   // 예전 지속시간은 버린다
+  assert.deepEqual([t.name, t.threshold, t.preset, t.frameW, t.area, t.tpl, t.p, t.extra], ['유니온의 힘', 0.98, null, 0, null, null, { leadSec: 120 }, 'keep']);
   assert.equal(plain(normalizeTarget({ id: 'u3', kind: 'buff', name: '', threshold: 0.1, p: {} })).name, 'u3');
   assert.equal(plain(normalizeTarget({ id: 'u3', kind: 'buff', name: '가'.repeat(20), p: {} })).name.length, 12);
   assert.equal(plain(normalizeTarget({ id: 'u3', kind: 'buff', name: 'a', threshold: 0.1, p: {} })).threshold, 0.4);
@@ -110,7 +110,7 @@ test('loadStore: v2가 있으면 그대로(ok), 쓰지 않는다', () => {
 test('loadStore: v2가 없고 v1이 있으면 이전(migrated)하고 v2를 쓰되 v1은 지우지 않는다. 두 번째 로드는 ok', () => {
   const st = fakeStorage({ 'maple-web-timer-v1': JSON.stringify(FULL_V1) });
   const r = plain(loadStore(st));
-  assert.equal(r.status, 'migrated'); assert.equal(r.store.targets[0].p.durationSec, 1800);
+  assert.equal(r.status, 'migrated'); assert.equal(r.store.targets[0].p.leadSec, 15);
   assert.ok(st.m.has('maple-web-timer-v2')); assert.ok(st.m.has('maple-web-timer-v1'));
   const r2 = plain(loadStore(st)); assert.equal(r2.status, 'ok'); assert.deepEqual(r2.store, r.store);
 });
@@ -126,7 +126,7 @@ test('loadStore: v2가 깨졌거나 ver>2 이거나 targets가 배열이 아니�
     const st = fakeStorage({ 'maple-web-timer-v2': raw, 'maple-web-timer-v1': JSON.stringify(FULL_V1) });
     const r = plain(loadStore(st));
     assert.equal(r.status, 'broken'); assert.equal(st.m.get('maple-web-timer-v2-broken'), raw);
-    assert.equal(r.store.targets[0].p.durationSec, null);            // v1(1800)을 쓰지 않았다
+    assert.equal(r.store.targets[0].p.leadSec, 10);                 // v1(15)을 쓰지 않았다
   }
 });
 
@@ -152,8 +152,7 @@ test('checkName: 앞뒤 공백 제거, 1~12자, 다른 대상과 같은 이름 �
 
 test('targetSnapshot: 상태줄·PIP가 같이 쓰는 행', () => {
   const targets = plain(defaultStore()).targets.concat([{ id: 'u9', kind: 'future', name: '미래', enabled: false, p: {} }]);
-  const st = newState(); st.present = true; st.seen = true; st.appearedAt = 1000;
-  targets[0].p.durationSec = 100;
+  const st = newState(); st.present = true; st.seen = true; st.remain = 100; st.remainAt = 1000; st.lastText = '1:40';   // 아이콘 숫자로 읽은 남은 시간
   const rows = plain(targetSnapshot(targets, { sol: st }, { src: true, frame: { w: 1280, h: 720 } }, 31_000));
   assert.deepEqual(rows[0], { id: 'sol', name: '솔 야누스', kind: 'buff', enabled: true, stripState: 'ok', stripText: null, statusText: '남은 시간 01:10', statusCls: 'on', remainSec: 70 });
   assert.equal(rows[1].stripState, 'unseen'); assert.equal(rows[2].stripState, 'ok');   // 룬은 내장 아이콘이 생겨 등록 없이 정상(2026-11-10)
@@ -203,7 +202,7 @@ test('missingBuiltins: 목록에 없는 내장 대상만, sol·booster·rune 순
 test('addBuiltin: 원래 id·기본값으로 복원, 이미 있으면 거절, 이름이 겹치면 (기본)을 붙인다', () => {
   const s = storeWith(['booster', 'rune']);
   const r = addBuiltin(s, 'sol');
-  assert.equal(r.ok, true); assert.deepEqual(plain([r.target.id, r.target.name, r.target.preset, r.target.p]), ['sol', '솔 야누스', 'sol', { durationSec: null, leadSec: 10 }]);
+  assert.equal(r.ok, true); assert.deepEqual(plain([r.target.id, r.target.name, r.target.preset, r.target.p]), ['sol', '솔 야누스', 'sol', { leadSec: 10 }]);
   assert.equal(s.targets.length, 3); assert.equal(addBuiltin(s, 'sol').ok, false);
   const s2 = storeWith(['booster']); s2.targets.push({ id: 'u1', kind: 'buff', name: '솔 야누스', p: {} });
   assert.equal(addBuiltin(s2, 'sol').target.name, '솔 야누스 (기본)');
@@ -214,7 +213,7 @@ test('addBuff: 이름 검사를 거쳐 u번호 id로 추가, 12개 상한, seq�
   const s = plain(defaultStore());
   const a = addBuff(s, ' 유니온의 힘 ');
   assert.deepEqual(plain([a.ok, a.target.id, a.target.name, a.target.kind, a.target.preset, a.target.threshold, a.target.enabled, a.target.p]),
-    [true, 'u1', '유니온의 힘', 'buff', null, 0.75, true, { durationSec: null, leadSec: 10 }]);
+    [true, 'u1', '유니온의 힘', 'buff', null, 0.75, true, { leadSec: 10 }]);
   assert.equal(addBuff(s, '유니온의 힘').ok, false);                  // 같은 이름
   assert.equal(addBuff(s, '').msg, '이름을 1~12자로, 다른 대상과 다르게 입력해 주세요');
   s.targets = s.targets.filter(t => t.id !== 'u1');
