@@ -6,7 +6,7 @@ import { NativeInput, Gauge } from './parts.jsx';
 import { unlockAudio } from '../app/alerts.js';
 import {
   BUFF_NAMES, addFromMenu, addFull, addMenu, cardView, commitField, deleteTarget, moveCard, renameCard, resetToPreset,
-  runAction, setAddMenu, setEnabled, setThreshold, showAddName, toggleOpen,
+  runAction, setAddMenu, setEnabled, showAddName, toggleOpen,
 } from '../app/cards.js';
 import { testAlert } from '../app/detect-run.js';
 import { startRegister } from '../app/register.js';
@@ -75,15 +75,6 @@ function TargetCard({ t, idx, n, now }) {
         <div className="sub" data-s="sub">{s.sub}</div>
         <div className="grid">
           {k.cardFields(t).map(f => <Field key={f.key} t={t} f={f} id={id} />)}
-          {k.usesThreshold && <>
-            <label htmlFor={id + '-thr'}>기준값</label>
-            <span className="row">
-              <input id={id + '-thr'} type="range" min="0.4" max="0.98" step="0.01" data-k="threshold" style={{ flex: 1 }}
-                value={t.threshold} onChange={e => setThreshold(t, e.target.value)} />
-              {' '}
-              <b data-s="thr">{t.threshold.toFixed(2)}</b>
-            </span>
-          </>}
           <span data-s="scoreLabel">{v.scoreLabel}</span><span className="score" data-s="score">{v.score}</span>
         </div>
         <div className="row" style={{ marginTop: 10 }}>

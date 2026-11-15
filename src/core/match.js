@@ -52,3 +52,31 @@ export function matchTemplate(img, W, H, tpl){
   }
   return {score:Math.max(best,0),x:bx,y:by};
 }
+// matchTemplate과 같은 계산을 하되 점수 높은 자리 n개를 돌려준다([{score,x,y}], 높은 순). 서로 템플릿 반 크기 안쪽으로 가까운 자리는 높은 것 하나만.
+// 색 확인(fill)처럼 회색 무늬 다음에 거르는 조건이 있을 때 쓴다: 1등이 걸러져도 2등 이하에서 진짜를 찾는다(2026-11-15, 솔 야누스)
+export function matchTemplateTop(img, W, H, tpl, n){
+  const {t,w,h,norm}=tpl, cnt=tpl.n??w*h, rects=tpl.rects??[[0,h,0,w]];
+  if(W<w||H<h||norm<1e-3) return [{score:0,x:0,y:0}];
+  const W1=W+1, [S,Q]=integralBuffers(W1*(H+1));
+  S.fill(0,0,W1); Q.fill(0,0,W1);
+  for(let y=0;y<H;y++){ let rs=0,rq=0; S[(y+1)*W1]=0; Q[(y+1)*W1]=0;
+    for(let x=0;x<W;x++){ const v=img[y*W+x]; rs+=v; rq+=v*v;
+      S[(y+1)*W1+x+1]=S[y*W1+x+1]+rs; Q[(y+1)*W1+x+1]=Q[y*W1+x+1]+rq; } }
+  const MW=W-w+1, MH=H-h+1, map=new Float64Array(MW*MH).fill(-2);
+  for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){
+    let sum=0, sq=0;
+    for(const [y0,y1,x0,x1] of rects){ const a=(y+y0)*W1+x+x0,b=a+(x1-x0),c=(y+y1)*W1+x+x0,d=c+(x1-x0); sum+=S[d]-S[b]-S[c]+S[a]; sq+=Q[d]-Q[b]-Q[c]+Q[a]; }
+    const v=sq-sum*sum/cnt; if(v<1e-3) continue;
+    let cr=0;
+    for(const [y0,y1,x0,x1] of rects) for(let ty=y0;ty<y1;ty++){ const ro=(y+ty)*W+x, to=ty*w; for(let tx=x0;tx<x1;tx++) cr+=t[to+tx]*img[ro+tx]; }
+    map[y*MW+x]=cr/(norm*Math.sqrt(v));
+  }
+  const rx=Math.max(1,w>>1), ry=Math.max(1,h>>1), out=[];
+  while(out.length<n){
+    let bi=-1, bs=-2; for(let i=0;i<map.length;i++) if(map[i]>bs){ bs=map[i]; bi=i; }
+    if(bi<0||bs<=-2) break;
+    const bx=bi%MW, by=(bi/MW)|0; out.push({score:Math.max(bs,0),x:bx,y:by});
+    for(let y=Math.max(0,by-ry+1);y<Math.min(MH,by+ry);y++) for(let x=Math.max(0,bx-rx+1);x<Math.min(MW,bx+rx);x++) map[y*MW+x]=-2;
+  }
+  return out.length?out:[{score:0,x:0,y:0}];
+}

@@ -6,14 +6,21 @@ import {eunNeun} from './util.js';
 export const TARGET_MAX=12;
 // 내장 3개: 기존 id를 그대로 써서 내 소리 슬롯 키(sol.pre 등)를 이전 없이 이어간다
 export const BUILTIN={
-  sol:{kind:'buff',name:'솔 야누스',sayName:'야누스',preset:'sol',threshold:0.75},
+  // 기준값 슬라이더는 없다(2026-11-14 사용자 결정). 솔 야누스는 0.75로 고정해 저장된 예전 값(잠시 썼던 0.45 포함)도 덮어쓴다.
+  // 0.75로 못 찾던 원인은 기준값이 아니라 아이콘 크기(UI 크기 설정)였다. 크기 맞추기(PRESETS.sweep)로 고쳤다(2026-11-15)
+  sol:{kind:'buff',name:'솔 야누스',sayName:'야누스',preset:'sol',threshold:0.75,fixedThreshold:true},
   booster:{kind:'countdown',name:'부스터',preset:'booster',threshold:0.7},
   rune:{kind:'rune',name:'룬',preset:'rune',threshold:0.8},
 };
+export const thresholdFixed=t=>!!(BUILTIN[t.id]&&BUILTIN[t.id].fixedThreshold);
 // 내장 기본 아이콘 세트. 저장하지 않는 코드 상수. 아이콘 이미지는 preset-data.js
 export const PRESETS={
-  sol:{scales:[1,1.25,1.5], area:f=>({x:Math.round(f.w*0.35),y:0,w:Math.round(f.w*0.65),h:Math.round(f.h*0.3)}), get icons(){ return PRESET_ICONS.sol; }},
-  booster:{scales:[0.8,1,1.25,1.5], area:f=>({x:Math.round(f.w*0.2),y:0,w:Math.round(f.w*0.6),h:Math.round(f.h*0.3)}), get icons(){ return PRESET_ICONS.booster; }},
+  // sweep: 대략 찾은 자리에서 크기를 2%씩 바꿔 가장 잘 맞는 크기를 찾아 기억한다(core/scan.js). 메이플 UI 크기 설정에 따라 아이콘이 검색 크기 사이에 걸려도 찾는다
+  // fill·fillAt: 숫자 띠 바로 위 가운데(가로 0.5, 세로 0.23)가 보라색이어야 야누스. 숫자 띠를 빼고 회색으로만 비교하면 버프 줄 가장자리 같은 엉뚱한 자리가
+  // 0.77까지 나왔다(2026-11-15 실제 화면). 야누스 그 자리는 (112,60,144), 엉뚱한 자리는 (123,81,81)
+  sol:{scales:[1,1.25,1.5], sweep:true, fillAt:[0.5,0.23], fill:(r,g,b)=>b-g>=40&&b>r, area:f=>({x:Math.round(f.w*0.35),y:0,w:Math.round(f.w*0.65),h:Math.round(f.h*0.3)}), get icons(){ return PRESET_ICONS.sol; }},
+  // scanStep: 못 찾았을 때 틱마다 크기 하나씩만 넓게 본다. "◷ 남은시간" 글자는 가로로 길어 크기 4개를 다 보면 1920×1080에서 틱마다 약 500ms(2026-11-14)
+  booster:{scales:[0.8,1,1.25,1.5], scanStep:1, sweep:true, area:f=>({x:Math.round(f.w*0.2),y:0,w:Math.round(f.w*0.6),h:Math.round(f.h*0.3)}), get icons(){ return PRESET_ICONS.booster; }},
   // 미니맵은 화면 왼쪽 위. 맵마다 크기가 달라 넉넉하게 잡는다(2026-11-10 스크린샷의 미니맵은 1352×751에서 x 5~205, y 60~155)
   // fill: 찾은 자리 가운데 색 확인. 미니맵의 내 위치(노랑)·다른 사람(분홍) 표시도 흰·검은 테두리라 무늬만으로 0.68까지 나온다(실제 화면). 룬 안쪽은 (221,103,255)
   rune:{scales:[1,1.25,1.5], area:f=>({x:0,y:0,w:Math.round(f.w*0.35),h:Math.round(f.h*0.4)}), get icons(){ return PRESET_ICONS.rune; },
@@ -39,6 +46,7 @@ export function normalizeTarget(t){
   o.sayName=(typeof o.sayName==='string'&&o.sayName.trim())?o.sayName.trim().slice(0,12):((BUILTIN[o.id]&&o.name===BUILTIN[o.id].name&&BUILTIN[o.id].sayName)||null);   // 부를 이름: 음성과 알림 문구(토스트·탭 제목·브라우저 알림)에 쓰고, 카드·작은 창·소리 설정에는 name을 보인다. 내장 기본값은 내장 이름일 때만
   o.enabled=typeof o.enabled==='boolean'?o.enabled:true;
   const th=+o.threshold; o.threshold=Number.isFinite(th)?Math.min(0.98,Math.max(0.4,th)):(BUILTIN[o.id]?BUILTIN[o.id].threshold:0.75);
+  if(thresholdFixed(o)) o.threshold=BUILTIN[o.id].threshold;   // 저장된 예전 값(0.75 등)도 고정값으로 바꾼다
   o.preset=PRESETS[o.preset]?o.preset:null;
   if(!o.preset&&BUILTIN[o.id]&&BUILTIN[o.id].preset) o.preset=BUILTIN[o.id].preset;   // 내장 아이콘이 나중에 생긴 내장 대상(룬, 2026-11-10). 직접 등록한 아이콘(tpl)이 있으면 그것이 우선
   o.frameW=Math.max(0,Math.round(+o.frameW)||0); o.frameH=Math.max(0,Math.round(+o.frameH)||0);

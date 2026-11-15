@@ -13,13 +13,13 @@ const m = await ev(() => ({
   cards: [...document.querySelectorAll(".card")].map(c => c.id),
   sub: document.querySelector("#subtitle").textContent,
   dur: !!document.querySelector("#card-sol [data-f=durationSec]"), lead: document.querySelector("#card-sol [data-f=leadSec]").value,
-  rep: document.querySelector("#card-rune [data-f=repeatSec]").value, thr: document.querySelector("#card-sol [data-k=threshold]").value,
+  rep: document.querySelector("#card-rune [data-f=repeatSec]").value, thr: !!document.querySelector("[data-k=threshold]"),
   v2: JSON.parse(localStorage.getItem("maple-web-timer-v2")), v1same: localStorage.getItem("maple-web-timer-v1") === JSON.stringify(JSON.parse(localStorage.getItem("maple-web-timer-v1"))),
   boosterThr: store.targets[1].threshold, boosterTpl: store.targets[1].tpl,
 }));
 check("이전: 카드 3장", JSON.stringify(m.cards) === JSON.stringify(["card-sol", "card-booster", "card-rune"]), m.cards);
 check("이전: 부제", m.sub === "감지 대상 3개", m.sub);
-check("이전: 지속시간 칸 없음(값은 버림) · 미리 알림 15 · 룬 반복 30 · 기준값 0.8", m.dur === false && !("durationSec" in m.v2.targets[0].p) && m.lead === "15" && m.rep === "30" && m.thr === "0.8", m);
+check("이전: 지속시간 칸 없음(값은 버림) · 미리 알림 15 · 룬 반복 30 · 기준값 슬라이더 없음", m.dur === false && !("durationSec" in m.v2.targets[0].p) && m.lead === "15" && m.rep === "30" && m.thr === false, m);
 check("이전: v2 저장, 룬 leadSec 버림", m.v2 && m.v2.ver === 2 && m.v2.targets.length === 3 && !("leadSec" in m.v2.targets[2].p), m.v2);
 check("이전: 부스터는 재설정(등록 비움, 0.7)", m.boosterThr === 0.7 && m.boosterTpl === null, m);
 

@@ -1,4 +1,4 @@
-/* ----- 감지 대상 카드의 엔진 쪽: 카드에 보일 값 계산과 대상 조작(켜기·기준값·입력 칸·펼침·이름·순서·추가·삭제).
+/* ----- 감지 대상 카드의 엔진 쪽: 카드에 보일 값 계산과 대상 조작(켜기·입력 칸·펼침·이름·순서·추가·삭제).
    화면은 ui/TargetsPanel.jsx. 입력 칸은 KINDS[kind].cardFields로 정한다 ----- */
 import {Alerts} from './alerts.js';
 import {bump} from './bus.js';
@@ -34,7 +34,6 @@ export function cardView(t,now){
 
 /* ----- 카드 조작 ----- */
 export function setEnabled(t,on){ t.enabled=on; if(!on){ states[t.id]=newState(); Alerts.drop(t.id); } saveTargets(); renderWatch(); }   // 끄는 순간 상태를 새로 시작
-export function setThreshold(t,v){ t.threshold=+v; saveTargets(); bump(); }
 // 입력 칸 확정: 종류의 set이 검사한다. 거절이면 안내하고 원래 값으로. 돌려주는 값은 칸에 다시 쓸 글자
 export function commitField(t,f,raw){
   const r=f.set(t,raw)||{}; if(r.msg) setNote(r.msg);

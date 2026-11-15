@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { toGray, prepTemplate, matchTemplate } from '../src/core/match.js';
+import { toGray, prepTemplate, matchTemplate, matchTemplateTop } from '../src/core/match.js';
 import { ocrSevenSeg, SEG_DIGITS } from '../src/core/detect-core.js';
 
 // 결정적인 가짜 난수(시험 데이터 고정용)
@@ -175,4 +175,17 @@ test('실제 미니맵: 룬을 다른 맵 배경에 옮겨 놓아도 마름모 �
   const whole = matchTemplate(bg, noRune.w, noRune.h, prepTemplate(R, 11, 11));
   assert.deepEqual([masked.x, masked.y], [X, Y]); assert.ok(masked.score > 0.999, 'masked ' + masked.score);
   assert.ok(whole.score < masked.score - 0.05, `whole ${whole.score}`);
+});
+
+test('matchTemplateTop: 점수 높은 자리 n개를 서로 겹치지 않게(가까운 자리는 하나만) 돌려준다', () => {
+  const W = 80, H = 30, img = noiseImage(W, H, 11), tg = crop(img, W, 10, 5, 8, 8);
+  const copy = Float32Array.from(img), nz = noiseImage(8, 8, 3).map(v => v / 255 - 0.5);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) copy[(12 + y) * W + 50 + x] = tg[y * 8 + x] * 0.9 + 10 + nz[y * 8 + x] * 30;   // 같은 무늬에 잡음을 섞어 한 번 더(밝기만 바꾸면 NCC가 똑같이 1이라 순서가 우연이 된다)
+  const tp = prepTemplate(tg, 8, 8), top = matchTemplateTop(copy, W, H, tp, 3);
+  assert.equal(top.length, 3);
+  assert.deepEqual([top[0].x, top[0].y], [10, 5]);
+  assert.deepEqual([top[1].x, top[1].y], [50, 12]);
+  assert.ok(top[0].score >= top[1].score && top[1].score >= top[2].score);
+  for (let i = 0; i < top.length; i++) for (let j = i + 1; j < top.length; j++) assert.ok(Math.abs(top[i].x - top[j].x) >= 4 || Math.abs(top[i].y - top[j].y) >= 4);
+  const one = matchTemplate(copy, W, H, tp); assert.deepEqual([one.x, one.y], [top[0].x, top[0].y]); assert.ok(Math.abs(one.score - top[0].score) < 1e-9);   // 1등은 matchTemplate과 같다
 });

@@ -21,7 +21,7 @@ test('기본 저장소: sol, booster, rune 순서의 내장 3개, 묶기 꺼짐'
 
 test('migrateV1: 모든 필드를 스펙 4.2 표대로 옮긴다', () => {
   const s = plain(migrateV1(FULL_V1)), [sol, booster, rune] = s.targets;
-  assert.deepEqual([sol.id, sol.enabled, sol.threshold, sol.area, sol.tpl, sol.frameW, sol.p], ['sol', false, 0.8, { x: 1, y: 2, w: 300, h: 80 }, { url: 'data:sol', w: 30, h: 30 }, 1920, { leadSec: 15 }]);   // v1 지속시간은 버린다(지속시간 칸을 없앰, 2026-11-11)
+  assert.deepEqual([sol.id, sol.enabled, sol.threshold, sol.area, sol.tpl, sol.frameW, sol.p], ['sol', false, 0.75, { x: 1, y: 2, w: 300, h: 80 }, { url: 'data:sol', w: 30, h: 30 }, 1920, { leadSec: 15 }]);   // v1 지속시간은 버린다(지속시간 칸을 없앰, 2026-11-11)
   assert.deepEqual([booster.threshold, booster.p, booster.tpl.url], [0.66, { leadSec: 20 }, 'data:b']);   // ver:2 이므로 재설정 없음
   assert.deepEqual([rune.p, rune.threshold], [{ repeatSec: 30 }, 0.85]);                                // 룬의 leadSec는 버림
   assert.equal('kind' in sol && sol.kind, 'buff');                                                      // v1에 저장된 kind(x)는 무시
@@ -49,6 +49,8 @@ test('normalizeTarget: 범위 보정, 알 수 없는 필드 보존, 이름 보�
   assert.equal(plain(normalizeTarget({ id: 'u3', kind: 'buff', name: '가'.repeat(20), p: {} })).name.length, 12);
   assert.equal(plain(normalizeTarget({ id: 'u3', kind: 'buff', name: 'a', threshold: 0.1, p: {} })).threshold, 0.4);
   assert.equal(plain(normalizeTarget({ id: 'rune', kind: 'rune', name: '룬', threshold: 'abc', p: {} })).threshold, 0.8);
+  // 솔 야누스는 기준값 고정: 저장된 값이 무엇이든 0.75(잠시 썼던 0.45 포함)
+  for (const th of [0.45, 0.9, 'abc']) assert.equal(plain(normalizeTarget({ id: 'sol', kind: 'buff', name: '솔 야누스', threshold: th, p: {} })).threshold, 0.75);
 });
 
 test('normalizeTarget: 내장 룬 대상은 예전 저장값(preset 없음)이어도 내장 아이콘을 쓰고, 직접 등록한 아이콘은 그대로 둔다', () => {
