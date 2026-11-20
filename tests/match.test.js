@@ -52,12 +52,16 @@ function renderDigits(str, h = 36, w = 20, gap = 8) {
   return { px, W, H };
 }
 
-test('ocrSevenSeg: 합성한 7세그먼트 숫자를 읽는다', () => {
-  for (const s of ['38', '125', '9.5', '07']) {
+test('ocrSevenSeg: 합성한 7세그먼트 숫자를 읽는다(부스터는 늘 소수 두 자리: 27.48, 9.64)', () => {
+  for (const s of ['38.25', '100.00', '9.50', '0.07']) {
     const { px, W, H } = renderDigits(s);
     const r = ocrSevenSeg(px, W, H);
     assert.ok(r, s + ' 읽기 실패'); assert.equal(r.text, s); assert.equal(r.value, parseFloat(s));
   }
+});
+
+test('ocrSevenSeg: 소수점이 없거나 소수 자리가 두 개가 아니면 버린다(2026-11-20 실제 화면: 퀘스트 글자에 덮인 "0.00"을 "666"으로 읽음)', () => {
+  for (const s of ['666', '38', '9.5', '1556']) { const { px, W, H } = renderDigits(s); assert.equal(ocrSevenSeg(px, W, H), null, s); }
 });
 
 test('ocrSevenSeg: 글씨가 없거나 너무 작으면 null', () => {

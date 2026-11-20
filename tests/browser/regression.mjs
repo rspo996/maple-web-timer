@@ -24,13 +24,23 @@ check("연결 뒤: 연결 버튼은 '다른 창 연결'로 물러나고, 등록�
 
 // 2) 부스터 숫자를 못 읽음: 20초 넘게 못 읽으면 알림 한 번(낮은 경고음)
 await ev(() => { __fake.reset(); __fake.image("booster", PRESET_ICONS.booster[0].url, 500, 20, 65, 19); });
-await wait(2500);
-check("부스터 켜짐 · 숫자 읽는 중", (await txt("#card-booster [data-s=status]")) === "켜짐 · 숫자 읽는 중");
+// 처음 찾을 때는 크기를 하나씩 번갈아 보고 크기 맞추기용 템플릿을 불러오느라 몇 초 걸린다(2026-11-15 감지 정리). 켜질 때까지 기다린다
+let bWait = 0; while (!(await ev(() => states.booster.present)) && bWait < 30) { await wait(500); bWait++; }
+// 꺼진 것을 본 뒤 새로 나타난 내장 부스터: 숫자를 읽기 전에는 나타난 때부터 100초로 센다(2026-11-20 사용자 결정)
+const bShown = await ev(() => [document.querySelector("#card-booster [data-s=status]").textContent, document.querySelector("#card-booster [data-s=sub]").textContent]);
+check("부스터 켜짐: 숫자를 읽기 전에는 100초로 센다", /^남은 시간 01:(3\d|40)$/.test(bShown[0]) && bShown[1].includes("100초로 세고"), { bShown, bWait });
 await ev(() => __fake.skew(21000)); await wait(2500);
-const unread = await ev(() => ({ spoken: __fake.spoken.slice(), st: document.querySelector("#card-booster [data-s=status]").textContent, osc: __fake.osc.slice(0, 3) }));
-check("숫자 못 읽음: 음성 한 번 · 상태 문구 · 낮은 톱니파 경고음", J(unread.spoken) === J(["부스터 숫자를 못 읽고 있어요"]) && unread.st === "켜짐 · 숫자를 못 읽음" && J(unread.osc) === J([["sawtooth", 330], ["sawtooth", 330], ["sawtooth", 330]]), unread);
-await ev(() => { __fake.show("booster", false); });
-await wait(3000);                                             // 꺼짐 확정(4틱)까지 기다린다(꺼짐 알림은 없음(2026-11-10 사용자 결정))
+const unread = await ev(() => ({ spoken: __fake.spoken.slice(), st: document.querySelector("#card-booster [data-s=status]").textContent, sub: document.querySelector("#card-booster [data-s=sub]").textContent, osc: __fake.osc.slice(0, 3) }));
+check("숫자 못 읽음(글자는 보이고 숫자 칸은 비어 있음): 음성 한 번 · 상태 문구 · 낮은 톱니파 경고음", J(unread.spoken) === J(["부스터 숫자를 못 읽고 있어요"]) && /^남은 시간 01:1\d$/.test(unread.st) && unread.sub.includes("20초 넘게 못 읽었어요") && J(unread.osc) === J([["sawtooth", 330], ["sawtooth", 330], ["sawtooth", 330]]), unread);
+// 글자가 사라져도 100초가 다 될 때까지는 가려진 것으로 보고, 그 10초 전에 미리 알림을 울린 뒤 끝 + 2초가 지나면 꺼짐(꺼짐 알림은 없음)
+await ev(() => { __fake.show("booster", false); __fake.reset(); __fake.skew(67000); });
+await wait(2500);
+const bPre = await ev(() => ({ spoken: __fake.spoken.slice(), present: states.booster.present, held: states.booster.held }));
+check("가려진 채로 100초 가정의 10초 전 미리 알림", J(bPre.spoken) === J(["부스터 곧 꺼져요"]) && bPre.present && bPre.held, bPre);
+await ev(() => { __fake.reset(); __fake.skew(15000); });
+await wait(3000);
+const bOff = await ev(() => ({ spoken: __fake.spoken.slice(), present: states.booster.present }));
+check("끝 시각 + 2초가 지나면 꺼짐, 꺼짐 알림 없음", bOff.present === false && bOff.spoken.length === 0, bOff);
 
 // 3) 솔 야누스(내장 아이콘): 켜짐(남은 시간 숫자는 아직 없음), 일치도 표시, 캔버스 일치도 라벨
 await ev(() => { __fake.reset(); window.__labels = []; const o = pctx.fillText.bind(pctx); pctx.fillText = (tx, ...a) => { __labels.push(tx); return o(tx, ...a); }; __fake.image("sol", document.querySelector("#card-sol .thumb").src, 1100, 50, 32, 32); });

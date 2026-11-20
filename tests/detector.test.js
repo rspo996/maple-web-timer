@@ -106,6 +106,24 @@ test('stepCountdown: 숫자를 20초 넘게 못 읽으면 unread 한 번, 읽으
   assert.equal(st.ocrWarned, false);
 });
 
+test('stepCountdown: 숫자가 다른 글자에 덮여(covered) 못 읽는 동안은 unread를 울리지 않고, 덮임이 풀린 뒤 20초를 새로 센다', () => {
+  const st = newState(), c = { leadSec: 10 }; st.present = true; st.presentAt = 0;
+  for (let t = 0; t <= 30_000; t += 500) assert.deepEqual(stepCountdown(st, c, null, t, true), [], 't ' + t);   // 30초 덮임
+  assert.equal(st.covered, true);
+  assert.deepEqual(stepCountdown(st, c, null, 30_500), []);                           // 덮이지 않았는데 못 읽음: 여기서부터 센다
+  assert.equal(st.covered, false);
+  assert.deepEqual(stepCountdown(st, c, null, 30_000 + UNREAD_MS - 1), []);
+  assert.deepEqual(stepCountdown(st, c, null, 30_000 + UNREAD_MS), ['unread']);
+});
+
+test('stepCountdown: 덮인 동안에도 읽어 둔 남은 시간으로 10초 전 미리 알림을 울린다', () => {
+  const st = newState(), c = { leadSec: 10 }; st.present = true; st.presentAt = 0;
+  stepCountdown(st, c, 30, 0); stepCountdown(st, c, 29.5, 500);                    // 두 번 맞아 받아들임
+  assert.equal(st.remain, 29.5);
+  const evs = []; for (let t = 1000; t <= 25_000; t += 500) for (const e of stepCountdown(st, c, null, t, true)) evs.push([t, e]);
+  assert.deepEqual(evs, [[20_000, 'pre']]);                                          // 남은 10초 = 500 + 19.5초
+});
+
 // ---- 묶음 1 스펙 16-1: 당겨 알림(markPre) 뒤에 같은 주기의 pre가 다시 울리지 않아야 함 ----
 test('부스터: 당겨 알림으로 pre 처리된 뒤 19초를 읽어도 재무장되지 않아 10초에 pre가 또 울리지 않는다', () => {
   const st = newState(), c = { leadSec: 10 }; st.present = true; st.presentAt = 0;

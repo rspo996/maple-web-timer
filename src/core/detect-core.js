@@ -23,12 +23,18 @@ export function stepDetector(st, cfg, matched, now){
   }
   return ev;
 }
-export function newState(){ return {present:false,held:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,preMarkRemain:0,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false}; }
+export function newState(){ return {present:false,held:false,seen:false,presentAt:null,onStreak:0,offStreak:0,armed:false,appearedAt:null,alertedPre:false,preMarkRemain:0,lastRemind:0,score:0,pos:null,remain:null,remainAt:0,cand:null,candAt:0,lastText:'',lastReadAt:null,ocrWarned:false,covered:false,coveredAt:null,assumed:false,other:false,minStreak:0}; }
 
 /* ===== 부스터 타이머 숫자 읽기 (7세그먼트) ===== */
-// 노란/흰 7세그먼트 숫자(검은 배경)를 읽어 {value, text} 반환. 못 읽으면 null
+// 노란/흰 7세그먼트 숫자(검은 배경)를 읽어 {value, text} 반환. 다른 글자가 숫자 칸을 지나가면 {covered:true}, 분·초 타이머면 {minutes:true}, 그 밖에 못 읽으면 null.
+// 2026-11-20 실제 화면 공유: 퀘스트 진행 글자("… 몬스터 처치 (시즌 미션) 22704 / 130000")가 숫자 가운데를 지나가는 동안
+// 숫자와 퀘스트 글자가 한 덩어리로 잡혀 "0.00"을 "666", "19.64"를 "1556"으로 읽었고, 같은 값이 연달아 나와 남은 시간으로 받아들일 수 있었다.
+// 부스터 숫자는 늘 소수 두 자리다(27.48, 9.64, 0.00). 7세그먼트 숫자 칸의 위·아래 빈 구멍에는 획이 없으므로, 그 자리가 밝으면 다른 글자가 덮은 것이다
 export const SEG_DIGITS={'1111110':'0','0110000':'1','1101101':'2','1111001':'3','0110011':'4','1011011':'5','1011111':'6','0011111':'6',
   '1110000':'7','1110010':'7','1111111':'8','1111011':'9','1110011':'9'};
+// 덮임 판정. 실제 화면에서 깨끗한 숫자의 구멍 밝은 비율은 최대 0.14, 퀘스트 글자가 지나간 숫자는 최소 0.21(2026-11-20, 412틱)
+const SEG_HOLE_MAX=0.18;
+const SEG_WIDE=0.95;   // 숫자 덩어리 폭이 높이의 이만큼을 넘으면 옆 글자와 이어진 것(실제 숫자는 폭/높이 약 0.77)
 export function ocrSevenSeg(rgba, W, H, litMin=110){
   const lit=new Uint8Array(W*H);
   for(let i=0,j=0;i<W*H;i++,j+=4) lit[i]=(0.299*rgba[j]+0.587*rgba[j+1]+0.114*rgba[j+2])>litMin?1:0;
@@ -52,19 +58,24 @@ export function ocrSevenSeg(rgba, W, H, litMin=110){
   const digs=runs.filter(r=>r.h>=0.7*maxH); if(!digs.length) return null;
   const top=Math.min(...digs.map(r=>r.t)), bot=Math.max(...digs.map(r=>r.b)), Hc=bot-top+1;
   let cw=Math.max(...digs.map(r=>r.w)); if(cw<0.4*Hc) cw=Math.round(0.55*Hc);
+  if(cw>SEG_WIDE*Hc) return {covered:true};
+  // 못 읽었을 때: 숫자 덩어리 사이에 숫자 높이의 0.35~0.7배 글자가 있으면 "9분 03초" 같은 분·초 타이머다({minutes:true}).
+  // 같은 “◷ 남은시간” 칸이 단계 콘텐츠에도 뜬다(2026-11-20 실제 화면: 탈라하트 5단계). 부스터 숫자 사이에는 작은 소수점(0.3배 이하)만 있다
+  const di=runs.map((r,i)=>r.h>=0.7*maxH?i:-1).filter(i=>i>=0);
+  const fail=()=>di.length>=2&&runs.some((r,i)=>i>di[0]&&i<di[di.length-1]&&r.h<0.7*maxH&&r.h>0.35*maxH)?{minutes:true}:null;
   const frac=(x0,x1,y0,y1)=>{ x0=Math.max(0,Math.round(x0)); x1=Math.min(W-1,Math.round(x1)); y0=Math.max(0,Math.round(y0)); y1=Math.min(H-1,Math.round(y1));
     let n=0,on=0; for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ n++; on+=lit[y*W+x]; } return n?on/n:0; };
   let text='';
   for(const r of runs){
     if(r.h>=0.7*maxH){
       const x0=r.w>=0.75*cw ? r.l : r.r-cw+1, X=f=>x0+f*(cw-1), Y=f=>top+f*(Hc-1);
+      if(Math.max(frac(X(.3),X(.7),Y(.18),Y(.38)), frac(X(.3),X(.7),Y(.62),Y(.82)))>SEG_HOLE_MAX) return {covered:true};
       const seg=[ frac(X(.3),X(.7),Y(0),Y(.12)), frac(X(.8),X(1),Y(.15),Y(.4)), frac(X(.8),X(1),Y(.6),Y(.85)),
                   frac(X(.3),X(.7),Y(.88),Y(1)), frac(X(0),X(.2),Y(.6),Y(.85)), frac(X(0),X(.2),Y(.15),Y(.4)), frac(X(.3),X(.7),Y(.44),Y(.56)) ];
-      const ch=SEG_DIGITS[seg.map(v=>v>0.3?1:0).join('')]; if(ch===undefined) return null; text+=ch;
+      const ch=SEG_DIGITS[seg.map(v=>v>0.3?1:0).join('')]; if(ch===undefined) return fail(); text+=ch;
     } else if(text && r.h<=0.3*maxH && r.w<=0.5*maxH && r.b>=bot-0.2*Hc && !text.includes('.')) text+='.';
   }
-  if(text.endsWith('.')) text=text.slice(0,-1);
-  if(!/^\d+(\.\d+)?$/.test(text)) return null;
+  if(!/^\d{1,3}\.\d\d$/.test(text)) return fail();
   return {value:parseFloat(text), text};
 }
 /* ===== 버프 아이콘의 남은 시간 숫자 읽기 (2026-11-11, 2026-11-12 실제 화면 공유에 맞춤) =====
@@ -143,13 +154,16 @@ export function ocrBuffTimer(rgba,W,H){
 }
 // 읽은 숫자로 남은 시간 갱신. 잘못 읽은 값 하나로 알림이 울리지 않도록, 예상값과 맞거나 두 번 연속 일치할 때만 받아들임
 export const UNREAD_MS=20000;   // 켜져 있는데 이만큼 숫자를 못 읽으면 미리 알림을 못 하므로 한 번 알림
-export function stepCountdown(st, cfg, value, now){
+// covered: 숫자 칸을 다른 글자가 덮어 못 읽었음(ocrSevenSeg의 {covered:true}). 그동안은 “못 읽음”을 세지 않는다
+export function stepCountdown(st, cfg, value, now, covered=false){
   const ev=[];
-  if(!st.present){ st.remain=null; st.cand=null; st.lastReadAt=null; st.ocrWarned=false; return ev; }
+  if(!st.present){ st.remain=null; st.cand=null; st.lastReadAt=null; st.ocrWarned=false; st.covered=false; st.coveredAt=null; st.assumed=false; return ev; }
   if(st.lastReadAt==null) st.lastReadAt=st.presentAt ?? now;
+  st.covered=value==null&&!!covered; if(st.covered) st.coveredAt=now;
   if(value==null){
-    // 글자가 가려진 동안(st.held)은 못 읽는 이유를 알고 읽어 둔 시간으로 세고 있으므로 “못 읽음”을 울리지 않는다(2026-11-10 사용자 결정)
-    if(!st.held && !st.ocrWarned && now-st.lastReadAt>=UNREAD_MS){ st.ocrWarned=true; ev.push('unread'); }
+    // 글자가 가려진 동안(st.held)이나 숫자가 다른 글자에 덮인 동안(st.covered)은 못 읽는 이유를 알고 읽어 둔 시간으로 세고 있으므로 “못 읽음”을 울리지 않는다
+    // (2026-11-10 사용자 결정. 덮임은 2026-11-20 실제 화면: 퀘스트 진행 글자가 숫자 가운데를 지나가 사냥 중 412틱 중 9틱만 읽혔다). 덮임이 풀린 뒤부터 20초를 다시 센다
+    if(!st.held && !st.covered && !st.ocrWarned && now-Math.max(st.lastReadAt,st.coveredAt??-Infinity)>=UNREAD_MS){ st.ocrWarned=true; ev.push('unread'); }
     // 못 읽는 동안에도 읽어 둔 남은 시간으로 미리 알림(퀘스트 진행 글자가 10초 전 순간을 가려도 울리도록)
     if(st.remain!=null && !st.alertedPre){
       const est=st.remain-(now-st.remainAt)/1000;
@@ -160,9 +174,10 @@ export function stepCountdown(st, cfg, value, now){
   st.lastReadAt=now; st.ocrWarned=false;
   const exp=st.remain!=null ? st.remain-(now-st.remainAt)/1000 : null;
   const candExp=st.cand!=null ? st.cand-(now-st.candAt)/1000 : null;
-  const ok=(exp!=null && Math.abs(value-exp)<=2) || (candExp!=null && Math.abs(value-candExp)<=1);
+  // st.assumed: 읽은 값이 아니라 정해 둔 길이로 센 남은 시간(내장 부스터 100초). 읽은 값을 확인하는 근거로 쓰지 않는다
+  const ok=(exp!=null && !st.assumed && Math.abs(value-exp)<=2) || (candExp!=null && Math.abs(value-candExp)<=1);
   if(!ok){ st.cand=value; st.candAt=now; return ev; }
-  st.remain=value; st.remainAt=now; st.cand=null;
+  st.remain=value; st.remainAt=now; st.cand=null; st.assumed=false;
   // 새 부스터를 썼으면 다시 알림 준비. 묶기로 미리 당겨 알린 주기(preMarkRemain)는 그 값보다 훨씬 커져야 새 주기로 본다
   if(value>Math.max(cfg.leadSec,st.preMarkRemain||0)+5){ st.alertedPre=false; st.preMarkRemain=0; }
   if(value<=cfg.leadSec && value>0 && !st.alertedPre){ st.alertedPre=true; st.preMarkRemain=value; ev.push('pre'); }

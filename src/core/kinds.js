@@ -25,7 +25,7 @@ export function commonStatus(k,t,ctx){
 export const NOT_SEEN={text:'아직 못 찾음',cls:'off',sub:'이번 연결에서 아직 한 번도 못 봤어요 · 켜져 있는데도 이러면 “등록”으로 직접 지정'};
 export const KIND_DEFAULTS={
   label:'', needsTemplate:true, usesThreshold:true, trackSeen:false, maxInstances:12, onSkip:false, events:[], actions:[],
-  timerBand:null,                                              // [lo, hi]: 템플릿 비교에서 뺄 가운데 행 띠(높이 비율). 버프만 쓴다
+  timerBand:null,                                              // [lo, hi]: 템플릿 비교에서 뺄 행 띠(높이 비율). 버프는 가운데 숫자, 카운트다운은 아래쪽
   defaults:()=>({}), normalizeP:p=>p,
   isRegistered:t=>!!(t.tpl||t.preset),
   needsReregister:(t,frame)=>!!(t.tpl&&t.frameW&&frame&&frame.w&&(t.frameW!==frame.w||t.frameH!==frame.h)),
@@ -98,8 +98,13 @@ registerKind('buff',{
   cardFields:()=>[leadField],
 });
 
+// 내장 부스터 길이(초). 2026-11-20 사용자 결정: 퀘스트 진행 글자가 100초 내내 숫자를 덮어 끝내 못 읽는 주기가 있었고(그날 4주기 중 1번),
+// 그날 부스터 4번은 모두 100초였다(읽은 숫자와 시각으로 구한 끝 시각, 처음 보인 시각). 글자가 늦게 보이면(켤 때 다른 창이 가림) 그만큼 늦게 울린다
+export const BOOSTER_FULL_SEC=100;
 registerKind('countdown',{
   label:'카운트다운', trackSeen:true,
+  // 2026-11-20 실제 화면 공유: 퀘스트 진행 글자 첫 줄이 “◷ 남은시간” 글자 아래쪽(높이의 약 0.7부터)을 지나가 일치도가 기준값 아래로 떨어졌다. 아래쪽을 빼고 비교한다
+  timerBand:[0.68,1.01],
   defaults:()=>({leadSec:10}),
   normalizeP:p=>({...p,leadSec:clampInt(p.leadSec,1,120,10)}),
   labels:()=>({area:'남은시간 타이머 주변',icon:'“◷ 남은시간” 글자'}),
@@ -112,8 +117,16 @@ registerKind('countdown',{
     // 숫자를 읽어 남은 시간을 알면, 그 시간이 다 될 때까지는 “남은시간” 글자가 안 보여도 가려진 것으로 보고 꺼짐 알림을 하지 않는다
     const holdUntil=st.present&&st.remain!=null?st.remainAt+st.remain*1000+HOLD_GRACE_MS:0;
     const hit=det.score>=t.threshold, evs=stepDetector(st,{...cfgView(t),holdUntil},hit,now); if(st.present) st.seen=true;
-    const o=st.present&&hit?hooks.readTimer(source,det.pos):null; st.ocrRect=o&&o.rect; if(o&&o.read) st.lastText=o.read.text;
-    evs.push(...stepCountdown(st,cfgView(t),o&&o.read?o.read.value:null,now));
+    // 내장 부스터가 꺼진 것을 본 뒤 새로 나타나면 그때부터 BOOSTER_FULL_SEC으로 센다(숫자를 두 번 맞게 읽으면 그 값으로 바뀐다, stepCountdown)
+    if(!st.present){ st.other=false; st.minStreak=0; }
+    if(t.preset==='booster'&&evs.includes('appear')&&st.remain==null){ st.remain=BOOSTER_FULL_SEC; st.remainAt=now; st.assumed=true; }
+    const o=st.present&&hit?hooks.readTimer(source,det.pos):null, r=o&&o.read; st.ocrRect=o&&o.rect; if(r&&r.text) st.lastText=r.text;
+    // 같은 “◷ 남은시간” 칸이 단계 콘텐츠의 분·초 타이머(“9분 03초”)에도 뜬다. 분·초 꼴을 두 번(덮인 틱은 건너뜀) 이어 보면
+    // 이 칸이 사라질 때까지 부스터로 보지 않는다: 100초 가정을 버리고 알리지 않는다(2026-11-20 사용자 결정)
+    if(r&&r.minutes) st.minStreak++; else if(o&&!(r&&r.covered)) st.minStreak=0;
+    if(st.minStreak>=2) st.other=true;
+    if(st.other){ st.remain=null; st.cand=null; st.assumed=false; st.covered=false; st.ocrWarned=false; return evs; }
+    evs.push(...stepCountdown(st,cfgView(t),r&&r.value!=null?r.value:null,now,!!(r&&r.covered)));
     return evs;
   },
   markPre:markPreRemain,
@@ -122,12 +135,15 @@ registerKind('countdown',{
     const c=commonStatus(KINDS.countdown,t,ctx); if(c) return c;
     if(!st.present&&!st.seen) return NOT_SEEN;
     if(!st.present) return {text:'꺼져 있음',cls:'off',sub:''};
-    const stuck=`숫자를 ${UNREAD_MS/1000}초 넘게 못 읽었어요`;
+    if(st.other) return {text:'다른 타이머',cls:'off',sub:'“◷ 남은시간” 칸이 분·초 타이머예요(부스터가 아님) · 알리지 않아요'};
+    const stuck=`숫자를 ${UNREAD_MS/1000}초 넘게 못 읽었어요`, covered='숫자가 다른 글자에 가려져 있어요';
     if(st.remain==null) return {text:st.ocrWarned?'켜짐 · 숫자를 못 읽음':'켜짐 · 숫자 읽는 중',cls:st.ocrWarned?'alert':'on',
-      sub:st.ocrWarned?stuck+' · 안 되면 “등록”으로 “◷ 남은시간” 글자를 직접 지정':st.lastText?'읽은 값 '+st.lastText:'타이머 숫자를 아직 못 읽었어요'};
+      sub:st.ocrWarned?stuck+' · 안 되면 “등록”으로 “◷ 남은시간” 글자를 직접 지정':st.covered?covered+' · 안 가려진 순간에 읽어요':st.lastText?'읽은 값 '+st.lastText:'타이머 숫자를 아직 못 읽었어요'};
     const rem=st.remain-(now-st.remainAt)/1000;
+    if(st.assumed) return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',
+      sub:(st.held?'“남은시간” 글자가 가려져 있어요':st.covered?covered:st.ocrWarned?stuck:'숫자를 아직 못 읽었어요')+` · 나타난 때부터 ${BOOSTER_FULL_SEC}초로 세고 있어요`};
     return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',
-      sub:st.held?'“남은시간” 글자가 가려져 있어요 · 읽어 둔 시간으로 계속 세요':st.ocrWarned?stuck+' · 이 시간은 추정이에요':'읽은 값 '+st.lastText+'초'};
+      sub:st.held?'“남은시간” 글자가 가려져 있어요 · 읽어 둔 시간으로 계속 세요':st.covered?covered+' · 읽어 둔 시간으로 계속 세요':st.ocrWarned?stuck+' · 이 시간은 추정이에요':'읽은 값 '+st.lastText+'초'};
   },
   cardFields:()=>[{...leadField,set:(t,raw)=>{ t.p.leadSec=clampInt(raw,1,120,10); return {}; }}],   // 부스터는 지속시간이 없어 검사할 것이 없다
 });

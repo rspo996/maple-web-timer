@@ -167,7 +167,7 @@ import { setHooks } from '../src/core/hooks.js';
 // 0.5초 틱으로 countdown.step을 돌린다. seq: 'x'=글자 일치, '.'=안 보임. read(now)는 그 시각에 읽히는 숫자(null이면 못 읽음)
 function cdRun(t, st, seq, clock, read) {
   const out = [];
-  setHooks({ readTimer: () => { const v = read(clock.now); return { rect: null, read: v == null ? null : { value: v, text: String(v) } }; } });
+  setHooks({ readTimer: () => { const v = read(clock.now); return { rect: null, read: v == null ? null : v === 'covered' ? { covered: true } : v === 'minutes' ? { minutes: true } : { value: v, text: String(v) } }; } });
   try {
     const alertKeys = KINDS.countdown.events.map(e => e.key);   // 감지 루프(collectEvents)처럼 알림 이벤트만 남긴다(appear 등 내부 이벤트는 버림)
     for (const c of seq) { for (const e of KINDS.countdown.step(t, st, { score: c === 'x' ? 0.9 : 0.1, pos: { x: 0, y: 0, w: 10, h: 10 } }, null, clock.now)) { const k = typeof e === 'string' ? e : e.key; if (alertKeys.includes(k)) out.push(k); } clock.now += 500; }
@@ -189,7 +189,7 @@ test('countdown.step: 읽어 둔 남은 시간이 넉넉하면 글자가 10초 �
 
 test('countdown.step: 남은 시간을 못 읽었으면 예전처럼 4번 안 보이면 꺼짐으로 본다(꺼짐 알림은 없음, 2026-11-10 사용자 결정)', () => {
   const t = booster(), st = newState(), clock = { now: 2_000_000 }, none = () => null;
-  cdRun(t, st, '....xxxx', clock, none);
+  cdRun(t, st, 'xxxx', clock, none);                               // 연결할 때 이미 켜져 있던 부스터: 언제 켰는지 몰라 100초로 세지 않는다(2026-11-20)
   assert.equal(st.remain, null);
   assert.deepEqual(cdRun(t, st, '....', clock, none), []);
   assert.equal(st.present, false);
@@ -219,6 +219,93 @@ test('countdown.step: 글자는 보이는데 숫자를 20초 넘게 못 읽으�
   const t = booster(), st = newState(), T0 = 5_000_000, clock = { now: T0 };
   cdRun(t, st, '....xxxx', clock, now => +(120 - (now - T0) / 1000).toFixed(1));
   assert.deepEqual(cdRun(t, st, 'x'.repeat(44), clock, () => null), ['unread']);
+});
+
+// 2026-11-20 사용자 보고: 사냥 중 “부스터 숫자를 못 읽고 있어요”가 자꾸 울림. 퀘스트 진행 글자가 “남은시간” 글자 아래쪽과 숫자 가운데를 지나가
+// 글자는 찾지만 숫자는 퀘스트 글자가 흐려진 순간(412틱 중 9틱)에만 읽혔다
+test('countdown.step: 글자는 보이는데 숫자가 다른 글자에 덮인 동안은 20초가 넘어도 “숫자 못 읽음”을 울리지 않고 읽어 둔 시간으로 10초 전 알림', () => {
+  const t = booster(), st = newState(), T0 = 6_000_000, clock = { now: T0 }, left = now => +(40 - (now - T0) / 1000).toFixed(2);
+  cdRun(t, st, '....', clock, left);
+  cdRun(t, st, 'xxxx', clock, left);                               // 켜지고 숫자를 읽음(약 38초 남음)
+  assert.ok(st.remain != null);
+  const evs = cdRun(t, st, 'x'.repeat(70), clock, () => 'covered');   // 35초 동안 글자는 보이고 숫자는 덮임
+  assert.deepEqual(evs, ['pre']);
+  assert.equal(st.ocrWarned, false); assert.equal(st.covered, true);
+  const r = cardStatus(t, st, clock.now, ctx); assert.match(r.sub, /가려져/);
+});
+
+test('countdown.step: 남은 시간을 모르는데(연결할 때 이미 켜져 있었음) 덮인 동안은 “숫자 못 읽음”을 울리지 않고, 카드에 가려졌다고 보인다', () => {
+  const t = booster(), st = newState(), clock = { now: 7_000_000 };
+  assert.deepEqual(cdRun(t, st, 'x'.repeat(60), clock, () => 'covered'), []);
+  assert.equal(st.present, true); assert.equal(st.remain, null);
+  const r = cardStatus(t, st, clock.now, ctx); assert.equal(r.text, '켜짐 · 숫자 읽는 중'); assert.match(r.sub, /가려져/);
+});
+
+// 2026-11-20 사용자 결정: 퀘스트 글자가 100초 내내 숫자를 덮으면(그날 4주기 중 1번) 숫자를 끝내 못 읽는다. 그날 부스터 4번은 모두 100초였다.
+// 꺼진 것을 본 뒤 새로 나타나면 그때부터 100초로 세고, 숫자를 두 번 맞게 읽으면 그 값으로 바꾼다
+test('countdown.step: 새로 나타난 부스터의 숫자를 끝내 못 읽으면 100초로 세어 남은 10초에 미리 알림', () => {
+  const t = booster(), st = newState(), clock = { now: 8_000_000 };
+  cdRun(t, st, '....', clock, () => null);                         // 꺼진 것을 봄(armed)
+  const T0 = clock.now;
+  const evs = []; for (let i = 0; i < 200; i++) { const e = cdRun(t, st, 'x', clock, () => 'covered'); if (e.length) evs.push([clock.now - 500 - T0, ...e]); }
+  assert.deepEqual(evs, [[90_500, 'pre']]);                         // 둘째 틱(500ms)에 켜짐 → 100초 뒤가 끝, 그 10초 전
+  assert.equal(st.ocrWarned, false);
+});
+
+test('countdown.step: 100초로 세는 중에 숫자를 두 번 맞게 읽으면 그 값으로 바꾼다(글자가 늦게 보인 경우)', () => {
+  const t = booster(), st = newState(), clock = { now: 9_000_000 };
+  cdRun(t, st, '....', clock, () => null);
+  cdRun(t, st, 'xx', clock, () => 'covered');
+  assert.equal(st.remain, 100); assert.equal(st.assumed, true);
+  const T1 = clock.now, left = now => +(40 - (now - T1) / 1000).toFixed(2);   // 실제로는 40초 남음
+  cdRun(t, st, 'x', clock, left);
+  assert.equal(st.remain, 100, '한 번 읽은 값은 후보로만(100초 가정을 확인 근거로 쓰지 않음)');
+  cdRun(t, st, 'x', clock, left);
+  assert.equal(st.remain, 39.5); assert.equal(st.assumed, false);
+});
+
+test('countdown.step: 연결할 때 이미 켜져 있던 부스터(언제 켰는지 모름)는 100초로 세지 않는다', () => {
+  const t = booster(), st = newState(), clock = { now: 10_000_000 };
+  assert.deepEqual(cdRun(t, st, 'x'.repeat(240), clock, () => 'covered'), []);
+  assert.equal(st.present, true); assert.equal(st.remain, null);
+});
+
+test('countdown.step: 직접 추가한 카운트다운(내장 부스터가 아님)은 100초로 세지 않는다', () => {
+  const t = mk('countdown', { ...REG, id: 'u2', name: '타이머' }), st = newState(), clock = { now: 11_000_000 };
+  cdRun(t, st, '....', clock, () => null);
+  cdRun(t, st, 'x'.repeat(10), clock, () => 'covered');
+  assert.equal(st.present, true); assert.equal(st.remain, null);
+});
+
+// 같은 “◷ 남은시간” 칸이 단계 콘텐츠의 분·초 타이머(“9분 03초”)에도 뜬다(2026-11-20 실제 화면). 그 칸에 100초로 세어 “부스터 곧 꺼져요”가 잘못 울렸다
+test('countdown.step: 분·초 타이머가 두 번(덮인 틱은 건너뜀) 이어 보이면 그 칸이 사라질 때까지 부스터로 보지 않는다(100초 가정을 버리고 알리지 않음)', () => {
+  const t = booster(), st = newState(), clock = { now: 12_000_000 };
+  cdRun(t, st, '....', clock, () => null);
+  const seq = ['covered', 'minutes', 'covered', 'minutes'];
+  cdRun(t, st, 'xx', clock, () => 'covered');
+  assert.equal(st.assumed, true);
+  for (const v of seq) cdRun(t, st, 'x', clock, () => v);
+  assert.equal(st.other, true); assert.equal(st.remain, null); assert.equal(st.assumed, false);
+  assert.deepEqual(cdRun(t, st, 'x'.repeat(240), clock, () => null), []);       // 2분 동안 못 읽어도 알림 없음(미리 알림·숫자 못 읽음 모두)
+  assert.equal(cardStatus(t, st, clock.now, ctx).text, '다른 타이머');
+  cdRun(t, st, '.'.repeat(4), clock, () => null);                                // 칸이 사라지면 다시 부스터를 찾는다
+  assert.equal(st.present, false);
+  cdRun(t, st, 'xx', clock, () => 'covered');
+  assert.equal(st.other, false); assert.equal(st.assumed, true);
+});
+
+test('countdown.step: 분·초 꼴이 한 번만 보이고 다음에 못 읽으면(덮임 아님) 부스터로 계속 본다', () => {
+  const t = booster(), st = newState(), clock = { now: 13_000_000 };
+  cdRun(t, st, '....', clock, () => null);
+  cdRun(t, st, 'xx', clock, () => 'covered');
+  for (const v of ['minutes', null, 'minutes', null]) cdRun(t, st, 'x', clock, () => v);
+  assert.equal(st.other, false); assert.equal(st.assumed, true);
+});
+
+test('countdown 상태: 100초로 세는 중이면 그렇게 알려 준다', () => {
+  const st = Object.assign(newState(), { present: true, seen: true, remain: 100, remainAt: 90_000, assumed: true, covered: true });
+  const r = cardStatus(booster(), st, 100_000, ctx);
+  assert.equal(r.text, '남은 시간 01:30'); assert.match(r.sub, /100초로 세고/);
 });
 
 test('countdown 상태: 가려진 동안은 읽어 둔 시간으로 센다고 알려 준다', () => {
