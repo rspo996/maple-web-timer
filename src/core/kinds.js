@@ -79,7 +79,10 @@ registerKind('buff',{
     {key:'pre',label:'미리 알림',beep:'buff',group:'pre',msg:t=>`${sayName(t)} 곧 꺼져요`},
   ],   // 꺼짐 알림 없음(2026-11-10 사용자 결정). stepDetector의 gone은 감지 루프(collectEvents)가 버린다
   step(t,st,det,source,now){
-    const hit=det.score>=t.threshold, evs=stepDetector(st,cfgView(t),hit,now); if(st.present) st.seen=true;
+    // 읽어 둔 남은 시간이 끝나기 전에는 아이콘이 안 보여도 꺼짐으로 보지 않고 그 값으로 계속 센다(부스터와 같게).
+    // 2026-11-21 사용자 보고·결정: 야누스가 10초 아래로 떨어지면 아이콘이 깜빡여 간헐적으로 "꺼져 있음"이 됐다
+    const holdUntil=st.present&&st.remain!=null?st.remainAt+st.remain*1000+HOLD_GRACE_MS:0;
+    const hit=det.score>=t.threshold, evs=stepDetector(st,{...cfgView(t),holdUntil},hit,now); if(st.present) st.seen=true;
     const o=st.present&&hit?hooks.readBuffTimer(source,det.pos):null; if(o&&o.read) st.lastText=o.read.text;
     // 30분짜리처럼 긴 버프는 끝나기 몇 분 전까지 큰 숫자가 없으므로 '숫자 못 읽음'은 버프에 쓰지 않는다
     evs.push(...stepCountdown(st,cfgView(t),o&&o.read?o.read.value:null,now).filter(e=>e!=='unread'));
@@ -93,7 +96,7 @@ registerKind('buff',{
     if(!st.present) return {text:'꺼져 있음',cls:'off',sub:''};
     if(st.remain==null) return {text:'켜짐',cls:'on',sub:'아이콘에 남은 시간 숫자가 보이면 그 숫자로 미리 알려요'};
     const rem=st.remain-(now-st.remainAt)/1000;
-    return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',sub:'아이콘 숫자 '+st.lastText};
+    return {text:'남은 시간 '+fmt(rem),cls:rem<=t.p.leadSec?'alert':'on',sub:st.held?'아이콘이 안 보여요 · 읽어 둔 시간으로 계속 세요':'아이콘 숫자 '+st.lastText};
   },
   cardFields:()=>[leadField],
 });

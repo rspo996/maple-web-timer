@@ -54,6 +54,36 @@ test('buff.step: 아이콘 숫자로 남은 시간을 세고 미리 알림 이�
   } finally { setHooks({ readBuffTimer: () => null }); }
 });
 
+// 2026-11-21 사용자 보고: 야누스가 10초 아래로 떨어지면 간헐적으로 "꺼져 있음"이 된다(끝나기 전 아이콘이 깜빡인다).
+// 사용자 결정: 읽어 둔 남은 시간이 아직 남았으면 안 보여도 꺼짐으로 보지 않고 그 값으로 계속 센다(부스터의 holdUntil과 같게)
+test('buff.step: 읽어 둔 남은 시간이 끝나기 전에는 아이콘이 안 보여도 꺼짐으로 보지 않고, 끝 시각 + 여유가 지나면 꺼짐', () => {
+  const t = mk('buff'), st = newState(); let now = 1000, val = null;
+  setHooks({ readBuffTimer: () => ({ rect: null, read: val == null ? null : { value: val, text: String(val) } }) });
+  try {
+    const step = m => { KINDS.buff.step(t, st, { score: m ? 0.9 : 0.1, pos: { x: 0, y: 0, w: 32, h: 32 } }, null, now); now += 500; };
+    for (let i = 0; i < 4; i++) step(false);                     // armed
+    const t0 = now; for (let i = 0; i < 6; i++) { val = Math.ceil(9 - (now - t0) / 1000); step(true); }   // 9초부터 줄어드는 숫자를 읽음
+    assert.equal(st.present, true); assert.ok(st.remain != null);
+    const end = st.remainAt + st.remain * 1000;
+    val = null; for (let i = 0; i < 8; i++) step(false);         // 4초 동안 깜빡여 안 보임(예전에는 2초 만에 꺼짐)
+    assert.equal(st.present, true); assert.equal(st.held, true);
+    const s = KINDS.buff.status({ ...t, ...REG }, st, now, ctx);   // 읽어 둔 값으로 계속 센다
+    assert.ok(s.text.startsWith('남은 시간'), s.text); assert.ok(s.sub.includes('읽어 둔 시간'), s.sub);
+    while (now < end + 2000) step(false);                        // 끝 시각 + 여유(HOLD_GRACE_MS)까지 계속 안 보임
+    step(false);
+    assert.equal(st.present, false);
+  } finally { setHooks({ readBuffTimer: () => null }); }
+});
+
+test('buff.step: 남은 시간을 아직 못 읽었으면 예전처럼 4틱(약 2초) 안 보이면 꺼짐', () => {
+  const t = mk('buff'), st = newState(); let now = 1000;
+  const step = m => { KINDS.buff.step(t, st, { score: m ? 0.9 : 0.1, pos: { x: 0, y: 0, w: 32, h: 32 } }, null, now); now += 500; };
+  for (let i = 0; i < 4; i++) step(true);
+  assert.equal(st.present, true); assert.equal(st.remain, null);
+  for (let i = 0; i < 4; i++) step(false);
+  assert.equal(st.present, false);
+});
+
 test('rune.step: appear-unknown도 appear로', () => {
   const t = mk('rune'), st = newState();
   const step = (now) => L.plain(KINDS.rune.step(t, st, { score: 0.9, pos: null }, null, now));
