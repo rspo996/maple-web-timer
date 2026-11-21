@@ -193,3 +193,18 @@ test('matchTemplateTop: 점수 높은 자리 n개를 서로 겹치지 않게(가
   for (let i = 0; i < top.length; i++) for (let j = i + 1; j < top.length; j++) assert.ok(Math.abs(top[i].x - top[j].x) >= 4 || Math.abs(top[i].y - top[j].y) >= 4);
   const one = matchTemplate(copy, W, H, tp); assert.deepEqual([one.x, one.y], [top[0].x, top[0].y]); assert.ok(Math.abs(one.score - top[0].score) < 1e-9);   // 1등은 matchTemplate과 같다
 });
+
+// 2026-11-21 실제 화면 공유: 넓게 찾을 때 줄인 화면에서 야누스가 회색 무늬로는 수십 등으로 밀려(가려진 탭 29등) 상위 12자리에 못 들어 계속 "꺼져 있음"이었다.
+// ok(x,y)(줄인 화면에서 본 색 확인)를 주면, 회색 상위 n자리에 더해 ok를 통과한 자리 중 상위 n자리도 돌려준다
+test('matchTemplateTop: ok를 주면 회색 상위 n자리 밖이어도 ok를 통과한 자리를 함께 돌려준다', () => {
+  const W = 120, H = 40, img = noiseImage(W, H, 5), tg = crop(img, W, 10, 5, 8, 8), tp = prepTemplate(tg, 8, 8);
+  const copy = Float32Array.from(img), nz = noiseImage(8, 8, 9).map(v => v / 255 - 0.5);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) copy[(20 + y) * W + 90 + x] = tg[y * 8 + x] * 0.3 + 60 + nz[y * 8 + x] * 400;   // 잡음이 많이 섞인 진짜(점수가 낮아 회색으로는 수십 등)
+  const plain = matchTemplateTop(copy, W, H, tp, 2), at = p => Math.abs(p.x - 90) <= 1 && Math.abs(p.y - 20) <= 1;
+  assert.ok(!plain.some(at), '시험 전제: 회색 상위 2자리에는 없다');
+  const ok = (x, y) => at({ x, y });
+  const top = matchTemplateTop(copy, W, H, tp, 2, ok);
+  assert.ok(top.some(at), JSON.stringify(top));
+  for (const p of plain) assert.ok(top.some(q => q.x === p.x && q.y === p.y), '회색 상위 자리는 그대로 남는다');
+  for (let i = 1; i < top.length; i++) assert.ok(top[i - 1].score >= top[i].score, '점수 높은 순');
+});

@@ -63,7 +63,7 @@ function measureIn(source,c,tp,r,P,t){
   const W=Math.round(r.w*tp.k), H=Math.round(r.h*tp.k);
   if(W<tp.w||H<tp.h) return {score:0,t:c,pos:{x:r.x,y:r.y,w:c.w*(c.s||1),h:c.h*(c.s||1)}};
   const {work,wctx}=scratch(); work.width=W; work.height=H; wctx.drawImage(source,r.x,r.y,r.w,r.h,0,0,W,H);
-  const gray=toGray(wctx.getImageData(0,0,W,H).data,W*H);
+  const rgba=wctx.getImageData(0,0,W,H).data, gray=toGray(rgba,W*H);
   // 한 자리를 원본 크기로 다시 재고(refineAt) 상자로
   const at=m=>{ let score=m.score, x=r.x+m.x/tp.k, y=r.y+m.y/tp.k;
     if(tp.full){ const f=refineAt(source,tp.full,x,y,Math.ceil(1/tp.k)+1); if(f){ score=f.score; x=f.x; y=f.y; } }
@@ -72,8 +72,11 @@ function measureIn(source,c,tp,r,P,t){
   if(!fill) return at(matchTemplate(gray,W,H,tp));
   // 내장 룬·솔 야누스: 무늬는 비슷해도 정해진 자리 색이 다르면 아니다. 회색 무늬 1등이 색에서 걸러져도 진짜를 놓치지 않게
   // 상위 FILL_TOP 자리를 보고, 색 확인을 통과한 자리 중 가장 높은 것을 쓴다(2026-11-15: 다른 버프 아이콘이 야누스보다 회색 무늬 점수가 높았다)
+  // 줄인 화면에서도 색 확인 자리를 미리 보고, 그 색이 맞는 자리 상위 FILL_TOP개를 더 본다(2026-11-21: 회색 점수만으로는 야누스가 29등으로 밀렸다)
+  const [fx,fy]=P.fillAt||[0.5,0.5], ox=(c.w*(c.s||1)*fx-tp.m)*tp.k, oy=(c.h*(c.s||1)*fy-tp.m)*tp.k;
+  const okSmall=(x,y)=>{ const px=Math.round(x+ox), py=Math.round(y+oy); if(px<0||py<0||px>=W||py>=H) return false; const i=(py*W+px)*4; return fill(rgba[i],rgba[i+1],rgba[i+2]); };
   let best=null, first=null;
-  for(const m of matchTemplateTop(gray,W,H,tp,FILL_TOP)){
+  for(const m of matchTemplateTop(gray,W,H,tp,FILL_TOP,okSmall)){
     const o=at(m); if(!first) first=o;
     if(fillAt(source,o.pos,fill,P.fillAt&&P.fillAt[0],P.fillAt&&P.fillAt[1])&&(!best||o.score>best.score)) best=o;
   }
