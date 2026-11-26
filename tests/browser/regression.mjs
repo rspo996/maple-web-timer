@@ -70,10 +70,14 @@ await ev(() => __fake.skew(51000));
 await wait(3500);
 const pre = await ev(() => ({ spoken: __fake.spoken.slice(), osc: __fake.osc.slice() }));
 check("미리 알림: 음성 한 번 + 딩딩-동", J(pre.spoken) === J(["야누스 곧 꺼져요"]) && J(pre.osc) === J([["square", 1046], ["square", 1046], ["square", 784]]), pre);
+// 아이콘이 사라져도 읽어 둔 끝 시각 + 2초까지는 가려진 것으로 보고 그 값으로 계속 센다(dec3080, 2026-11-21 사용자 결정). 그 뒤 꺼짐
 await ev(() => { __fake.reset(); __fake.show("sol", false); });
-await wait(3500);
+await wait(2500);
+const solHeld = await ev(() => ({ spoken: __fake.spoken.slice(), present: states.sol.present, held: states.sol.held, sub: document.querySelector("#card-sol [data-s=sub]").textContent }));
+check("미리 알림 뒤 아이콘이 사라져도 끝 시각 + 2초까지는 읽어 둔 시간으로 센다", solHeld.present && solHeld.held && solHeld.sub.includes("읽어 둔 시간으로 계속 세요") && solHeld.spoken.length === 0, solHeld);
+await ev(() => __fake.skew(5000)); await wait(2500);
 const off = await ev(() => ({ spoken: __fake.spoken.slice(), st: document.querySelector("#card-sol [data-s=status]").textContent }));
-check("미리 알림 뒤 꺼짐 알림 없음", off.spoken.length === 0 && off.st === "꺼져 있음", off);
+check("끝 시각 + 2초가 지나면 꺼짐, 미리 알림 뒤 꺼짐 알림 없음", off.spoken.length === 0 && off.st === "꺼져 있음", off);
 
 // 6) 알림 테스트: 음성은 같은 문구 8초 중복 억제, 순서대로 말함
 await ev(() => { __fake.skew(9000); __fake.reset(); testAlert(targetById("sol")); testAlert(targetById("sol")); testAlert(targetById("booster")); });   // 앞 알림과 8초 넘게 띄워 중복 억제에 걸리지 않게
