@@ -76,7 +76,7 @@ function measureIn(source,c,tp,r,P,t){
   const [fx,fy]=P.fillAt||[0.5,0.5], ox=(c.w*(c.s||1)*fx-tp.m)*tp.k, oy=(c.h*(c.s||1)*fy-tp.m)*tp.k;
   const okSmall=(x,y)=>{ const px=Math.round(x+ox), py=Math.round(y+oy); if(px<0||py<0||px>=W||py>=H) return false; const i=(py*W+px)*4; return fill(rgba[i],rgba[i+1],rgba[i+2]); };
   let best=null, first=null;
-  for(const m of matchTemplateTop(gray,W,H,tp,FILL_TOP,okSmall)){
+  for(const m of matchTemplateTop(gray,W,H,tp,FILL_TOP,okSmall,!!P.fillOnly)){   // fillOnly(룬): 색이 맞는 자리만 잰다
     const o=at(m); if(!first) first=o;
     if(fillAt(source,o.pos,fill,P.fillAt&&P.fillAt[0],P.fillAt&&P.fillAt[1])&&(!best||o.score>best.score)) best=o;
   }

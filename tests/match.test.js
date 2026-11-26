@@ -127,6 +127,8 @@ import { bandMask, diamondMask, maskRects } from '../src/core/match.js';
 import { KINDS } from '../src/core/kinds.js';
 import { SOL_TIMER, grayOf } from './fixtures/sol-janus-timer.js';
 import { RUNE_MINIMAP, grayOf as gunzipGray } from './fixtures/rune-minimap.js';
+import { PRESETS } from '../src/core/targets.js';
+import { decodePng } from './png.js';
 const L_plain = x => JSON.parse(JSON.stringify(x));
 const rowsOf = (m, w, h) => [...Array(h).keys()].filter(y => m[y * w]);
 
@@ -207,4 +209,46 @@ test('matchTemplateTop: ok를 주면 회색 상위 n자리 밖이어도 ok를 �
   assert.ok(top.some(at), JSON.stringify(top));
   for (const p of plain) assert.ok(top.some(q => q.x === p.x && q.y === p.y), '회색 상위 자리는 그대로 남는다');
   for (let i = 1; i < top.length; i++) assert.ok(top[i - 1].score >= top[i].score, '점수 높은 순');
+});
+
+// 2026-11-25 실제 화면 공유(1366×796): 화면에 없는 룬을 미니맵 영역 전체에서 원본 크기로 재느라 틱마다 약 75~100ms가 들었다.
+// 룬 색 조건을 통과한 자리는 14만 자리 중 184곳(0.13%)뿐이었다. okOnly면 ok를 통과한 자리만 재고, 그 자리들 중 상위 n자리를 돌려준다
+test('matchTemplateTop: okOnly면 ok를 통과한 자리만 재서 그중 상위 n자리를 돌려준다', () => {
+  const W = 120, H = 40, img = noiseImage(W, H, 5), tg = crop(img, W, 10, 5, 8, 8), tp = prepTemplate(tg, 8, 8);
+  const copy = Float32Array.from(img), nz = noiseImage(8, 8, 9).map(v => v / 255 - 0.5);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) copy[(20 + y) * W + 90 + x] = tg[y * 8 + x] * 0.3 + 60 + nz[y * 8 + x] * 400;
+  const pass = new Set(['90,20', '40,10', '41,10', '70,30', '3,3']), ok = (x, y) => pass.has(x + ',' + y);
+  let calls = 0; const okCount = (x, y) => { calls++; return ok(x, y); };
+  const top = matchTemplateTop(copy, W, H, tp, 2, okCount, true);
+  assert.equal(calls, (W - 8 + 1) * (H - 8 + 1), 'ok는 자리마다 한 번');
+  assert.ok(top.length >= 1 && top.length <= 2, JSON.stringify(top));
+  for (const p of top) assert.ok(ok(p.x, p.y), 'ok를 통과한 자리만: ' + JSON.stringify(p));
+  assert.ok(!top.some(p => p.x === 10 && p.y === 5), '회색 1등(10,5)이라도 ok를 못 넘으면 빠진다');
+  // 점수는 ok 없이 잰 값과 같고, 통과한 자리 중 가장 높은 것이 1등
+  const full = new Map(); for (const k of pass) { const [x, y] = k.split(',').map(Number); full.set(k, matchTemplate(crop(copy, W, x, y, 8, 8), 8, 8, tp).score); }
+  const bestKey = [...full.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  assert.equal(top[0].x + ',' + top[0].y, bestKey);
+  for (const p of top) assert.ok(Math.abs(p.score - full.get(p.x + ',' + p.y)) < 1e-6, '점수는 같은 계산');
+  for (let i = 1; i < top.length; i++) assert.ok(top[i - 1].score >= top[i].score, '점수 높은 순');
+  // 통과한 자리가 없으면 예전처럼 점수 0 한 자리
+  assert.deepEqual(matchTemplateTop(copy, W, H, tp, 2, () => false, true), [{ score: 0, x: 0, y: 0 }]);
+});
+
+// 내장 룬(fillOnly): 앱의 measureIn처럼 줄인 화면의 "아이콘 가운데" 한 점이 룬 색인 자리만 잰다. 진짜 룬 아이콘(색)을 실제 미니맵 배경에 옮겨 놓아도 그 자리를 찾는지
+test('실제 룬 아이콘: 가운데 색이 맞는 자리만 재도(fillOnly) 미니맵에 옮겨 놓은 룬을 찾는다', () => {
+  const { noRune } = RUNE_MINIMAP, W = noRune.w, H = noRune.h, bg = gunzipGray(noRune), P = PRESETS.rune, icon = P.icons[0], ic = decodePng(icon.url), M = diamondMask(11, 11), X = 120, Y = 30;
+  assert.equal(P.fillOnly, true);
+  assert.deepEqual([icon.w, icon.h, icon.crop || 0], [11, 11, 0]);
+  const px = new Uint8ClampedArray(W * H * 4);
+  for (let i = 0; i < W * H; i++) { px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = bg[i]; px[i * 4 + 3] = 255; }
+  for (let y = 0; y < 11; y++) for (let x = 0; x < 11; x++) if (M[y * 11 + x]) for (let c = 0; c < 3; c++) px[((Y + y) * W + X + x) * 4 + c] = ic.px[(y * 11 + x) * 4 + c];
+  const tp = prepTemplate(toGray(ic.px, 121), 11, 11, M);
+  const ox = 11 * 0.5, ok = (x, y) => { const qx = Math.round(x + ox), qy = Math.round(y + ox); if (qx >= W || qy >= H) return false; const i = (qy * W + qx) * 4; return P.fill(px[i], px[i + 1], px[i + 2]); };   // detect-run.js의 okSmall(배율 1)
+  assert.ok(ok(X, Y), '룬 자리의 가운데 점은 룬 색');
+  const top = matchTemplateTop(toGray(px, W * H), W, H, tp, 12, ok, true);
+  assert.deepEqual([top[0].x, top[0].y], [X, Y], JSON.stringify(top.slice(0, 3)));
+  assert.ok(top[0].score > 0.99, 'score ' + top[0].score);
+  // 앱은 이어서 원본에서 3×3 평균 색(fillAt)을 본다: 그것도 룬 색
+  let r = 0, g = 0, b = 0; for (let j = 4; j <= 6; j++) for (let i = 4; i <= 6; i++) { const k = ((Y + j) * W + X + i) * 4; r += px[k]; g += px[k + 1]; b += px[k + 2]; }
+  assert.ok(P.fill(r / 9, g / 9, b / 9), `3×3 평균 ${r / 9},${g / 9},${b / 9}`);
 });

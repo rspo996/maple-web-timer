@@ -56,7 +56,9 @@ export function matchTemplate(img, W, H, tpl){
 // 색 확인(fill)처럼 회색 무늬 다음에 거르는 조건이 있을 때 쓴다: 1등이 걸러져도 2등 이하에서 진짜를 찾는다(2026-11-15, 솔 야누스)
 // ok(x,y)를 주면 회색 상위 n자리에 더해, ok를 통과한 자리 중 상위 n자리도 넣는다(같은 자리는 한 번, 점수 높은 순).
 // 2026-11-21 실제 화면 공유: 줄인 화면에서 야누스의 회색 점수가 배경 수십 곳과 비슷해, 픽셀이 조금만 달라도(가려진 탭의 ImageBitmap) 29등으로 밀려 못 찾았다
-export function matchTemplateTop(img, W, H, tpl, n, ok=null){
+// okOnly면 ok를 통과한 자리만 재고 그중 상위 n자리를 돌려준다(회색 상위 자리는 보지 않는다). 2026-11-25 실제 화면: 룬 색을 통과한 자리는 14만 자리 중 184곳이라
+// 화면에 없는 룬을 틱마다 미니맵 전체에서 재던 약 75~100ms를 줄인다
+export function matchTemplateTop(img, W, H, tpl, n, ok=null, okOnly=false){
   const {t,w,h,norm}=tpl, cnt=tpl.n??w*h, rects=tpl.rects??[[0,h,0,w]];
   if(W<w||H<h||norm<1e-3) return [{score:0,x:0,y:0}];
   const W1=W+1, [S,Q]=integralBuffers(W1*(H+1));
@@ -65,7 +67,9 @@ export function matchTemplateTop(img, W, H, tpl, n, ok=null){
     for(let x=0;x<W;x++){ const v=img[y*W+x]; rs+=v; rq+=v*v;
       S[(y+1)*W1+x+1]=S[y*W1+x+1]+rs; Q[(y+1)*W1+x+1]=Q[y*W1+x+1]+rq; } }
   const MW=W-w+1, MH=H-h+1, map=new Float64Array(MW*MH).fill(-2);
+  const gate=okOnly&&ok;
   for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){
+    if(gate&&!ok(x,y)) continue;
     let sum=0, sq=0;
     for(const [y0,y1,x0,x1] of rects){ const a=(y+y0)*W1+x+x0,b=a+(x1-x0),c=(y+y1)*W1+x+x0,d=c+(x1-x0); sum+=S[d]-S[b]-S[c]+S[a]; sq+=Q[d]-Q[b]-Q[c]+Q[a]; }
     const v=sq-sum*sum/cnt; if(v<1e-3) continue;
@@ -84,7 +88,7 @@ export function matchTemplateTop(img, W, H, tpl, n, ok=null){
     }
     return out; };
   let okMap=null;
-  if(ok){ okMap=Float64Array.from(map); for(let i=0;i<okMap.length;i++) if(okMap[i]>-2&&!ok(i%MW,(i/MW)|0)) okMap[i]=-2; }
+  if(ok&&!gate){ okMap=Float64Array.from(map); for(let i=0;i<okMap.length;i++) if(okMap[i]>-2&&!ok(i%MW,(i/MW)|0)) okMap[i]=-2; }
   const out=pick(map);
   if(okMap) for(const p of pick(okMap)) if(!out.some(q=>q.x===p.x&&q.y===p.y)) out.push(p);
   out.sort((a,b)=>b.score-a.score);
