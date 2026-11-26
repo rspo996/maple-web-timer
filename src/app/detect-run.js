@@ -182,12 +182,23 @@ export function dispatchEvents(list,now){
 }
 // 카드의 "알림 테스트": 묶지 않고 첫 이벤트를 개별 알림으로 재생
 export function testAlert(t){ const def=KINDS[t.kind].events[0]; Alerts.fire({...reqFor(t,def,{}),src:'test',group:null}); }
+/* 틱마다 화면 사본 하나. 2026-11-25 실제 화면 공유(1366×796): video에서 조각을 잘라 올 때마다 한 번에 1~2ms가 들어(3×3 조각 100번 241ms, 사본에서는 0.3ms)
+   탭이 보이는 동안 틱마다 drawImage를 170번 넘게 불러 10초 중 약 7초를 붙잡혔고, 탭이 최대 8.6초 응답하지 않았다.
+   video만 한 번(약 3~10ms) 복사하고 감지는 모두 사본에서 읽는다. 숨은 탭의 ImageBitmap은 조각을 잘라 와도 싸서(같은 날 2344번에 0.2초) 그대로 쓴다 */
+let frameCv=null, frameCtx=null;
+export function frameCopy(s){
+  if(!(s instanceof HTMLVideoElement)) return s;
+  const [w,h]=dims(s); if(!w||!h) return s;
+  if(!frameCv){ frameCv=document.createElement('canvas'); frameCtx=frameCv.getContext('2d',{willReadFrequently:true}); }
+  if(frameCv.width!==w||frameCv.height!==h){ frameCv.width=w; frameCv.height=h; }
+  frameCtx.drawImage(s,0,0); return frameCv;
+}
 export const slowWatch=createSlowWatch(450,20);
 export let busy=false;
 export async function tick(){
   if(busy) return; busy=true;
   try{
-    const t0=performance.now(), now=Date.now(), g=await grab(), source=g.frame; setFrameFresh(g.fresh);
+    const t0=performance.now(), now=Date.now(), g=await grab(), raw=g.frame, source=raw&&frameCopy(raw); setFrameFresh(g.fresh);
     batch(()=>{   // 이번 틱에 바뀐 상태줄·카드·알림 문구를 한 번에 그린다
       if(source){ [frame.w,frame.h]=dims(source); }
       const live=!!src&&src.type==='stream', ok=!!source&&!(live&&isBlank(source));
@@ -211,7 +222,7 @@ export async function tick(){
       if(slow) setNote(`감지가 느려요 (평균 ${slow} ms) · 사용 안 하는 대상은 꺼 주세요`);
       renderWatch();   // 탭 제목은 숨겨져 있어도 갱신
       pipUpdate(Date.now());   // 작은 창도 숨겨진 동안이 주 사용 조건이라 매 틱 갱신(묶음 5)
-      if(!document.hidden){ drawPreview(source); if(live&&ok) pulse(); }
+      if(!document.hidden){ drawPreview(raw); if(live&&ok) pulse(); }   // 미리보기는 원본에서 그린다(CPU 사본을 화면 캔버스로 다시 올리지 않게 [추정: 이쪽이 싸다])
     });
   } finally { busy=false; Alerts.flush(Date.now()); }
 }
