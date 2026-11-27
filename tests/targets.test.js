@@ -169,11 +169,11 @@ test('slotsOf: 대상 순서·이름을 따르고, 묶음·수동 타이머 슬�
   const targets = plain(defaultStore()).targets;
   targets.push({ id: 'u1', kind: 'buff', name: '유니온의 힘', p: {} });
   const r = plain(slotsOf(targets));
-  assert.deepEqual(r.map(s => s.key), ['sol.pre', 'booster.pre', 'booster.unread', 'rune.appear', 'rune.remind', 'u1.pre',
+  assert.deepEqual(r.map(s => s.key), ['sol.pre', 'booster.pre', 'rune.appear', 'rune.remind', 'u1.pre',
     'grp.pre', 'manual.pre', 'manual.end', 'manual.next1', 'manual.next2']);
-  assert.deepEqual([r[5].group, r[5].label, r[6].group, r[6].label], ['유니온의 힘', '미리 알림', '묶음 알림', '미리 알림']);
+  assert.deepEqual([r[4].group, r[4].label, r[5].group, r[5].label], ['유니온의 힘', '미리 알림', '묶음 알림', '미리 알림']);
   targets[3].name = '새 이름';
-  assert.equal(plain(slotsOf(targets))[5].group, '새 이름');
+  assert.equal(plain(slotsOf(targets))[4].group, '새 이름');
 });
 
 test('slotsOf: 수동 타이머 파일이 없는 동안에는 manual 슬롯을 숨길 수 있다, 모르는 kind는 건너뛴다', () => {

@@ -12,7 +12,6 @@ export const VOICES=[{id:'Erinome',label:'Erinome',gender:'여'}];
 export const DEFAULT_VOICE='Erinome';                        // 사용자 결정(2026-11-11): 기본은 Erinome, 목소리는 모두 여자
 export const VOICE_MODEL='gemini-3.8-flash-tts';
 export const VOICE_STYLE='Friendly, bright and natural young Korean woman, like a cheerful game guide. Warm smile in the voice. Say only the given text.';   // 한국어 대본이어도 말투 지시는 영어가 좋다(문서)
-export const WATCH_START='감시 시작할게요';
 export const VOICE_SAMPLE='야누스 곧 꺼져요';             // 소리 설정의 "듣기"
 
 const perms=(arr,k)=>k===0?[[]]:arr.flatMap((x,i)=>perms([...arr.slice(0,i),...arr.slice(i+1)],k-1).map(p=>[x,...p]));
@@ -56,7 +55,7 @@ function manualTexts(m){
 // targets: 대상 배열(꺼 둔 대상 포함), group: {on}, manual: 수동 타이머 저장값. 없으면 기본 설정
 export function voicePhrases({targets,group,manual}={}){
   const ts=targets||defaultStore().targets, m=manual||manualEmptyStore();
-  const all=[WATCH_START,...ts.flatMap(targetTexts),...(group&&group.on?groupTexts(ts):[]),...manualTexts(m)];
+  const all=[...ts.flatMap(targetTexts),...(group&&group.on?groupTexts(ts):[]),...manualTexts(m)];
   return [...new Set(all)].sort();
 }
 // files: manifest.files[목소리] (문구 → 파일). 없는 문구는 브라우저 음성으로 나온다

@@ -14,7 +14,7 @@ test('종류 등록부: 세 종류와 이벤트 키·묶음 종류', () => {
   assert.deepEqual(Object.keys(KINDS).sort(), ['buff', 'countdown', 'rune']);
   const ev = k => L.plain(KINDS[k].events.map(e => [e.key, e.group, e.beep]));
   assert.deepEqual(ev('buff'), [['pre', 'pre', 'buff']]);  // 꺼짐 알림 없음(2026-11-10 사용자 결정)
-  assert.deepEqual(ev('countdown'), [['pre', 'pre', 'booster'], ['unread', null, 'system']]);
+  assert.deepEqual(ev('countdown'), [['pre', 'pre', 'booster']]);  // 숫자 못 읽음 알림 없음(2026-11-28 사용자 결정)
   assert.deepEqual(ev('rune'), [['appear', null, 'rune'], ['remind', null, 'rune']]);
 });
 
@@ -25,7 +25,6 @@ test('문구: 버프·부스터 미리 알림은 부를 이름 + 곧 꺼져요, 
   assert.equal(msg('buff', 'pre', mk('buff', { name: '유니온의 힘' })), '유니온의 힘 곧 꺼져요');
   assert.equal(msg('countdown', 'pre', mk('countdown', { name: '부스터' })), '부스터 곧 꺼져요');
   assert.equal(sayName(sol), '야누스'); assert.equal(sayName(t), '솔 야누스'); assert.equal(sayName({ name: 'A', sayName: null }), 'A');
-  assert.equal(msg('countdown', 'unread', mk('countdown', { name: '부스터' })), '부스터 숫자를 못 읽고 있어요');
   assert.equal(msg('rune', 'appear', mk('rune')), '룬이 나왔어요');
   assert.equal(msg('rune', 'remind', mk('rune')), '룬 아직 있어요');
 });
@@ -245,10 +244,11 @@ test('countdown.step: 글자가 가려진 동안은 20초가 넘어도 “숫자
   assert.equal(st.present, true); assert.equal(st.held, true); assert.equal(st.ocrWarned, false);
 });
 
-test('countdown.step: 글자는 보이는데 숫자를 20초 넘게 못 읽으면 “숫자 못 읽음”은 그대로 한 번', () => {
+test('countdown.step: 글자는 보이는데 숫자를 20초 넘게 못 읽어도 알림은 없다(2026-11-28 사용자 결정: 숫자 못 읽음 알림 삭제)', () => {
   const t = booster(), st = newState(), T0 = 5_000_000, clock = { now: T0 };
   cdRun(t, st, '....xxxx', clock, now => +(120 - (now - T0) / 1000).toFixed(1));
-  assert.deepEqual(cdRun(t, st, 'x'.repeat(44), clock, () => null), ['unread']);
+  assert.deepEqual(cdRun(t, st, 'x'.repeat(44), clock, () => null), []);
+  assert.equal(st.ocrWarned, true);   // 카드 상태 문구(“20초 넘게 못 읽었어요”)는 그대로
 });
 
 // 2026-11-20 사용자 보고: 사냥 중 “부스터 숫자를 못 읽고 있어요”가 자꾸 울림. 퀘스트 진행 글자가 “남은시간” 글자 아래쪽과 숫자 가운데를 지나가

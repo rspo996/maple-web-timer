@@ -18,11 +18,11 @@ check("연결: 상태줄", (await txt("#watchState")) === "감시 중");
 check("연결: 탭 제목", (await ev(() => document.title)) === "● 감시 중 · 메이플 재획 알리미");
 const first = await ev(() => ({ cards: ["sol", "booster", "rune"].map(i => document.querySelector(`#card-${i} [data-s=status]`).textContent), spoken: __fake.spoken.slice() }));
 check("연결: 카드 문구(못 찾음은 꺼짐과 구분)", J(first.cards) === J(["아직 못 찾음", "아직 못 찾음", "룬 없음"]), first.cards);  // 룬도 내장 아이콘이 생겨 등록 없이 찾는다(2026-11-10)
-check("연결: 시작 음성(등록할 대상 없음)", first.spoken[0] === "감시 시작할게요", first.spoken);
+check("연결: 시작 음성 없음(등록할 대상 없음, 2026-11-28 사용자 결정)", first.spoken.length === 0, first.spoken);
 const hand = await ev(() => ({ label: document.querySelector("#btnConnect").textContent, primary: document.querySelector("#btnConnect").classList.contains("primary"), strip: [...document.querySelectorAll("#watchTargets button.primary")].map(b => b.textContent) }));
 check("연결 뒤: 연결 버튼은 '다른 창 연결'로 물러나고, 등록할 대상이 없으니 상태줄에 등록 버튼 없음", hand.label === "다른 창 연결" && !hand.primary && J(hand.strip) === J([]), hand);
 
-// 2) 부스터 숫자를 못 읽음: 20초 넘게 못 읽으면 알림 한 번(낮은 경고음)
+// 2) 부스터 숫자를 못 읽음: 20초 넘게 못 읽어도 소리 없이 카드 상태 문구만(2026-11-28 사용자 결정)
 await ev(() => { __fake.reset(); __fake.image("booster", PRESET_ICONS.booster[0].url, 500, 20, 65, 19); });
 // 처음 찾을 때는 크기를 하나씩 번갈아 보고 크기 맞추기용 템플릿을 불러오느라 몇 초 걸린다(2026-11-15 감지 정리). 켜질 때까지 기다린다
 let bWait = 0; while (!(await ev(() => states.booster.present)) && bWait < 30) { await wait(500); bWait++; }
@@ -31,7 +31,7 @@ const bShown = await ev(() => [document.querySelector("#card-booster [data-s=sta
 check("부스터 켜짐: 숫자를 읽기 전에는 100초로 센다", /^남은 시간 01:(3\d|40)$/.test(bShown[0]) && bShown[1].includes("100초로 세고"), { bShown, bWait });
 await ev(() => __fake.skew(21000)); await wait(2500);
 const unread = await ev(() => ({ spoken: __fake.spoken.slice(), st: document.querySelector("#card-booster [data-s=status]").textContent, sub: document.querySelector("#card-booster [data-s=sub]").textContent, osc: __fake.osc.slice(0, 3) }));
-check("숫자 못 읽음(글자는 보이고 숫자 칸은 비어 있음): 음성 한 번 · 상태 문구 · 낮은 톱니파 경고음", J(unread.spoken) === J(["부스터 숫자를 못 읽고 있어요"]) && /^남은 시간 01:1\d$/.test(unread.st) && unread.sub.includes("20초 넘게 못 읽었어요") && J(unread.osc) === J([["sawtooth", 330], ["sawtooth", 330], ["sawtooth", 330]]), unread);
+check("숫자 못 읽음(글자는 보이고 숫자 칸은 비어 있음): 소리 없이 상태 문구만(2026-11-28 사용자 결정)", J(unread.spoken) === J([]) && /^남은 시간 01:1\d$/.test(unread.st) && unread.sub.includes("20초 넘게 못 읽었어요") && J(unread.osc) === J([]), unread);
 // 글자가 사라져도 100초가 다 될 때까지는 가려진 것으로 보고, 그 10초 전에 미리 알림을 울린 뒤 끝 + 2초가 지나면 꺼짐(꺼짐 알림은 없음)
 await ev(() => { __fake.show("booster", false); __fake.reset(); __fake.skew(67000); });
 await wait(2500);
@@ -107,7 +107,7 @@ check("끊김: 2분이 지나도 다시 알리지 않음", (await lost()) === 0,
 
 // 9) 화면이 다시 들어오면(화면 안 들어옴 → 복구) 음성만. 새로 연결하면 다시 감시 중
 await ev(() => __fake.reset()); await page.click("#btnConnect"); await wait(3000);
-check("다시 연결: 감시 중 · 시작 음성", (await txt("#watchState")) === "감시 중" && (await ev(() => __fake.spoken[0])) === "감시 시작할게요");
+check("다시 연결: 감시 중 · 시작 음성 없음", (await txt("#watchState")) === "감시 중" && (await ev(() => __fake.spoken.length)) === 0);
 await ev(() => location.reload()); await wait(1500);
 check("연결한 적이 있으면 새로고침 뒤 설명서가 접혀 있음", (await ev(() => document.querySelector("#helpDetails").open)) === false);
 const shownHidden = await ev(() => [...document.querySelectorAll("[hidden]")].filter(e => getComputedStyle(e).display !== "none").map(e => e.id || e.className || e.tagName));

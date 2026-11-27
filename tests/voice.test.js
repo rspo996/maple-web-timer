@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { VOICES, DEFAULT_VOICE, WATCH_START, VOICE_SAMPLE, voicePhrases, voiceCoverage } from '../src/core/voice-phrases.js';
+import { VOICES, DEFAULT_VOICE, VOICE_SAMPLE, voicePhrases, voiceCoverage } from '../src/core/voice-phrases.js';
 import { KINDS } from '../src/core/kinds.js';
 import { defaultStore, addKindTarget } from '../src/core/targets.js';
 import { manualEmptyStore } from '../src/core/manual-core.js';
@@ -11,11 +11,11 @@ const ROUTINE = ['회수 10초 전', '사냥 10초 전', '사냥 시간이에요
 test('목소리는 기본 Erinome 하나', () => {
   assert.deepEqual(VOICES.map(v => v.id), ['Erinome']);
   assert.equal(DEFAULT_VOICE, 'Erinome'); assert.ok(VOICES.every(v => v.label === v.id && v.gender === '여'));
-  assert.equal(WATCH_START, '감시 시작할게요'); assert.equal(VOICE_SAMPLE, '야누스 곧 꺼져요');
+  assert.equal(VOICE_SAMPLE, '야누스 곧 꺼져요');
 });
 
 test('voicePhrases: 기본 설정이면 기본 대상·수동 프리셋·사냥·회수 문구, 중복 없이 정렬', () => {
-  const want = [WATCH_START, '야누스 곧 꺼져요', '부스터 곧 꺼져요', '부스터 숫자를 못 읽고 있어요', '룬이 나왔어요', '룬 아직 있어요', ...PRESETS, ...ROUTINE].sort();
+  const want = ['야누스 곧 꺼져요', '부스터 곧 꺼져요', '룬이 나왔어요', '룬 아직 있어요', ...PRESETS, ...ROUTINE].sort();
   assert.deepEqual(voicePhrases(), want);
 });
 

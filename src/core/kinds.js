@@ -114,7 +114,7 @@ registerKind('countdown',{
   events:[
     {key:'pre',label:'미리 알림',beep:'booster',group:'pre',msg:t=>`${sayName(t)} 곧 꺼져요`},
     // 꺼짐 알림 없음(2026-11-10 사용자 결정)
-    {key:'unread',label:'숫자 못 읽음',beep:'system',group:null,msg:t=>`${t.name} 숫자를 못 읽고 있어요`},
+    // 숫자 못 읽음 알림 없음(2026-11-28 사용자 결정). 못 읽는 것은 카드 상태 문구로만 보인다
   ],
   step(t,st,det,source,now){
     // 숫자를 읽어 남은 시간을 알면, 그 시간이 다 될 때까지는 “남은시간” 글자가 안 보여도 가려진 것으로 보고 꺼짐 알림을 하지 않는다
