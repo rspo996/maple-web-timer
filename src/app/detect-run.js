@@ -12,7 +12,7 @@ import {bandMask,diamondMask,matchTemplate,matchTemplateTop,prepTemplate,toGray}
 import {nearRect,pickScale,proposals,scanSlice,sweepScales} from '../core/scan.js';
 import {scratch} from '../core/scratch.js';
 import {createSlowWatch} from '../core/slow-watch.js';
-import {PRESETS} from '../core/targets.js';
+import {PRESETS,presetCands} from '../core/targets.js';
 export const states={}; export const tplCache={};
 export const stateOf=id=>states[id]||(states[id]=newState());
 // 모든 대상의 감지 상태를 새로 시작. armed=true는 스크린샷 테스트(처음부터 켜짐 시각을 믿음)
@@ -29,7 +29,8 @@ export function loadTpl(t,band){
     const m=t.crop||0, iw=img.width-2*m, ih=img.height-2*m;
     const draw=(w,h)=>{ const {work,wctx}=scratch(); work.width=w; work.height=h; wctx.fillStyle="#000"; wctx.fillRect(0,0,w,h); wctx.drawImage(img,m,m,iw,ih,0,0,w,h); return toGray(wctx.getImageData(0,0,w,h).data,w*h); };
     const maskOf=(w,h)=>t.shape==='diamond'?diamondMask(w,h):band?bandMask(w,h,band[0],band[1]):undefined;
-    const k=scaleFor(iw*s,ih*s), w=Math.max(4,Math.round(iw*s*k)), h=Math.max(4,Math.round(ih*s*k));
+    // fullRes: 줄이지 않고 잰다(실제 배율로 자른 룬 16×16. 14px로 줄이면 같은 화면에서도 0.85로 떨어졌다, 2026-11-28. 룬은 색이 맞는 자리만 재서 가볍다)
+    const k=t.fullRes?1:scaleFor(iw*s,ih*s), w=Math.max(4,Math.round(iw*s*k)), h=Math.max(4,Math.round(ih*s*k));
     const gray=draw(w,h);   // 원본 회색값도 보관(설치기의 밝기 비, 묶음 4 스펙 15-1)
     let full=null;
     if(band&&k<1){ const fw=Math.max(4,Math.round(iw*s)), fh=Math.max(4,Math.round(ih*s)); full=prepTemplate(draw(fw,fh),fw,fh,maskOf(fw,fh)); }
@@ -89,7 +90,7 @@ export function detectTemplate(t, source){
   if(t.tpl && t.frameW && (t.frameW!==frame.w||t.frameH!==frame.h)) return null;
   // 기본 아이콘은 UI 배율이 달라도 찾도록 여러 크기로 검색. 한 번 찾으면 그 크기부터 먼저 확인
   const P=t.preset&&PRESETS[t.preset];
-  const cands=t.tpl?[t.tpl]:P.icons.flatMap(p=>P.scales.map(s=>({...p,s})));
+  const cands=t.tpl?[t.tpl]:presetCands(P);
   const st=stateOf(t.id), sweep=!t.tpl&&P&&P.sweep;
   // 기억한 후보. 크기 맞추기로 고른 크기는 검색 크기 목록에 없으므로 아이콘에 그 크기를 붙여 만든다
   const remembered=()=>{ const p=sweep&&P.icons.find(p=>p.url===st.hit.url); return p?{...p,s:st.hit.s}:null; };

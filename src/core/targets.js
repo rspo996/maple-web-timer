@@ -29,6 +29,8 @@ export const PRESETS={
   rune:{scales:[1,1.25,1.5], area:f=>({x:0,y:0,w:Math.round(f.w*0.35),h:Math.round(f.h*0.4)}), get icons(){ return PRESET_ICONS.rune; },
     fill:(r,g,b)=>r>=160&&b>=200&&g<=170&&b-g>=70, fillOnly:true},
 };
+// 내장 아이콘 × 검색 크기 후보. 아이콘에 scales가 있으면 그 크기만(실제 배율에서 자른 룬 16×16은 크기 1 하나, 2026-11-28)
+export const presetCands=P=>P.icons.flatMap(p=>(p.scales||P.scales).map(s=>({...p,s})));
 
 /* ----- 저장소 v2: 형식·검사·이전 (순수 함수. 저장소 객체를 인자로 받아 node에서 시험한다) ----- */
 export const STORE_V1='maple-web-timer-v1', STORE_V2='maple-web-timer-v2', STORE_BROKEN='maple-web-timer-v2-broken';

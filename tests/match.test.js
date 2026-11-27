@@ -252,3 +252,23 @@ test('실제 룬 아이콘: 가운데 색이 맞는 자리만 재도(fillOnly) �
   let r = 0, g = 0, b = 0; for (let j = 4; j <= 6; j++) for (let i = 4; i <= 6; i++) { const k = ((Y + j) * W + X + i) * 4; r += px[k]; g += px[k + 1]; b += px[k + 2]; }
   assert.ok(P.fill(r / 9, g / 9, b / 9), `3×3 평균 ${r / 9},${g / 9},${b / 9}`);
 });
+
+// 2026-11-28 사용자 화면(UI 크기 약 1.43배): 미니맵 룬은 16×15쯤으로, 11×11 아이콘을 1·1.25·1.5배로 늘려도 게임이 부드럽게 늘린 모양과 달라
+// 0.55~0.66(기준 0.8 미만)이었다. 실제 화면에서 16×16으로 자른 아이콘을 줄이지 않고(fullRes) 그 크기 하나로 잰다.
+// 앱의 measureIn 흉내: 템플릿 크기 = 아이콘×s×k, 화면도 k로 줄임(여기서는 k=1인 후보만 실제로 잰다), 가운데 한 점이 룬 색인 자리만(fillOnly)
+import { RUNE_LIVE_143, runeLivePx } from './fixtures/rune-live-143.js';
+import { presetCands, BUILTIN } from '../src/core/targets.js';
+test('실제 화면(UI 1.43배) 룬: 내장 후보 중 하나가 기준값 이상으로 룬 자리를 찾는다', () => {
+  const P = PRESETS.rune, { w: W, h: H, at } = RUNE_LIVE_143, px = runeLivePx(), g = toGray(px, W * H);
+  const cands = presetCands(P);
+  const big = cands.find(c => c.w === 16);
+  assert.ok(big, '16×16 룬 아이콘 후보');
+  assert.equal(big.s, 1); assert.equal(big.fullRes, true); assert.equal(big.shape, 'diamond');
+  assert.equal(cands.filter(c => c.w === 16).length, 1, '16×16 아이콘은 크기 1 하나만');
+  assert.equal(cands.filter(c => c.w === 11).length, P.scales.length, '11×11 아이콘은 예전 크기 목록 그대로');
+  const ic = decodePng(big.url), M = diamondMask(16, 16), tp = prepTemplate(toGray(ic.px, 256), 16, 16, M);
+  const ok = (x, y) => { const i = ((y + 8) * W + x + 8) * 4; return P.fill(px[i], px[i + 1], px[i + 2]); };
+  const top = matchTemplateTop(g, W, H, tp, 12, ok, true);
+  assert.deepEqual([top[0].x, top[0].y], [at.x, at.y], JSON.stringify(top.slice(0, 3)));
+  assert.ok(top[0].score >= BUILTIN.rune.threshold + 0.1, 'score ' + top[0].score);
+});
